@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Brand colors */
+  --orange: #FF5C00;
+  --orange-dark: #CC4A00;
+  --orange-tint: #FFE8D6;
+  --green: #1A5C2E;
+  --green-dark: #0F3D1E;
+  --green-tint: #D4EDDA;
+
+  /* Neutral colors */
+  --text-dark: #111111;
+  --text-muted: #555555;
+  --bg: #F5F5F0;
+  --bg-warm: #FFF8F5;
+  --white: #FFFFFF;
+  --border: #E0E8E3;
+
+  /* Typography */
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dark);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
