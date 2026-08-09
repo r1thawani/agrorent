@@ -77,7 +77,7 @@ export default function Navbar() {
           {isAuthenticated ? (
             <>
               <Link
-                to="/dashboard"
+                to={user.role === "admin" ? "/admin" : "/dashboard"}
                 style={{ display: "flex", alignItems: "center", gap: "8px", color: "#FFFFFF", fontSize: "14px", textDecoration: "none" }}
               >
                 <img

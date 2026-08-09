@@ -106,20 +106,29 @@ export default function AdminUsers() {
       label: "Actions",
       render: (u) => (
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button
-            onClick={() => toggleStatus(u.id)}
-            style={{
-              fontSize: "13px",
-              padding: "6px 14px",
-              border: "1px solid #E0E8E3",
-              borderRadius: "8px",
-              backgroundColor: "#FFFFFF",
-              color: "#555555",
-              cursor: "pointer",
-            }}
-          >
-            {u.status === "active" ? "Suspend" : "Unsuspend"}
-          </button>
+          {u.role === "admin" ? (
+            // An admin account managing itself (or another admin) through
+            // the general Users table doesn't make sense — there was
+            // previously nothing stopping this, so a site admin could
+            // suspend their own account by mistake. Protect admin rows
+            // instead, same as most real admin consoles do.
+            <span style={{ fontSize: "13px", color: "#555555" }}>Protected</span>
+          ) : (
+            <button
+              onClick={() => toggleStatus(u.id)}
+              style={{
+                fontSize: "13px",
+                padding: "6px 14px",
+                border: "1px solid #E0E8E3",
+                borderRadius: "8px",
+                backgroundColor: "#FFFFFF",
+                color: "#555555",
+                cursor: "pointer",
+              }}
+            >
+              {u.status === "active" ? "Suspend" : "Unsuspend"}
+            </button>
+          )}
           <Link
             to={`/profile/${u.id}`}
             style={{ fontSize: "13px", fontWeight: 500, color: "#1A5C2E", textDecoration: "none" }}
@@ -134,7 +143,7 @@ export default function AdminUsers() {
   return (
     <div>
       <AdminTopNav />
-      <main style={{ backgroundColor: "#F5F5F0", minHeight: "calc(100vh - 104px)", padding: "32px" }}>
+      <main style={{ backgroundColor: "#F5F5F0", minHeight: "calc(100vh - 56px)", padding: "32px" }}>
         <div style={{ maxWidth: "1120px", margin: "0 auto" }}>
           <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>
             All users
