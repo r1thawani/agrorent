@@ -29,8 +29,15 @@ const DEFAULT_USER = {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
+  // Simple no-backend way to reach the admin panel: logging in with this
+  // exact email gives you the "admin" role instead of the default
+  // "renter". There's no real auth yet, so this is just a fixed trigger —
+  // swap it for a real admin check once the backend exists.
+  const ADMIN_EMAIL = "admin@agrorent.com";
+
   function login(email) {
-    setUser({ ...DEFAULT_USER, email });
+    const role = email === ADMIN_EMAIL ? "admin" : DEFAULT_USER.role;
+    setUser({ ...DEFAULT_USER, email, role });
   }
 
   function signup({ name, email, role = "renter" }) {
