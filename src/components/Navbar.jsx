@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
-  const location = useLocation();
-  const isHome = location.pathname === "/";
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  function handleLogout() {
+    logout();
+    navigate("/");
+  }
 
   return (
     <nav
@@ -41,7 +44,7 @@ export default function Navbar() {
             textDecoration: "none",
           }}
         >
-          {isHome ? "AgroRent" : "Back to Home"}
+          AgroRent
         </Link>
 
         {/* Centre — Nav links */}
@@ -69,28 +72,61 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Right — Login + Sign Up */}
+        {/* Right — auth-aware: Login/Sign Up when logged out, user menu when logged in */}
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <Link
-            to="/login"
-            style={{ color: "#FFFFFF", fontSize: "14px", textDecoration: "none" }}
-          >
-            Login
-          </Link>
-          <Link
-            to="/signup"
-            style={{
-              backgroundColor: "#FF5C00",
-              color: "#FFFFFF",
-              fontSize: "13px",
-              fontWeight: "500",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              textDecoration: "none",
-            }}
-          >
-            Sign Up
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link
+                to="/dashboard"
+                style={{ display: "flex", alignItems: "center", gap: "8px", color: "#FFFFFF", fontSize: "14px", textDecoration: "none" }}
+              >
+                <img
+                  src={user.photo}
+                  alt={user.name}
+                  style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }}
+                />
+                {user.name}
+              </Link>
+              <button
+                onClick={handleLogout}
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#A8E6BE",
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(168, 230, 190, 0.4)",
+                  cursor: "pointer",
+                }}
+              >
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                style={{ color: "#FFFFFF", fontSize: "14px", textDecoration: "none" }}
+              >
+                Login
+              </Link>
+              <Link
+                to="/signup"
+                style={{
+                  backgroundColor: "#FF5C00",
+                  color: "#FFFFFF",
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  textDecoration: "none",
+                }}
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>
