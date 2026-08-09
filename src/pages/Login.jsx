@@ -2,36 +2,42 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
-const ROLES = [
-  { value: "renter", label: "Renter" },
-  { value: "owner", label: "Owner" },
+// Login only distinguishes account TYPE — a regular user vs. an admin.
+// Renter/owner is not a login-time choice: every regular account can act
+// as both, and which mode you're in is switched from the dashboard (see
+// Sidebar.jsx), not picked here. Signup is the only place a "starting"
+// mode gets chosen, and even that can be changed right after logging in.
+const ACCOUNT_TYPES = [
+  { value: "user", label: "User" },
   { value: "admin", label: "Admin" },
 ];
 
-const ROLE_HOME = {
-  renter: "/dashboard",
-  owner: "/dashboard/owner",
+const ACCOUNT_TYPE_HOME = {
+  user: "/dashboard",
   admin: "/admin",
 };
 
 export default function Login() {
-  const [form, setForm] = useState({ email: "", password: "", role: "renter" });
+  const [form, setForm] = useState({ email: "", password: "", accountType: "user" });
   const navigate = useNavigate();
   const { login } = useAuth();
 
   // Each field updates only its own key, independently of the others and
-  // regardless of the order they're filled in — so picking a role first,
-  // last, or in the middle all behave the same way.
+  // regardless of the order they're filled in — so picking an account type
+  // first, last, or in the middle all behave the same way.
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
-  const pickRole = (role) => setForm((f) => ({ ...f, role }));
+  const pickAccountType = (accountType) => setForm((f) => ({ ...f, accountType }));
 
   function handleSubmit(e) {
     e.preventDefault();
     // No backend yet, so this doesn't verify the password — it just marks
-    // the app as "logged in" as this email, with whichever role is
-    // currently selected in form.role. See AuthContext.jsx.
-    login(form.email, form.role);
-    navigate(ROLE_HOME[form.role], { replace: true });
+    // the app as "logged in" as this email. Admin logs in with a fixed
+    // "admin" role; a regular "User" login always lands in renter mode,
+    // and can switch to owner mode from the dashboard afterwards — see
+    // AuthContext.jsx and Sidebar.jsx.
+    const role = form.accountType === "admin" ? "admin" : "renter";
+    login(form.email, role);
+    navigate(ACCOUNT_TYPE_HOME[form.accountType], { replace: true });
   }
 
   const inputStyle = { width: "100%", height: "44px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", boxSizing: "border-box" };
@@ -62,12 +68,12 @@ export default function Login() {
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Log in as</label>
             <div style={{ display: "flex", gap: "8px" }}>
-              {ROLES.map((opt) => (
+              {ACCOUNT_TYPES.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => pickRole(opt.value)}
-                  aria-pressed={form.role === opt.value}
+                  onClick={() => pickAccountType(opt.value)}
+                  aria-pressed={form.accountType === opt.value}
                   style={{
                     flex: 1,
                     height: "40px",
@@ -75,16 +81,20 @@ export default function Login() {
                     fontSize: "13px",
                     fontWeight: 500,
                     cursor: "pointer",
-                    border: form.role === opt.value ? "1.5px solid #FF5C00" : "1.5px solid #E0E8E3",
-                    backgroundColor: form.role === opt.value ? "#FFF0E6" : "#FFFFFF",
-                    color: form.role === opt.value ? "#FF5C00" : "#555555",
+                    border: form.accountType === opt.value ? "1.5px solid #FF5C00" : "1.5px solid #E0E8E3",
+                    backgroundColor: form.accountType === opt.value ? "#FFF0E6" : "#FFFFFF",
+                    color: form.accountType === opt.value ? "#FF5C00" : "#555555",
                   }}
                 >
                   {opt.label}
                 </button>
               ))}
             </div>
-            <p style={{ fontSize: "12px", color: "#555555", marginTop: "6px" }}>Demo only — no backend yet, so this just picks which dashboard you land on.</p>
+            <p style={{ fontSize: "12px", color: "#555555", marginTop: "6px" }}>
+              {form.accountType === "admin"
+                ? "Demo only — no backend yet, so this just picks which dashboard you land on."
+                : "Renting and listing both live under one account — switch between them anytime from your dashboard."}
+            </p>
           </div>
 
           <button type="submit" style={{ width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, border: "none", cursor: "pointer", marginTop: "8px" }}>

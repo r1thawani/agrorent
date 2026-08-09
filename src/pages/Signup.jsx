@@ -89,7 +89,7 @@ export default function Signup() {
                 </button>
               ))}
             </div>
-            <p style={{ fontSize: "12px", color: "#555555", marginTop: "6px" }}>You can switch roles later from your dashboard.</p>
+            <p style={{ fontSize: "12px", color: "#555555", marginTop: "6px" }}>This just picks where you land first — every account can both rent and list. Switch anytime with the "Switch to Owner/Renter Mode" button in your dashboard sidebar.</p>
           </div>
 
           {error && <p style={{ fontSize: "13px", color: "#A02020", margin: 0 }}>{error}</p>}

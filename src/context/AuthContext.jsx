@@ -11,6 +11,14 @@ import { createContext, useState } from "react";
 // this context, and every component that calls useAuth() (Navbar, Sidebar,
 // etc.) re-renders with the current user.
 //
+// Roles: "renter" and "owner" are not separate account types — every
+// regular account can act as both, and `user.role` just tracks which mode
+// they're currently in. The Sidebar's "Switch to Owner/Renter Mode" button
+// calls setRole() below to flip it, which is what actually makes "you can
+// switch roles later" (shown at signup) true. "admin" is the one exception:
+// it's a genuinely separate account type, chosen on the Login page instead
+// of Signup, and there's no UI that switches a renter/owner into it.
+//
 // Swap this for real API calls + persisted tokens when the backend exists;
 // the shape of `user` and the login/signup/logout functions are designed to
 // stay the same so callers won't need to change.

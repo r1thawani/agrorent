@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Calendar,
@@ -10,6 +10,7 @@ import {
   Inbox,
   DollarSign,
   PlusCircle,
+  Repeat,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
@@ -36,8 +37,18 @@ const OWNER_LINKS = [
  * Sidebar — shared dashboard navigation, used by every dashboard-style page
  * built in sub-phases 4B through 4F.
  *
+ * Every non-admin account can act as both a renter and an owner — there's
+ * no separate "owner account". `role` on the logged-in user is just which
+ * mode they're currently in, and the switcher at the bottom of this sidebar
+ * flips it (see AuthContext.setRole). Pages still pass a `role` prop for
+ * their own default rendering, but the *source of truth* for which link set
+ * and CTA show is always the live value from AuthContext, so the sidebar
+ * stays in sync everywhere the moment someone switches modes.
+ *
  * Props:
- *  - role: "renter" | "owner" — controls which link set and which footer CTA show
+ *  - role: "renter" | "owner" — fallback used only if there's no logged-in
+ *    user yet (shouldn't normally happen, since every page rendering this
+ *    is behind ProtectedRoute).
  *  - activeLink: string (optional) — path to force-highlight as active. If not
  *    passed, the sidebar figures out the active link from the current route
  *    via useLocation(), which is what most pages should rely on.
@@ -53,15 +64,27 @@ export default function Sidebar({
   userName,
   userPhoto,
 }) {
-  const { user } = useAuth();
+  const { user, setRole } = useAuth();
   const location = useLocation();
-  const links = role === "owner" ? OWNER_LINKS : RENTER_LINKS;
+  const navigate = useNavigate();
+
+  // Always prefer the live role from AuthContext over whatever the parent
+  // page hardcoded, so switching modes updates this sidebar (and its link
+  // set) immediately, no matter which page you switch from.
+  const currentRole = user?.role || role;
+  const links = currentRole === "owner" ? OWNER_LINKS : RENTER_LINKS;
   const currentPath = activeLink || location.pathname;
   const displayName = userName || user?.name || "Your account";
   const displayPhoto =
     userPhoto ||
     user?.photo ||
     "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop";
+
+  function handleSwitchRole() {
+    const nextRole = currentRole === "owner" ? "renter" : "owner";
+    setRole(nextRole);
+    navigate(nextRole === "owner" ? "/dashboard/owner" : "/dashboard", { replace: true });
+  }
 
   return (
     <aside
@@ -101,7 +124,7 @@ export default function Sidebar({
               textTransform: "capitalize",
             }}
           >
-            {role}
+            {currentRole} mode
           </div>
         </div>
       </div>
@@ -162,7 +185,7 @@ export default function Sidebar({
       </nav>
 
       {/* Owner-only CTA */}
-      {role === "owner" && (
+      {currentRole === "owner" && (
         <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "0.5px solid #E0E8E3" }}>
           <Link
             to="/post-listing"
@@ -187,6 +210,39 @@ export default function Sidebar({
             <PlusCircle size={15} />
             Post New Listing
           </Link>
+        </div>
+      )}
+
+      {/* Role switcher — every account can act as both a renter and an
+          owner, so this is always available (not shown for admin, which
+          is a separate account type that never renders this sidebar). */}
+      {(currentRole === "renter" || currentRole === "owner") && (
+        <div style={{ marginTop: currentRole === "owner" ? "8px" : "24px", paddingTop: currentRole === "owner" ? "0" : "16px", borderTop: currentRole === "owner" ? "none" : "0.5px solid #E0E8E3" }}>
+          <button
+            type="button"
+            onClick={handleSwitchRole}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              width: "100%",
+              padding: "10px 0",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#1A5C2E",
+              backgroundColor: "#FFFFFF",
+              border: "1.5px solid #1A5C2E",
+              cursor: "pointer",
+              transition: "background-color 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F0F7F2")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFFFFF")}
+          >
+            <Repeat size={15} />
+            Switch to {currentRole === "owner" ? "Renter" : "Owner"} Mode
+          </button>
         </div>
       )}
     </aside>
