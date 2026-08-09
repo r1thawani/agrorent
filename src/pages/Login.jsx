@@ -5,22 +5,34 @@ import { useAuth } from "../hooks/useAuth";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("renter");
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
 
   // ProtectedRoute redirects here with the page the user was trying to
   // reach in location.state.from, so login sends them back there instead
-  // of always dumping them on /dashboard.
-  const from = location.state?.from || "/dashboard";
+  // of always dumping them on /dashboard — unless they explicitly picked
+  // a role below, in which case we send them to that role's landing page.
+  const from = location.state?.from;
 
   function handleSubmit(e) {
     e.preventDefault();
     // No backend yet, so this doesn't verify the password — it just marks
-    // the app as "logged in" as this email. See AuthContext.jsx.
-    login(email);
-    navigate(from, { replace: true });
+    // the app as "logged in" as this email, with whichever role was
+    // picked below. See AuthContext.jsx.
+    login(email, role);
+
+    if (from) {
+      navigate(from, { replace: true });
+      return;
+    }
+    if (role === "admin") navigate("/admin", { replace: true });
+    else if (role === "owner") navigate("/dashboard/owner", { replace: true });
+    else navigate("/dashboard", { replace: true });
   }
+
+  const inputStyle = { width: "100%", height: "44px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", boxSizing: "border-box" };
 
   return (
     <div style={{ minHeight: "calc(100vh - 56px)", backgroundColor: "#F5F5F0", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px" }}>
@@ -35,15 +47,47 @@ export default function Login() {
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Email address</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={{ width: "100%", height: "44px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", boxSizing: "border-box" }} />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} />
           </div>
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
               <label style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>Password</label>
               <Link to="/forgot-password" style={{ fontSize: "12px", color: "#FF5C00", textDecoration: "none" }}>Forgot password?</Link>
             </div>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: "100%", height: "44px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", boxSizing: "border-box" }} />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={inputStyle} />
           </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Log in as</label>
+            <div style={{ display: "flex", gap: "8px" }}>
+              {[
+                { value: "renter", label: "Renter" },
+                { value: "owner", label: "Owner" },
+                { value: "admin", label: "Admin" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRole(opt.value)}
+                  style={{
+                    flex: 1,
+                    height: "40px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    border: role === opt.value ? "1.5px solid #FF5C00" : "1.5px solid #E0E8E3",
+                    backgroundColor: role === opt.value ? "#FFF0E6" : "#FFFFFF",
+                    color: role === opt.value ? "#FF5C00" : "#555555",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: "12px", color: "#555555", marginTop: "6px" }}>Demo only — no backend yet, so this just picks which dashboard you land on.</p>
+          </div>
+
           <button type="submit" style={{ width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, border: "none", cursor: "pointer", marginTop: "8px" }}>
             Log In
           </button>
