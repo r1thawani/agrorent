@@ -1,16 +1,63 @@
-# React + Vite
+# AgroRent
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+AgroRent is a peer-to-peer rental marketplace for farming equipment. Farmers who own equipment (tractors, ploughs, harvesters, irrigation systems, etc.) can list it for rent, and other farmers can browse, book, and pay a down payment to rent it for the dates they need.
 
-Currently, two official plugins are available:
+This repository is the **frontend** — a React single-page app built with Vite. It currently runs entirely on mock data (no backend yet); see [Project status](#project-status) below.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Browse & search** — filterable, searchable listings grid (category, province, price range)
+- **Listing detail** — photo gallery, availability calendar, reviews, and a booking sidebar with live price calculation
+- **Booking flow** — date selection → price breakdown (subtotal, service fee, down payment, balance) → confirmation
+- **Renter dashboard** — active/upcoming bookings, recent messages, recent notifications
+- **Owner dashboard** — pending booking requests (accept/decline), confirmed bookings, listing management
+- **Messaging** — conversation list and a chat-style thread per conversation
+- **Notifications** — read/unread state shared across the app via React Context
+- **Reviews** — star ratings and written reviews on completed rentals
+- **Auth pages** — login, signup, forgot/reset password (mock, no real backend yet)
+- **Admin section** — users, listings, bookings, and dispute management screens
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech stack
 
-## Expanding the Oxlint configuration
+- [React 19](https://react.dev/) + [React Router](https://reactrouter.com/)
+- [Vite](https://vitejs.dev/) for dev server & build
+- [Tailwind CSS](https://tailwindcss.com/) (available, though most components use plain inline styles + CSS variables defined in `src/index.css`)
+- [lucide-react](https://lucide.dev/) for icons
+- [oxlint](https://oxc.rs/) for linting
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Getting started
+
+```bash
+npm install
+npm run dev       # start the dev server
+npm run build     # production build to /dist
+npm run preview   # preview the production build locally
+npm run lint       # run oxlint
+```
+
+## Project structure
+
+```
+src/
+  components/   Shared, reusable UI pieces (cards, badges, forms)
+  pages/        One file per route (see src/App.jsx for the route list)
+  context/      React Context providers (auth, notifications)
+  hooks/        Custom hooks (auth, booking pricing, mock socket)
+  services/     Mock service layer — Promise-based, shaped like a real API
+  data/         Mock data (equipment, bookings, messages, etc.)
+  utils/        Small formatting/calculation helpers
+```
+
+## Project status
+
+This is a **frontend-only prototype** built for a class/demo presentation. There is no real backend yet:
+
+- All data comes from `src/data/mockData.js`
+- `src/services/*.js` mimic real API calls (they're async and return realistic shapes) but currently just read/write the mock data in memory — nothing persists across a page refresh
+- Auth is session-only React state (see `src/context/AuthContext.jsx`)
+
+The service layer was deliberately written so that connecting a real backend later is a small change (point `src/services/api.js` at a real API and update each service to call it) rather than a rewrite of the pages themselves.
+
+## License
+
+Class project — no license specified yet.

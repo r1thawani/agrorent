@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Send } from "lucide-react";
 import Sidebar from "../components/Sidebar";
+import MessageBubble from "../components/MessageBubble";
 import { MESSAGES } from "../data/mockData";
 
 export default function Conversation() {
@@ -122,37 +123,9 @@ export default function Conversation() {
                 backgroundColor: "#F5F5F0",
               }}
             >
-              {thread.map((msg) => {
-                const isMe = msg.from === "me";
-                return (
-                  <div key={msg.id} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start" }}>
-                    <div style={{ maxWidth: "65%" }}>
-                      <div
-                        style={{
-                          padding: "10px 14px",
-                          borderRadius: isMe ? "12px 12px 4px 12px" : "12px 12px 12px 4px",
-                          fontSize: "14px",
-                          backgroundColor: isMe ? "#FF5C00" : "#FFFFFF",
-                          color: isMe ? "#FFFFFF" : "#111111",
-                          border: isMe ? "none" : "0.5px solid #E0E8E3",
-                        }}
-                      >
-                        {msg.text}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "11px",
-                          color: "#555555",
-                          marginTop: "3px",
-                          textAlign: isMe ? "right" : "left",
-                        }}
-                      >
-                        {msg.time}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {thread.map((msg) => (
+                <MessageBubble key={msg.id} message={msg} />
+              ))}
             </div>
 
             <form

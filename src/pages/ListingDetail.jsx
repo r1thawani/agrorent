@@ -1,17 +1,9 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { MapPin, Star, ChevronLeft } from "lucide-react";
+import { MapPin, ChevronLeft } from "lucide-react";
 import { EQUIPMENT } from "../data/mockData";
-
-function StarRating({ rating }) {
-  return (
-    <div style={{ display: "flex", gap: "2px" }}>
-      {[1, 2, 3, 4, 5].map(s => (
-        <Star key={s} size={14} fill={s <= Math.round(rating) ? "#FF5C00" : "none"} stroke={s <= Math.round(rating) ? "#FF5C00" : "#ccc"} />
-      ))}
-    </div>
-  );
-}
+import StarRating from "../components/StarRating";
+import ReviewCard from "../components/ReviewCard";
 
 function AvailabilityCalendar() {
   const today = new Date();
@@ -153,23 +145,7 @@ export default function ListingDetail() {
                 <span style={{ fontSize: "13px", color: "#555555" }}>({eq.reviews} reviews)</span>
               </div>
               {MOCK_REVIEWS.map(r => (
-                <div key={r.id} style={{ backgroundColor: "#FFFFFF", border: "0.5px solid #E0E8E3", borderRadius: "12px", padding: "16px", marginBottom: "12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <img src={r.photo} alt={r.name} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }} />
-                      <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{r.name}</span>
-                    </div>
-                    <span style={{ fontSize: "12px", color: "#555555" }}>{r.date}</span>
-                  </div>
-                  <StarRating rating={r.rating} />
-                  <p style={{ fontSize: "14px", color: "#111111", marginTop: "8px", lineHeight: 1.6 }}>{r.text}</p>
-                  {r.reply && (
-                    <div style={{ marginTop: "12px", paddingLeft: "12px", borderLeft: "3px solid #1A5C2E" }}>
-                      <div style={{ fontSize: "12px", fontWeight: 500, color: "#1A5C2E" }}>Owner reply:</div>
-                      <p style={{ fontSize: "14px", color: "#111111", marginTop: "4px" }}>{r.reply}</p>
-                    </div>
-                  )}
-                </div>
+                <ReviewCard key={r.id} review={r} />
               ))}
             </div>
           </div>
@@ -200,7 +176,7 @@ export default function ListingDetail() {
                 </div>
               )}
 
-              <Link to={`/book/${eq.id}`} style={{ display: "block", width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, textAlign: "center", lineHeight: "48px", textDecoration: "none", marginTop: "16px" }}>
+              <Link to={`/listings/${eq.id}/book`} style={{ display: "block", width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, textAlign: "center", lineHeight: "48px", textDecoration: "none", marginTop: "16px" }}>
                 Book Now
               </Link>
               <p style={{ textAlign: "center", fontSize: "12px", color: "#555555", marginTop: "8px" }}>You won't be charged yet</p>

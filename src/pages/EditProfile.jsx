@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { ZAMBIAN_PROVINCES } from "../data/mockData";
+import { useAuth } from "../hooks/useAuth";
 
 function getFocusStyle(field, focusedField) {
   return {
@@ -15,9 +17,11 @@ function getFocusStyle(field, focusedField) {
 }
 
 export default function EditProfile() {
+  const navigate = useNavigate();
+  const { user, updateProfile, logout } = useAuth();
   const [form, setForm] = useState({
-    name: "Mutinta Mwansa",
-    phone: "+260 97 456 7890",
+    name: user?.name || "",
+    phone: "",
     location: "Lusaka Province",
   });
   const [bio, setBio] = useState(
@@ -34,7 +38,10 @@ export default function EditProfile() {
 
   function handleSave(e) {
     e.preventDefault();
-    // No backend yet - nothing to persist, just a local confirmation flash.
+    // Actually persist to the logged-in user in AuthContext — previously
+    // this just flashed a fake "saved" message without changing anything,
+    // so the Sidebar/Dashboard kept showing the old hardcoded name.
+    updateProfile({ name: form.name });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -58,7 +65,7 @@ export default function EditProfile() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
       <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "32px 24px", display: "flex", gap: "24px" }}>
-        <Sidebar role="renter" activeLink="/profile/edit" />
+        <Sidebar role={user?.role || "renter"} activeLink="/profile/edit" />
 
         <div style={{ flex: 1, minWidth: 0, maxWidth: "560px" }}>
           <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginBottom: "24px" }}>
@@ -68,7 +75,7 @@ export default function EditProfile() {
           {/* Photo */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "28px" }}>
             <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=192&h=192&fit=crop"
+              src={user?.photo || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=192&h=192&fit=crop"}
               alt="Profile"
               style={{
                 width: "96px",
@@ -302,7 +309,13 @@ export default function EditProfile() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => setConfirmDelete(false)}
+                  onClick={() => {
+                    // No backend to actually delete an account on, but this
+                    // should at least end the session — previously this
+                    // button had no onClick at all and did nothing.
+                    logout();
+                    navigate("/");
+                  }}
                   style={{
                     flex: 1,
                     height: "44px",

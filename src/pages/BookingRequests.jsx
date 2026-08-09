@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { BOOKING_REQUESTS } from "../data/mockData";
+import { bookingService } from "../services/bookingService";
 
 const TABS = ["Pending", "Accepted", "Declined"];
 
@@ -141,16 +142,18 @@ export default function BookingRequests() {
     (r) => r.status === activeTab.toLowerCase()
   );
 
-  function accept(id) {
+  async function accept(id) {
     setRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: "accepted" } : r))
     );
+    await bookingService.accept(id);
   }
 
-  function decline(id) {
+  async function decline(id) {
     setRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: "declined" } : r))
     );
+    await bookingService.decline(id);
   }
 
   return (

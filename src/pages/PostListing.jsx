@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CATEGORIES } from "../data/mockData";
+import { equipmentService } from "../services/equipmentService";
+import { useAuth } from "../hooks/useAuth";
 import PhotoUpload from "../components/PhotoUpload";
 import Sidebar from "../components/Sidebar";
 
@@ -40,7 +42,10 @@ const sectionHeaderStyle = {
 
 export default function PostListing() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [photos, setPhotos] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
     name: "",
     category: "",
@@ -58,10 +63,47 @@ export default function PostListing() {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // No backend yet — navigate back to my listings on "submit"
-    navigate("/my-listings");
+
+    if (!form.name || !form.category || !form.priceDay || !form.pickup) {
+      setFormError("Please fill in the equipment name, category, daily price, and pickup location.");
+      return;
+    }
+    setFormError("");
+    setSubmitting(true);
+
+    const placeholderImage =
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&h=360&fit=crop&auto=format";
+
+    try {
+      await equipmentService.create({
+        name: form.name,
+        category: form.category,
+        condition: form.condition,
+        description: form.description,
+        priceDay: Number(form.priceDay) || 0,
+        priceWeek: Number(form.priceWeek) || 0,
+        location: form.pickup,
+        pickup: form.pickup,
+        available: { from: form.availFrom, until: form.availUntil },
+        image: photos[0] || placeholderImage,
+        thumbnails: photos.length ? photos : [placeholderImage],
+        owner: {
+          id: user?.email || "you",
+          name: user?.name || "You",
+          photo: user?.photo,
+          rating: 0,
+          reviews: 0,
+          since: new Date().getFullYear().toString(),
+        },
+      });
+      navigate("/my-listings");
+    } catch {
+      setFormError("Something went wrong posting your listing. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function getFocusStyle(field) {
@@ -77,8 +119,8 @@ export default function PostListing() {
       {/* Main content */}
       <div
         style={{
-          marginLeft: 240,
           flex: 1,
+          minWidth: 0,
           padding: "40px 32px",
           maxWidth: 760,
         }}
@@ -301,8 +343,15 @@ export default function PostListing() {
             <PhotoUpload photos={photos} onChange={setPhotos} maxPhotos={10} />
           </div>
 
+          {formError && (
+            <p style={{ fontSize: 13, color: "#DC2626", marginTop: 16, marginBottom: 0 }}>
+              {formError}
+            </p>
+          )}
+
           <button
             type="submit"
+            disabled={submitting}
             style={{
               display: "block",
               width: "100%",
@@ -314,12 +363,13 @@ export default function PostListing() {
               borderRadius: 8,
               fontSize: 16,
               fontWeight: 500,
-              cursor: "pointer",
+              cursor: submitting ? "default" : "pointer",
+              opacity: submitting ? 0.7 : 1,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#CC4A00")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FF5C00")}
+            onMouseEnter={(e) => !submitting && (e.currentTarget.style.backgroundColor = "#CC4A00")}
+            onMouseLeave={(e) => !submitting && (e.currentTarget.style.backgroundColor = "#FF5C00")}
           >
-            Post Listing
+            {submitting ? "Posting..." : "Post Listing"}
           </button>
         </form>
       </div>

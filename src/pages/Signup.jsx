@@ -1,14 +1,28 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ZAMBIAN_PROVINCES } from "../data/mockData";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Signup() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirm: "", location: "" });
+  const [role, setRole] = useState("renter");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
   function handleSubmit(e) {
     e.preventDefault();
-    navigate("/dashboard");
+    if (form.password !== form.confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setError("");
+    signup({ name: form.name, email: form.email, role });
+    // Previously there was no way to sign up as an owner at all — role
+    // always defaulted to "renter" — so /my-listings, /post-listing, and
+    // /dashboard/owner were unreachable through any real flow. Now the
+    // choice below actually determines where the new account lands.
+    navigate(role === "owner" ? "/dashboard/owner" : "/dashboard");
   }
 
   const update = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
@@ -47,6 +61,38 @@ export default function Signup() {
               {ZAMBIAN_PROVINCES.map(p => <option key={p}>{p}</option>)}
             </select>
           </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>I'm signing up to</label>
+            <div style={{ display: "flex", gap: "10px" }}>
+              {[
+                { value: "renter", label: "Rent equipment" },
+                { value: "owner", label: "List my equipment" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRole(opt.value)}
+                  style={{
+                    flex: 1,
+                    height: "44px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    border: role === opt.value ? "1.5px solid #FF5C00" : "1.5px solid #E0E8E3",
+                    backgroundColor: role === opt.value ? "#FFF0E6" : "#FFFFFF",
+                    color: role === opt.value ? "#FF5C00" : "#555555",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: "12px", color: "#555555", marginTop: "6px" }}>You can switch roles later from your dashboard.</p>
+          </div>
+
+          {error && <p style={{ fontSize: "13px", color: "#A02020", margin: 0 }}>{error}</p>}
 
           <button type="submit" style={{ width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, border: "none", cursor: "pointer", marginTop: "8px" }}>
             Create Account

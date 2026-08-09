@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { BOOKINGS } from "../data/mockData";
+import { bookingService } from "../services/bookingService";
 
 const TABS = [
   { key: "all", label: "All" },
@@ -108,8 +109,11 @@ export default function MyBookings() {
   const [bookings, setBookings] = useState(BOOKINGS);
   const [activeTab, setActiveTab] = useState("all");
 
-  function handleCancel(id) {
+  async function handleCancel(id) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
+    // Sync the shared BOOKINGS store too (see bookingService), so this
+    // status change is still there if the user navigates away and back.
+    await bookingService.cancel(id);
   }
 
   const filtered = activeTab === "all" ? bookings : bookings.filter((b) => b.status === activeTab);

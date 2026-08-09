@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Lock, ChevronLeft } from "lucide-react";
 import { EQUIPMENT } from "../data/mockData";
+import { bookingService } from "../services/bookingService";
+import { useAuth } from "../hooks/useAuth";
 import { calculateDays } from "../utils/calculateDays";
 import { calculateBooking } from "../utils/calculateBooking";
 
@@ -30,6 +32,7 @@ function getFocusStyle(field, focusedField) {
 export default function BookingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const eq = EQUIPMENT.find((e) => e.id === id) ?? EQUIPMENT[0];
 
   const [startDate, setStartDate] = useState(eq.available?.from ?? "");
@@ -42,12 +45,13 @@ export default function BookingPage() {
   const [agreed, setAgreed] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const rawDays = calculateDays(startDate, endDate);
   const days = rawDays > 0 ? rawDays : 1;
   const { subtotal, fee, total, downPayment, balance } = calculateBooking(eq.priceDay, days);
 
-  function handleConfirm(e) {
+  async function handleConfirm(e) {
     e.preventDefault();
 
     if (!startDate || !endDate || rawDays < 1) {
@@ -63,26 +67,51 @@ export default function BookingPage() {
       return;
     }
     setError("");
+    setSubmitting(true);
 
     const bookingRef = `AGR-2025-${String(Math.floor(1000 + Math.random() * 9000))}`;
 
-    navigate(`/booking/${bookingRef}/confirmation`, {
-      state: {
-        bookingRef,
+    try {
+      // Actually create the booking (previously this just navigated to a
+      // confirmation screen without ever adding to BOOKINGS, so it never
+      // showed up on MyBookings/OwnerDashboard afterwards).
+      await bookingService.create({
+        equipmentId: eq.id,
         equipment: eq.name,
         equipmentImage: eq.image,
-        ownerName: eq.owner.name,
-        ownerPhoto: eq.owner.photo,
-        ownerPhone: eq.owner.phone ?? "+260 97 000 0000",
-        pickup: eq.pickup,
+        renterId: user?.email || "you",
+        renter: user?.name || "You",
+        ownerId: eq.owner?.id,
+        owner: eq.owner?.name,
         startDate,
         endDate,
-        days,
-        total,
+        totalDays: days,
+        totalPrice: total,
         downPayment,
-        balance,
-      },
-    });
+      });
+
+      navigate(`/booking/${bookingRef}/confirmation`, {
+        state: {
+          bookingRef,
+          equipment: eq.name,
+          equipmentImage: eq.image,
+          ownerName: eq.owner.name,
+          ownerPhoto: eq.owner.photo,
+          ownerPhone: eq.owner.phone ?? "+260 97 000 0000",
+          pickup: eq.pickup,
+          startDate,
+          endDate,
+          days,
+          total,
+          downPayment,
+          balance,
+        },
+      });
+    } catch {
+      setError("Something went wrong confirming your booking. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -368,6 +397,7 @@ export default function BookingPage() {
 
                 <button
                   type="submit"
+                  disabled={submitting}
                   style={{
                     width: "100%",
                     height: "52px",
@@ -378,10 +408,11 @@ export default function BookingPage() {
                     fontSize: "15px",
                     fontWeight: 500,
                     marginTop: "20px",
-                    cursor: "pointer",
+                    cursor: submitting ? "default" : "pointer",
+                    opacity: submitting ? 0.7 : 1,
                   }}
                 >
-                  Confirm Booking & Pay K{downPayment.toLocaleString()}
+                  {submitting ? "Confirming..." : `Confirm Booking & Pay K${downPayment.toLocaleString()}`}
                 </button>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginTop: "12px" }}>

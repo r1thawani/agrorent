@@ -6,32 +6,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import StatCard from "../components/StatCard";
+import BookingCard from "../components/BookingCard";
 import { BOOKINGS, MESSAGES } from "../data/mockData";
-
-const STATUS_BADGE = {
-  confirmed: { bg: "#D4EDDA", text: "#0F3D1E", label: "Confirmed" },
-  pending: { bg: "#FFE8D6", text: "#CC4A00", label: "Pending" },
-  completed: { bg: "#F5F5F0", text: "#555555", label: "Completed" },
-};
-
-function StatusBadge({ status }) {
-  const s = STATUS_BADGE[status] || STATUS_BADGE.completed;
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        fontSize: "11px",
-        fontWeight: 500,
-        padding: "3px 10px",
-        borderRadius: "20px",
-        backgroundColor: s.bg,
-        color: s.text,
-      }}
-    >
-      {s.label}
-    </span>
-  );
-}
+import { useAuth } from "../hooks/useAuth";
 
 // Owner-side booking requests are a separate mock dataset from the renter-side
 // BOOKINGS list (these are pending requests awaiting accept/decline, modeled
@@ -66,6 +43,8 @@ const PENDING_REQUESTS = [
 
 export default function OwnerDashboard() {
   const [activeLink] = useState("/dashboard/owner");
+  const { user } = useAuth();
+  const firstName = (user?.name || "there").split(" ")[0];
   const confirmedBookings = BOOKINGS.filter((b) => b.status === "confirmed");
 
   return (
@@ -87,11 +66,11 @@ export default function OwnerDashboard() {
           alignItems: "flex-start",
         }}
       >
-        <Sidebar role="owner" activeLink={activeLink} userName="Chanda Mutale" />
+        <Sidebar role="owner" activeLink={activeLink} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111" }}>
-            Welcome back, Chanda
+            Welcome back, {firstName}
           </h1>
 
           {/* Stat Cards */}
@@ -229,52 +208,7 @@ export default function OwnerDashboard() {
             </h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {confirmedBookings.map((b) => (
-                <div
-                  key={b.id}
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: "12px",
-                    padding: "16px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    border: "0.5px solid #E0E8E3",
-                  }}
-                >
-                  <img
-                    src={b.equipmentImage}
-                    alt={b.equipment}
-                    style={{
-                      width: "60px",
-                      height: "48px",
-                      borderRadius: "8px",
-                      objectFit: "cover",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>
-                      {b.equipment}
-                    </div>
-                    <div style={{ fontSize: "13px", color: "#555555" }}>
-                      {b.startDate} → {b.endDate}
-                    </div>
-                    <div style={{ marginTop: "4px" }}>
-                      <StatusBadge status={b.status} />
-                    </div>
-                  </div>
-                  <Link
-                    to="/booking-requests"
-                    style={{
-                      fontSize: "13px",
-                      color: "#1A5C2E",
-                      flexShrink: 0,
-                      textDecoration: "none",
-                    }}
-                  >
-                    View details
-                  </Link>
-                </div>
+                <BookingCard key={b.id} booking={b} linkTo="/booking-requests" />
               ))}
             </div>
           </div>

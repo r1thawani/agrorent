@@ -2,29 +2,42 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { PlusCircle } from "lucide-react";
 import { EQUIPMENT } from "../data/mockData";
+import { equipmentService } from "../services/equipmentService";
 import Sidebar from "../components/Sidebar";
 
-// Seed each listing with mock bookings/earnings counts for display
-const seedListings = EQUIPMENT.map((eq, i) => ({
-  ...eq,
-  isAvailable: true,
-  mockBookings: [3, 7, 1, 12, 2, 5][i] ?? 0,
-  mockEarnings: eq.priceDay * ([9, 14, 3, 20, 4, 8][i] ?? 0),
-}));
+// Seed each listing with mock bookings/earnings counts for display.
+// EQUIPMENT is the shared source of truth (mutated by equipmentService), so
+// anything posted via PostListing shows up here too — new items just don't
+// have mock booking/earnings history yet, so they default to 0.
+function seedFromEquipment() {
+  const seedStats = [3, 7, 1, 12, 2, 5];
+  const seedMultiplier = [9, 14, 3, 20, 4, 8];
+  return EQUIPMENT.map((eq, i) => ({
+    ...eq,
+    isAvailable: eq.isAvailable ?? true,
+    mockBookings: seedStats[i] ?? 0,
+    mockEarnings: eq.priceDay * (seedMultiplier[i] ?? 0),
+  }));
+}
 
 export default function MyListings() {
-  const [listings, setListings] = useState(seedListings);
+  const [listings, setListings] = useState(seedFromEquipment);
 
-  function toggleAvailability(id) {
+  async function toggleAvailability(id) {
+    const target = listings.find((eq) => eq.id === id);
     setListings((prev) =>
       prev.map((eq) =>
         eq.id === id ? { ...eq, isAvailable: !eq.isAvailable } : eq
       )
     );
+    // Keep the shared EQUIPMENT store in sync so other pages (Listings,
+    // Home) reflect the change too, next time they load.
+    await equipmentService.update(id, { isAvailable: !target?.isAvailable });
   }
 
-  function deleteListing(id) {
+  async function deleteListing(id) {
     setListings((prev) => prev.filter((eq) => eq.id !== id));
+    await equipmentService.remove(id);
   }
 
   return (
@@ -34,8 +47,8 @@ export default function MyListings() {
       {/* Main content */}
       <div
         style={{
-          marginLeft: 240,
           flex: 1,
+          minWidth: 0,
           padding: "40px 32px",
         }}
       >

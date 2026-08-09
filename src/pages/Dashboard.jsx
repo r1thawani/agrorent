@@ -5,43 +5,22 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle, Clock, MessageSquare } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import StatCard from "../components/StatCard";
-import { BOOKINGS, MESSAGES, NOTIFICATIONS } from "../data/mockData";
-
-const STATUS_BADGE = {
-  confirmed: { bg: "#D4EDDA", text: "#0F3D1E", label: "Confirmed" },
-  pending: { bg: "#FFE8D6", text: "#CC4A00", label: "Pending" },
-  active: { bg: "#FFE8D6", text: "#CC4A00", label: "Active" },
-  completed: { bg: "#F5F5F0", text: "#555555", label: "Completed" },
-  cancelled: { bg: "#FDECEA", text: "#A02020", label: "Cancelled" },
-};
-
-function StatusBadge({ status }) {
-  const s = STATUS_BADGE[status] || STATUS_BADGE.completed;
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        fontSize: "11px",
-        fontWeight: 500,
-        padding: "3px 10px",
-        borderRadius: "20px",
-        backgroundColor: s.bg,
-        color: s.text,
-      }}
-    >
-      {s.label}
-    </span>
-  );
-}
+import BookingCard from "../components/BookingCard";
+import Notification from "../components/Notification";
+import { BOOKINGS, MESSAGES } from "../data/mockData";
+import { useNotifications } from "../context/NotificationContext";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Dashboard() {
   const [activeLink] = useState("/dashboard");
+  const { user } = useAuth();
+  const firstName = (user?.name || "there").split(" ")[0];
   const upcoming = BOOKINGS.filter(
     (b) => b.status === "confirmed" || b.status === "pending"
   );
+  const { notifications, markAsRead } = useNotifications();
 
   return (
     <div
@@ -62,11 +41,11 @@ export default function Dashboard() {
           alignItems: "flex-start",
         }}
       >
-        <Sidebar role="renter" activeLink={activeLink} userName="Mutinta Mwansa" />
+        <Sidebar role="renter" activeLink={activeLink} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111" }}>
-            Welcome back, Mutinta
+            Welcome back, {firstName}
           </h1>
 
           {/* Stat Cards */}
@@ -113,61 +92,7 @@ export default function Dashboard() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {upcoming.map((b) => (
-                  <div
-                    key={b.id}
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      border: "0.5px solid #E0E8E3",
-                    }}
-                  >
-                    <img
-                      src={b.equipmentImage}
-                      alt={b.equipment}
-                      style={{
-                        width: "60px",
-                        height: "48px",
-                        borderRadius: "8px",
-                        objectFit: "cover",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          color: "#111111",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {b.equipment}
-                      </div>
-                      <div style={{ fontSize: "13px", color: "#555555" }}>
-                        {b.startDate} → {b.endDate}
-                      </div>
-                      <div style={{ marginTop: "4px" }}>
-                        <StatusBadge status={b.status} />
-                      </div>
-                    </div>
-                    <Link
-                      to="/my-bookings"
-                      style={{
-                        fontSize: "13px",
-                        color: "#1A5C2E",
-                        flexShrink: 0,
-                        textDecoration: "none",
-                      }}
-                    >
-                      View details
-                    </Link>
-                  </div>
+                  <BookingCard key={b.id} booking={b} linkTo="/my-bookings" />
                 ))}
               </div>
             )}
@@ -249,57 +174,9 @@ export default function Dashboard() {
               Recent notifications
             </h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {NOTIFICATIONS.slice(0, 3).map((n) => {
-                const iconBg =
-                  n.type === "confirmed" || n.type === "completed"
-                    ? "#D4EDDA"
-                    : n.type === "request"
-                    ? "#FFE8D6"
-                    : "#E0E8E3";
-                return (
-                  <div
-                    key={n.id}
-                    style={{
-                      backgroundColor: n.read ? "#FFFFFF" : "#FFF8F5",
-                      borderRadius: "12px",
-                      padding: "14px",
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "12px",
-                      border: "0.5px solid #E0E8E3",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        backgroundColor: iconBg,
-                      }}
-                    >
-                      {n.type === "confirmed" || n.type === "completed" ? (
-                        <CheckCircle size={16} style={{ color: "#0F3D1E" }} />
-                      ) : n.type === "request" ? (
-                        <Clock size={16} style={{ color: "#FF5C00" }} />
-                      ) : (
-                        <MessageSquare size={16} style={{ color: "#555555" }} />
-                      )}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "14px", color: "#111111", lineHeight: 1.4 }}>
-                        {n.text}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "#555555", marginTop: "4px" }}>
-                        {n.time}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {notifications.slice(0, 3).map((n) => (
+                <Notification key={n.id} notification={n} onClick={() => markAsRead(n.id)} />
+              ))}
             </div>
           </div>
         </div>

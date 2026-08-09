@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import EquipmentCard from "../components/EquipmentCard";
-import { EQUIPMENT, CATEGORIES, ZAMBIAN_PROVINCES } from "../data/mockData";
+import FilterSidebar from "../components/FilterSidebar";
+import { EQUIPMENT } from "../data/mockData";
 
 export default function Listings() {
+  const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [location, setLocation] = useState("");
   const [minPrice, setMinPrice] = useState("");
@@ -16,7 +18,16 @@ export default function Listings() {
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
     );
 
-  const filtered = EQUIPMENT.filter(eq => {
+  function clearFilters() {
+    setSearch("");
+    setSelectedCategories([]);
+    setLocation("");
+    setMinPrice("");
+    setMaxPrice("");
+  }
+
+  let filtered = EQUIPMENT.filter(eq => {
+    if (search && !eq.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (selectedCategories.length && !selectedCategories.includes(eq.category)) return false;
     if (location && !eq.location.includes(location)) return false;
     if (minPrice && eq.priceDay < Number(minPrice)) return false;
@@ -24,44 +35,8 @@ export default function Listings() {
     return true;
   });
 
-  const sidebar = (
-    <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", border: "0.5px solid #E0E8E3", padding: "20px" }}>
-      <div style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>Filters</div>
-
-      <input type="text" placeholder="Search equipment…" style={{ width: "100%", height: "40px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", marginBottom: "20px", boxSizing: "border-box" }} />
-
-      <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>Category</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "20px" }}>
-        {CATEGORIES.map(cat => (
-          <label key={cat} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-            <input type="checkbox" checked={selectedCategories.includes(cat)} onChange={() => toggleCategory(cat)} style={{ width: "16px", height: "16px", accentColor: "#FF5C00", cursor: "pointer" }} />
-            <span style={{ fontSize: "13px", color: "#111111" }}>{cat}</span>
-          </label>
-        ))}
-      </div>
-
-      <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>Location</div>
-      <select value={location} onChange={e => setLocation(e.target.value)} style={{ width: "100%", height: "40px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", backgroundColor: "#FFFFFF", marginBottom: "20px" }}>
-        <option value="">All provinces</option>
-        {ZAMBIAN_PROVINCES.map(p => <option key={p}>{p}</option>)}
-      </select>
-
-      <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>Price per day</div>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "24px" }}>
-        <input type="number" placeholder="Min (K)" value={minPrice} onChange={e => setMinPrice(e.target.value)} style={{ width: "50%", height: "40px", padding: "0 10px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }} />
-        <span style={{ color: "#555555" }}>–</span>
-        <input type="number" placeholder="Max (K)" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} style={{ width: "50%", height: "40px", padding: "0 10px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }} />
-      </div>
-
-      <button style={{ width: "100%", height: "44px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "13px", fontWeight: 500, border: "none", cursor: "pointer" }}>
-        Apply Filters
-      </button>
-      <button onClick={() => { setSelectedCategories([]); setLocation(""); setMinPrice(""); setMaxPrice(""); }}
-        style={{ width: "100%", textAlign: "center", fontSize: "13px", color: "#555555", marginTop: "10px", background: "none", border: "none", cursor: "pointer" }}>
-        Clear all filters
-      </button>
-    </div>
-  );
+  if (sort === "price-asc") filtered = [...filtered].sort((a, b) => a.priceDay - b.priceDay);
+  if (sort === "price-desc") filtered = [...filtered].sort((a, b) => b.priceDay - a.priceDay);
 
   return (
     <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "80px 24px 32px" }}>
@@ -78,7 +53,19 @@ export default function Listings() {
         <div style={{ display: "flex", gap: "24px" }}>
           {/* Sidebar */}
           <div style={{ width: "260px", flexShrink: 0, position: "sticky", top: "80px", alignSelf: "flex-start" }}>
-            {sidebar}
+            <FilterSidebar
+              search={search}
+              onSearchChange={setSearch}
+              selectedCategories={selectedCategories}
+              onToggleCategory={toggleCategory}
+              location={location}
+              onLocationChange={setLocation}
+              minPrice={minPrice}
+              onMinPriceChange={setMinPrice}
+              maxPrice={maxPrice}
+              onMaxPriceChange={setMaxPrice}
+              onClear={clearFilters}
+            />
           </div>
 
           {/* Listings area */}

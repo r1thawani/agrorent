@@ -19,7 +19,7 @@ export default function Footer() {
             <div style={{ display: "flex", flexDirection: "column", gap: "0px", alignItems: "center" }}>
               <Link to="/listings" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>Browse Equipment</Link>
               <Link to="/" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>How It Works</Link>
-              <Link to="/listings/new" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>List Your Equipment</Link>
+              <Link to="/post-listing" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>List Your Equipment</Link>
             </div>
           </div>
 

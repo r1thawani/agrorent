@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Listings from "./pages/Listings";
 import ListingDetail from "./pages/ListingDetail";
@@ -38,6 +39,7 @@ export default function App() {
         <Navbar />
         <main style={{ flex: "1" }}>
           <Routes>
+            {/* Public — no login required */}
             <Route path="/" element={<Home />} />
             <Route path="/listings" element={<Listings />} />
             <Route path="/listings/:id" element={<ListingDetail />} />
@@ -45,28 +47,34 @@ export default function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/owner" element={<OwnerDashboard />} />
-            <Route path="/post-listing" element={<PostListing />} />
-            <Route path="/listings/:id/edit" element={<EditListing />} />
-            <Route path="/my-listings" element={<MyListings />} />
-            <Route path="/listings/:id/book" element={<BookingPage />} />
-            <Route path="/booking/:id/confirmation" element={<BookingConfirmation />} />
-            <Route path="/my-bookings" element={<MyBookings />} />
-            <Route path="/booking-requests" element={<BookingRequests />} />
-            <Route path="/review/:bookingId" element={<LeaveReview />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/messages/:id" element={<Conversation />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/profile/edit" element={<EditProfile />} />
             <Route path="/profile/:id" element={<PublicProfile />} />
-            <Route path="/earnings" element={<Earnings />} />
-            <Route path="/wishlist" element={<Wishlist />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/listings" element={<AdminListings />} />
-            <Route path="/admin/bookings" element={<AdminBookings />} />
-            <Route path="/admin/disputes" element={<AdminDisputes />} />
+
+            {/* Any logged-in user */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/listings/:id/book" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
+            <Route path="/booking/:id/confirmation" element={<ProtectedRoute><BookingConfirmation /></ProtectedRoute>} />
+            <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
+            <Route path="/review/:bookingId" element={<ProtectedRoute><LeaveReview /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/messages/:id" element={<ProtectedRoute><Conversation /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+            <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+
+            {/* Owner role required */}
+            <Route path="/dashboard/owner" element={<ProtectedRoute requireRole="owner"><OwnerDashboard /></ProtectedRoute>} />
+            <Route path="/post-listing" element={<ProtectedRoute requireRole="owner"><PostListing /></ProtectedRoute>} />
+            <Route path="/listings/:id/edit" element={<ProtectedRoute requireRole="owner"><EditListing /></ProtectedRoute>} />
+            <Route path="/my-listings" element={<ProtectedRoute requireRole="owner"><MyListings /></ProtectedRoute>} />
+            <Route path="/booking-requests" element={<ProtectedRoute requireRole="owner"><BookingRequests /></ProtectedRoute>} />
+            <Route path="/earnings" element={<ProtectedRoute requireRole="owner"><Earnings /></ProtectedRoute>} />
+
+            {/* Admin role required */}
+            <Route path="/admin" element={<ProtectedRoute requireRole="admin"><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute requireRole="admin"><AdminUsers /></ProtectedRoute>} />
+            <Route path="/admin/listings" element={<ProtectedRoute requireRole="admin"><AdminListings /></ProtectedRoute>} />
+            <Route path="/admin/bookings" element={<ProtectedRoute requireRole="admin"><AdminBookings /></ProtectedRoute>} />
+            <Route path="/admin/disputes" element={<ProtectedRoute requireRole="admin"><AdminDisputes /></ProtectedRoute>} />
           </Routes>
         </main>
         <Footer />

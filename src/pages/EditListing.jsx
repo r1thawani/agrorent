@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { EQUIPMENT, CATEGORIES } from "../data/mockData";
+import { equipmentService } from "../services/equipmentService";
 import PhotoUpload from "../components/PhotoUpload";
 import Sidebar from "../components/Sidebar";
 
@@ -62,15 +63,52 @@ export default function EditListing() {
   const [photos, setPhotos] = useState(eq.thumbnails ?? (eq.image ? [eq.image] : []));
   const [focusedField, setFocusedField] = useState(null);
   const [showDelete, setShowDelete] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
 
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // No backend yet — navigate back to my listings
-    navigate("/my-listings");
+    if (!form.name || !form.category || !form.priceDay || !form.pickup) {
+      setFormError("Please fill in the equipment name, category, daily price, and pickup location.");
+      return;
+    }
+    setFormError("");
+    setSubmitting(true);
+    try {
+      await equipmentService.update(eq.id, {
+        name: form.name,
+        category: form.category,
+        condition: form.condition,
+        description: form.description,
+        priceDay: Number(form.priceDay) || 0,
+        priceWeek: Number(form.priceWeek) || 0,
+        location: form.pickup,
+        pickup: form.pickup,
+        available: { from: form.availFrom, until: form.availUntil },
+        image: photos[0] ?? eq.image,
+        thumbnails: photos.length ? photos : eq.thumbnails,
+      });
+      navigate("/my-listings");
+    } catch {
+      setFormError("Something went wrong saving your changes. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    setSubmitting(true);
+    try {
+      await equipmentService.remove(eq.id);
+      navigate("/my-listings");
+    } catch {
+      setFormError("Something went wrong deleting this listing. Please try again.");
+      setSubmitting(false);
+    }
   }
 
   function getFocusStyle(field) {
@@ -86,8 +124,8 @@ export default function EditListing() {
       {/* Main content */}
       <div
         style={{
-          marginLeft: 240,
           flex: 1,
+          minWidth: 0,
           padding: "40px 32px",
           maxWidth: 760,
         }}
@@ -303,7 +341,8 @@ export default function EditListing() {
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   type="button"
-                  onClick={() => navigate("/my-listings")}
+                  onClick={handleDelete}
+                  disabled={submitting}
                   style={{
                     padding: "8px 16px",
                     fontSize: 13,
@@ -312,10 +351,11 @@ export default function EditListing() {
                     backgroundColor: "#DC2626",
                     border: "none",
                     borderRadius: 8,
-                    cursor: "pointer",
+                    cursor: submitting ? "default" : "pointer",
+                    opacity: submitting ? 0.7 : 1,
                   }}
                 >
-                  Yes, delete it
+                  {submitting ? "Deleting..." : "Yes, delete it"}
                 </button>
                 <button
                   type="button"
@@ -336,10 +376,17 @@ export default function EditListing() {
             </div>
           )}
 
+          {formError && (
+            <p style={{ fontSize: 13, color: "#DC2626", marginTop: 16, marginBottom: 0 }}>
+              {formError}
+            </p>
+          )}
+
           {/* Action buttons */}
           <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
             <button
               type="submit"
+              disabled={submitting}
               style={{
                 flex: "0 0 70%",
                 height: 52,
@@ -349,12 +396,13 @@ export default function EditListing() {
                 borderRadius: 8,
                 fontSize: 16,
                 fontWeight: 500,
-                cursor: "pointer",
+                cursor: submitting ? "default" : "pointer",
+                opacity: submitting ? 0.7 : 1,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#CC4A00")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FF5C00")}
+              onMouseEnter={(e) => !submitting && (e.currentTarget.style.backgroundColor = "#CC4A00")}
+              onMouseLeave={(e) => !submitting && (e.currentTarget.style.backgroundColor = "#FF5C00")}
             >
-              Save changes
+              {submitting ? "Saving..." : "Save changes"}
             </button>
             <button
               type="button"

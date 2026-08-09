@@ -11,6 +11,7 @@ import {
   DollarSign,
   PlusCircle,
 } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 
 const RENTER_LINKS = [
   { label: "Overview", path: "/dashboard", icon: LayoutDashboard },
@@ -40,19 +41,27 @@ const OWNER_LINKS = [
  *  - activeLink: string (optional) — path to force-highlight as active. If not
  *    passed, the sidebar figures out the active link from the current route
  *    via useLocation(), which is what most pages should rely on.
- *  - userName: string (optional) — display name in the profile header, defaults
- *    to a placeholder until real auth/profile data exists.
- *  - userPhoto: string (optional) — avatar image URL, defaults to a placeholder.
+ *  - userName: string (optional) — display name in the profile header. Defaults
+ *    to the logged-in user's name from AuthContext, since every page that
+ *    renders this is already behind ProtectedRoute (i.e. someone is logged in).
+ *  - userPhoto: string (optional) — avatar image URL, defaults to the logged-in
+ *    user's photo, then a placeholder if they haven't set one.
  */
 export default function Sidebar({
   role = "renter",
   activeLink,
-  userName = "Mutinta Mwansa",
-  userPhoto = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop",
+  userName,
+  userPhoto,
 }) {
+  const { user } = useAuth();
   const location = useLocation();
   const links = role === "owner" ? OWNER_LINKS : RENTER_LINKS;
   const currentPath = activeLink || location.pathname;
+  const displayName = userName || user?.name || "Your account";
+  const displayPhoto =
+    userPhoto ||
+    user?.photo ||
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop";
 
   return (
     <aside
@@ -72,7 +81,7 @@ export default function Sidebar({
       {/* Profile header */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
         <img
-          src={userPhoto}
+          src={displayPhoto}
           alt="Profile"
           style={{
             width: "48px",
@@ -83,7 +92,7 @@ export default function Sidebar({
         />
         <div>
           <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111" }}>
-            {userName}
+            {displayName}
           </div>
           <div
             style={{

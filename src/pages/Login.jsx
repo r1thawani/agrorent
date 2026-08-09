@@ -1,14 +1,25 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+
+  // ProtectedRoute redirects here with the page the user was trying to
+  // reach in location.state.from, so login sends them back there instead
+  // of always dumping them on /dashboard.
+  const from = location.state?.from || "/dashboard";
 
   function handleSubmit(e) {
     e.preventDefault();
-    navigate("/dashboard");
+    // No backend yet, so this doesn't verify the password — it just marks
+    // the app as "logged in" as this email. See AuthContext.jsx.
+    login(email);
+    navigate(from, { replace: true });
   }
 
   return (
