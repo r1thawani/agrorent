@@ -105,8 +105,8 @@ export default function Signup() {
         </p>
         <p style={{ textAlign: "center", fontSize: "12px", color: "#555555", marginTop: "16px" }}>
           By signing up you agree to our{" "}
-          <Link to="#" style={{ textDecoration: "underline", color: "#555555" }}>Terms of Service</Link>{" "}and{" "}
-          <Link to="#" style={{ textDecoration: "underline", color: "#555555" }}>Privacy Policy</Link>.
+          <Link to="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline", color: "#555555" }}>Terms of Service</Link>{" "}and{" "}
+          <Link to="/privacy" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline", color: "#555555" }}>Privacy Policy</Link>.
         </p>
       </div>
     </div>

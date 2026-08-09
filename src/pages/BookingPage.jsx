@@ -386,7 +386,7 @@ export default function BookingPage() {
                   />
                   <span style={{ fontSize: "13px", color: "#111111" }}>
                     I agree to AgroRent's{" "}
-                    <Link to="#" style={{ color: "#1A5C2E", textDecoration: "underline" }}>
+                    <Link to="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "#1A5C2E", textDecoration: "underline" }}>
                       Terms of Service
                     </Link>{" "}
                     and rental agreement
