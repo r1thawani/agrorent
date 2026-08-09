@@ -293,9 +293,9 @@ export const ADMIN_USERS = [
   { id: "au9", name: "Darious Phiri", email: "darious@example.com", role: "renter",
     joined: "5 Mar 2024", status: "active",
     photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=64&h=64&fit=crop" },
-  { id: "au10", name: "Site Administrator", email: "admin@agrorent.com", role: "admin",
+  { id: "au10", name: "Natasha Chileshe", email: "admin@agrorent.com", role: "admin",
     joined: "1 Jan 2024", status: "active",
-    photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=64&h=64&fit=crop" },
+    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop" },
 ];
 
 export const DISPUTES = [

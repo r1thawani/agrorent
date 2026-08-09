@@ -34,11 +34,26 @@ const DEFAULT_USER = {
   role: "renter", // "renter" | "owner" | "admin"
 };
 
+// A separate identity for the "Admin" login path — previously admin logins
+// just reused DEFAULT_USER, so every admin session showed up as "Mutinta
+// Mwansa" with the same renter photo used all over the rest of the demo
+// data. Admin is a genuinely different account type (see the note above),
+// so it gets its own name/photo instead of borrowing a renter's identity.
+// Same person as the "Site Administrator" row (au10) in ADMIN_USERS —
+// mockData.js — so the identity is consistent wherever it shows up.
+const ADMIN_USER = {
+  name: "Natasha Chileshe",
+  email: "",
+  photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop",
+  role: "admin",
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   function login(email, role = DEFAULT_USER.role) {
-    setUser({ ...DEFAULT_USER, email, role });
+    const base = role === "admin" ? ADMIN_USER : DEFAULT_USER;
+    setUser({ ...base, email, role });
   }
 
   function signup({ name, email, role = "renter" }) {
