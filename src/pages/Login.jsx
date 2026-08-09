@@ -1,35 +1,37 @@
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
+const ROLES = [
+  { value: "renter", label: "Renter" },
+  { value: "owner", label: "Owner" },
+  { value: "admin", label: "Admin" },
+];
+
+const ROLE_HOME = {
+  renter: "/dashboard",
+  owner: "/dashboard/owner",
+  admin: "/admin",
+};
+
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("renter");
+  const [form, setForm] = useState({ email: "", password: "", role: "renter" });
   const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useAuth();
 
-  // ProtectedRoute redirects here with the page the user was trying to
-  // reach in location.state.from, so login sends them back there instead
-  // of always dumping them on /dashboard — unless they explicitly picked
-  // a role below, in which case we send them to that role's landing page.
-  const from = location.state?.from;
+  // Each field updates only its own key, independently of the others and
+  // regardless of the order they're filled in — so picking a role first,
+  // last, or in the middle all behave the same way.
+  const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+  const pickRole = (role) => setForm((f) => ({ ...f, role }));
 
   function handleSubmit(e) {
     e.preventDefault();
     // No backend yet, so this doesn't verify the password — it just marks
-    // the app as "logged in" as this email, with whichever role was
-    // picked below. See AuthContext.jsx.
-    login(email, role);
-
-    if (from) {
-      navigate(from, { replace: true });
-      return;
-    }
-    if (role === "admin") navigate("/admin", { replace: true });
-    else if (role === "owner") navigate("/dashboard/owner", { replace: true });
-    else navigate("/dashboard", { replace: true });
+    // the app as "logged in" as this email, with whichever role is
+    // currently selected in form.role. See AuthContext.jsx.
+    login(form.email, form.role);
+    navigate(ROLE_HOME[form.role], { replace: true });
   }
 
   const inputStyle = { width: "100%", height: "44px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", boxSizing: "border-box" };
@@ -47,28 +49,25 @@ export default function Login() {
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Email address</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} />
+            <input type="email" value={form.email} onChange={update("email")} required style={inputStyle} />
           </div>
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
               <label style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>Password</label>
               <Link to="/forgot-password" style={{ fontSize: "12px", color: "#FF5C00", textDecoration: "none" }}>Forgot password?</Link>
             </div>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={inputStyle} />
+            <input type="password" value={form.password} onChange={update("password")} required style={inputStyle} />
           </div>
 
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Log in as</label>
             <div style={{ display: "flex", gap: "8px" }}>
-              {[
-                { value: "renter", label: "Renter" },
-                { value: "owner", label: "Owner" },
-                { value: "admin", label: "Admin" },
-              ].map((opt) => (
+              {ROLES.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setRole(opt.value)}
+                  onClick={() => pickRole(opt.value)}
+                  aria-pressed={form.role === opt.value}
                   style={{
                     flex: 1,
                     height: "40px",
@@ -76,9 +75,9 @@ export default function Login() {
                     fontSize: "13px",
                     fontWeight: 500,
                     cursor: "pointer",
-                    border: role === opt.value ? "1.5px solid #FF5C00" : "1.5px solid #E0E8E3",
-                    backgroundColor: role === opt.value ? "#FFF0E6" : "#FFFFFF",
-                    color: role === opt.value ? "#FF5C00" : "#555555",
+                    border: form.role === opt.value ? "1.5px solid #FF5C00" : "1.5px solid #E0E8E3",
+                    backgroundColor: form.role === opt.value ? "#FFF0E6" : "#FFFFFF",
+                    color: form.role === opt.value ? "#FF5C00" : "#555555",
                   }}
                 >
                   {opt.label}

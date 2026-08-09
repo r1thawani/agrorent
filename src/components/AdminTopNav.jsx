@@ -33,6 +33,11 @@ export default function AdminTopNav() {
         alignItems: "center",
         gap: "32px",
         padding: "0 32px",
+        marginTop: "56px", // clears the fixed main Navbar (height 56px, zIndex 50)
+                            // which would otherwise sit on top of this bar
+        position: "sticky",
+        top: "56px",
+        zIndex: 40,
       }}
     >
       {ADMIN_LINKS.map((link) => {

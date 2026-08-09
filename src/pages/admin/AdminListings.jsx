@@ -166,7 +166,7 @@ export default function AdminListings() {
   return (
     <div>
       <AdminTopNav />
-      <div style={{ padding: "32px", backgroundColor: "#F5F5F0", minHeight: "100vh" }}>
+      <div style={{ padding: "32px", backgroundColor: "#F5F5F0", minHeight: "calc(100vh - 104px)" }}>
         <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>
           All listings
         </h1>
