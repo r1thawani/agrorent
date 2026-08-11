@@ -113,7 +113,7 @@ export default function PostListing() {
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0" }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
       <Sidebar role="owner" activeLink="/post-listing" />
 
       {/* Main content */}

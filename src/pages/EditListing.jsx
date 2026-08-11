@@ -118,7 +118,7 @@ export default function EditListing() {
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0" }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
       <Sidebar role="owner" activeLink="/my-listings" />
 
       {/* Main content */}

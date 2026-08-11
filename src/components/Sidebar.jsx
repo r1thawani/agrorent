@@ -11,6 +11,7 @@ import {
   DollarSign,
   PlusCircle,
   Repeat,
+  Search,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
@@ -213,11 +214,42 @@ export default function Sidebar({
         </div>
       )}
 
+      {/* Renter-only CTA — same treatment as the owner's "Post New Listing"
+          button above, so renters get an equally obvious quick action
+          instead of relying only on the small "Browse" link in the navbar. */}
+      {currentRole === "renter" && (
+        <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "0.5px solid #E0E8E3" }}>
+          <Link
+            to="/listings"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              width: "100%",
+              padding: "10px 0",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "#FFFFFF",
+              backgroundColor: "#1A5C2E",
+              textDecoration: "none",
+              transition: "opacity 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            <Search size={15} />
+            Browse Equipment
+          </Link>
+        </div>
+      )}
+
       {/* Role switcher — every account can act as both a renter and an
           owner, so this is always available (not shown for admin, which
           is a separate account type that never renders this sidebar). */}
       {(currentRole === "renter" || currentRole === "owner") && (
-        <div style={{ marginTop: currentRole === "owner" ? "8px" : "24px", paddingTop: currentRole === "owner" ? "0" : "16px", borderTop: currentRole === "owner" ? "none" : "0.5px solid #E0E8E3" }}>
+        <div style={{ marginTop: "8px", paddingTop: "0", borderTop: "none" }}>
           <button
             type="button"
             onClick={handleSwitchRole}

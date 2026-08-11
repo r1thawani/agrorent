@@ -119,7 +119,7 @@ export default function MyBookings() {
   const filtered = activeTab === "all" ? bookings : bookings.filter((b) => b.status === activeTab);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0" }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
       <Sidebar role="renter" activeLink="/my-bookings" />
       <div style={{ flex: 1, padding: "32px", paddingTop: "88px" }}>
         <h1 style={{ fontSize: "26px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>My bookings</h1>

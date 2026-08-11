@@ -157,7 +157,7 @@ export default function BookingRequests() {
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0" }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
       <Sidebar role="owner" activeLink="/booking-requests" />
       <div style={{ flex: 1, padding: "32px 40px" }}>
         <h1
