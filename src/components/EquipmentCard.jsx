@@ -1,5 +1,6 @@
 import { MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useWishlist } from "../context/WishlistContext";
 
 export default function EquipmentCard({
   id,
@@ -10,8 +11,10 @@ export default function EquipmentCard({
   rating,
   reviews,
   image,
-  wishlistIcon,
 }) {
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  const saved = isWishlisted(id);
+
   return (
     <Link
       to={`/listings/${id}`}
@@ -21,16 +24,20 @@ export default function EquipmentCard({
       {/* Image area */}
       <div className="relative h-[180px]" style={{ backgroundColor: "#FFF0E6" }}>
         <img src={image} alt={name} className="w-full h-full object-cover" />
-        {wishlistIcon && (
-          <button
-            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm"
-            onClick={(e) => {
-              e.preventDefault();
-            }}
-          >
-            <span className="text-red-500 text-sm">♥</span>
-          </button>
-        )}
+        <button
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm"
+          aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
+          aria-pressed={saved}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleWishlist(id);
+          }}
+        >
+          <span className={saved ? "text-red-500 text-sm" : "text-sm"} style={{ color: saved ? "#EF4444" : "#999999" }}>
+            {saved ? "♥" : "♡"}
+          </span>
+        </button>
       </div>
 
       {/* Card body */}

@@ -1,16 +1,13 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { EQUIPMENT } from "../data/mockData";
 import EquipmentCard from "../components/EquipmentCard";
+import { useWishlist } from "../context/WishlistContext";
 
 export default function Wishlist() {
-  const [saved, setSaved] = useState(EQUIPMENT.slice(0, 4));
-
-  function remove(id) {
-    setSaved((s) => s.filter((eq) => eq.id !== id));
-  }
+  const { wishlistIds } = useWishlist();
+  const saved = EQUIPMENT.filter((eq) => wishlistIds.includes(eq.id));
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
@@ -53,31 +50,11 @@ export default function Wishlist() {
               }}
             >
               {saved.map((eq) => (
-                <div key={eq.id} style={{ position: "relative" }}>
-                  <EquipmentCard {...eq} />
-                  <button
-                    onClick={() => remove(eq.id)}
-                    aria-label="Remove from wishlist"
-                    style={{
-                      position: "absolute",
-                      top: "12px",
-                      right: "12px",
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "9999px",
-                      backgroundColor: "#FFFFFF",
-                      border: "none",
-                      boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      zIndex: 10,
-                    }}
-                  >
-                    <Heart size={16} fill="#EF4444" stroke="#EF4444" />
-                  </button>
-                </div>
+                // EquipmentCard's own heart button (top-right of the image) is
+                // wired to the same WishlistContext, so tapping it here — where
+                // everything shown is already saved — removes it from the list.
+                // No need for a second, separately-positioned remove button.
+                <EquipmentCard key={eq.id} {...eq} />
               ))}
             </div>
           )}

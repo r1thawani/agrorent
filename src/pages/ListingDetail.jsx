@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { MapPin, ChevronLeft } from "lucide-react";
+import { MapPin, ChevronLeft, Heart } from "lucide-react";
 import { EQUIPMENT } from "../data/mockData";
 import StarRating from "../components/StarRating";
 import ReviewCard from "../components/ReviewCard";
+import { useWishlist } from "../context/WishlistContext";
 
 function AvailabilityCalendar() {
   const today = new Date();
@@ -58,6 +59,8 @@ export default function ListingDetail() {
   const [mainPhoto, setMainPhoto] = useState(0);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  const saved = isWishlisted(eq.id);
 
   const days = startDate && endDate
     ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000))
@@ -97,7 +100,32 @@ export default function ListingDetail() {
                 <span style={{ fontSize: "11px", fontWeight: 500, padding: "3px 10px", borderRadius: "20px", backgroundColor: "#D4EDDA", color: "#0F3D1E" }}>{eq.category}</span>
                 <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "20px", backgroundColor: "#F5F5F0", color: "#555555" }}>{eq.condition} condition</span>
               </div>
-              <h1 style={{ fontSize: "24px", fontWeight: 500, color: "#111111", marginTop: "12px" }}>{eq.name}</h1>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+                <h1 style={{ fontSize: "24px", fontWeight: 500, color: "#111111", marginTop: "12px" }}>{eq.name}</h1>
+                <button
+                  onClick={() => toggleWishlist(eq.id)}
+                  aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
+                  aria-pressed={saved}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    marginTop: "12px",
+                    padding: "8px 14px",
+                    borderRadius: "8px",
+                    border: "0.5px solid #E0E8E3",
+                    backgroundColor: "#FFFFFF",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: saved ? "#EF4444" : "#555555",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Heart size={16} fill={saved ? "#EF4444" : "none"} stroke={saved ? "#EF4444" : "#555555"} />
+                  {saved ? "Saved" : "Save"}
+                </button>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "8px" }}>
                 <MapPin size={14} style={{ color: "#555555" }} />
                 <span style={{ fontSize: "14px", color: "#555555" }}>{eq.location}</span>
