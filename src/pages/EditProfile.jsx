@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { ZAMBIAN_PROVINCES } from "../data/mockData";
+import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
 
 function getFocusStyle(field, focusedField) {
@@ -22,7 +22,8 @@ export default function EditProfile() {
   const [form, setForm] = useState({
     name: user?.name || "",
     phone: "",
-    location: "Lusaka Province",
+    province: "Lusaka Province",
+    district: "Lusaka",
   });
   const [bio, setBio] = useState(
     "Smallholder farmer in Lusaka Province with 10 years experience. Primarily grow maize and soya beans."
@@ -41,7 +42,7 @@ export default function EditProfile() {
     // Actually persist to the logged-in user in AuthContext — previously
     // this just flashed a fake "saved" message without changing anything,
     // so the Sidebar/Dashboard kept showing the old hardcoded name.
-    updateProfile({ name: form.name });
+    updateProfile({ name: form.name, location: `${form.district}, ${form.province}` });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -132,17 +133,13 @@ export default function EditProfile() {
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
                   Location
                 </label>
-                <select
-                  value={form.location}
-                  onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                  onFocus={() => setFocusedField("location")}
-                  onBlur={() => setFocusedField(null)}
-                  style={{ ...getFocusStyle("location", focusedField), backgroundColor: "#FFFFFF" }}
-                >
-                  {ZAMBIAN_PROVINCES.map((p) => (
-                    <option key={p}>{p}</option>
-                  ))}
-                </select>
+                <LocationSelect
+                  province={form.province}
+                  district={form.district}
+                  onProvinceChange={(v) => setForm((f) => ({ ...f, province: v }))}
+                  onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
+                  required
+                />
               </div>
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>

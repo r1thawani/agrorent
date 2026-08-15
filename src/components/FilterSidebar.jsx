@@ -1,5 +1,6 @@
 import SearchBar from "./SearchBar";
-import { CATEGORIES, ZAMBIAN_PROVINCES } from "../data/mockData";
+import LocationSelect from "./LocationSelect";
+import { CATEGORIES } from "../data/mockData";
 
 // The filters panel from Listings.jsx, extracted into its own component so
 // it's testable/reusable on its own (e.g. a future "browse by category" page)
@@ -9,8 +10,10 @@ export default function FilterSidebar({
   onSearchChange,
   selectedCategories,
   onToggleCategory,
-  location,
-  onLocationChange,
+  province,
+  district,
+  onProvinceChange,
+  onDistrictChange,
   minPrice,
   onMinPriceChange,
   maxPrice,
@@ -43,16 +46,16 @@ export default function FilterSidebar({
       <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
         Location
       </div>
-      <select
-        value={location}
-        onChange={(e) => onLocationChange(e.target.value)}
-        style={{ width: "100%", height: "40px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", backgroundColor: "#FFFFFF", marginBottom: "20px" }}
-      >
-        <option value="">All provinces</option>
-        {ZAMBIAN_PROVINCES.map((p) => (
-          <option key={p}>{p}</option>
-        ))}
-      </select>
+      <div style={{ marginBottom: "20px" }}>
+        <LocationSelect
+          province={province}
+          district={district}
+          onProvinceChange={onProvinceChange}
+          onDistrictChange={onDistrictChange}
+          allowEmpty
+          inputStyle={{ height: "40px" }}
+        />
+      </div>
 
       <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
         Price per day

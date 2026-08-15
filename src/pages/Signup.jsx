@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ZAMBIAN_PROVINCES } from "../data/mockData";
+import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Signup() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirm: "", location: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirm: "", province: "", district: "" });
   const [role, setRole] = useState("renter");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -16,8 +16,12 @@ export default function Signup() {
       setError("Passwords do not match.");
       return;
     }
+    if (!form.province || !form.district) {
+      setError("Please select your province and district.");
+      return;
+    }
     setError("");
-    signup({ name: form.name, email: form.email, role });
+    signup({ name: form.name, email: form.email, role, location: `${form.district}, ${form.province}` });
     // Previously there was no way to sign up as an owner at all — role
     // always defaulted to "renter" — so /my-listings, /post-listing, and
     // /dashboard/owner were unreachable through any real flow. Now the
@@ -55,11 +59,14 @@ export default function Signup() {
           ))}
 
           <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Your district / province</label>
-            <select value={form.location} onChange={update("location")} required style={{ ...inputStyle, backgroundColor: "#FFFFFF" }}>
-              <option value="">Select location…</option>
-              {ZAMBIAN_PROVINCES.map(p => <option key={p}>{p}</option>)}
-            </select>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Your province / district</label>
+            <LocationSelect
+              province={form.province}
+              district={form.district}
+              onProvinceChange={(v) => setForm(f => ({ ...f, province: v }))}
+              onDistrictChange={(v) => setForm(f => ({ ...f, district: v }))}
+              required
+            />
           </div>
 
           <div>

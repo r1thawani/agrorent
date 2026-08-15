@@ -6,7 +6,7 @@ export const EQUIPMENT = [
     condition: "Good",
     priceDay: 250,
     priceWeek: 1500,
-    location: "Lusaka, Chilanga",
+    location: "Chilanga, Lusaka",
     rating: 4.8,
     reviews: 23,
     image: "https://images.unsplash.com/photo-1606739211185-2c846d734a6d?w=600&h=360&fit=crop&auto=format",
@@ -125,14 +125,77 @@ export const EQUIPMENT = [
   },
 ];
 
-export const ZAMBIAN_PROVINCES = [
-  "Central Province", "Copperbelt Province", "Eastern Province", "Luapula Province",
-  "Lusaka Province", "Muchinga Province", "North-Western Province", "Northern Province",
-  "Southern Province", "Western Province",
-  "Lusaka", "Kitwe", "Ndola", "Kabwe", "Chipata", "Livingstone", "Kasama",
-  "Solwezi", "Mongu", "Mansa", "Chingola", "Mufulira", "Luanshya", "Mazabuka",
-  "Choma", "Mkushi", "Chisamba", "Kafue", "Siavonga", "Petauke",
-];
+// Previously this list mixed the 10 real provinces together with a grab-bag
+// of individual towns/districts ("Lusaka", "Kitwe", "Kabwe"...) in one flat
+// array, so every "select a location" dropdown in the app was really just a
+// single, non-hierarchical picklist — there was no way to pick a province
+// and then narrow down to one of *its* districts, and several towns
+// (e.g. Chilanga, Mazabuka) weren't even in the list. This is now a proper
+// province -> districts map covering all 10 provinces and their 116
+// districts, so location pickers can present two dependent dropdowns
+// (province, then district) instead of one flat, partial list.
+export const ZAMBIA_LOCATIONS = {
+  "Central Province": [
+    "Chibombo", "Chisamba", "Chitambo", "Kabwe", "Kapiri Mposhi", "Luano",
+    "Mkushi", "Mumbwa", "Ngabwe", "Serenje", "Shibuyunji",
+  ],
+  "Copperbelt Province": [
+    "Chililabombwe", "Chingola", "Kalulushi", "Kitwe", "Luanshya",
+    "Lufwanyama", "Masaiti", "Mpongwe", "Mufulira", "Ndola",
+  ],
+  "Eastern Province": [
+    "Chadiza", "Chama", "Chasefu", "Chipangali", "Chipata", "Kasenengwa",
+    "Katete", "Lumezi", "Lundazi", "Lusangazi", "Mambwe", "Nyimba",
+    "Petauke", "Sinda", "Vubwi",
+  ],
+  "Luapula Province": [
+    "Chembe", "Chiengi", "Chifunabuli", "Chipili", "Kawambwa", "Lunga",
+    "Mansa", "Milenge", "Mwansabombwe", "Mwense", "Nchelenge", "Samfya",
+  ],
+  "Lusaka Province": [
+    "Chilanga", "Chongwe", "Kafue", "Luangwa", "Lusaka", "Rufunsa",
+  ],
+  "Muchinga Province": [
+    "Chinsali", "Isoka", "Kanchibiya", "Lavushimanda", "Mafinga", "Mpika",
+    "Nakonde", "Shiwang'andu",
+  ],
+  "Northern Province": [
+    "Chilubi", "Kaputa", "Kasama", "Lunte", "Lupososhi", "Luwingu", "Mbala",
+    "Mporokoso", "Mpulungu", "Mungwi", "Nsama", "Senga Hill",
+  ],
+  "North-Western Province": [
+    "Chavuma", "Ikelenge", "Kabompo", "Kalumbila", "Kasempa", "Manyinga",
+    "Mufumbwe", "Mushindamo", "Mwinilunga", "Solwezi", "Zambezi",
+  ],
+  "Southern Province": [
+    "Chikankata", "Chirundu", "Choma", "Gwembe", "Itezhi-Tezhi", "Kalomo",
+    "Kazungula", "Livingstone", "Mazabuka", "Monze", "Namwala", "Pemba",
+    "Siavonga", "Sinazongwe", "Zimba",
+  ],
+  "Western Province": [
+    "Kalabo", "Kaoma", "Limulunga", "Luampa", "Lukulu", "Mitete", "Mongu",
+    "Mulobezi", "Mwandi", "Nalolo", "Nkeyema", "Senanga", "Sesheke",
+    "Shangombo", "Sikongo", "Sioma",
+  ],
+};
+
+export const ZAMBIAN_PROVINCES = Object.keys(ZAMBIA_LOCATIONS);
+
+// Equipment.location is free text like "Kabwe, Central" (town, then the
+// province's short name without the "Province" suffix). Filtering used to
+// compare that string directly against a value like "Central Province" from
+// the location dropdown, which never matched anything since the words
+// "Central Province" never actually appear in "Kabwe, Central" — the
+// province filter silently returned zero results for every province. This
+// matches on the district when one is picked (most specific), and falls
+// back to comparing against the province's short name otherwise.
+export function matchesLocation(equipmentLocation, province, district) {
+  if (!province) return true;
+  const haystack = equipmentLocation.toLowerCase();
+  if (district) return haystack.includes(district.toLowerCase());
+  const shortProvince = province.replace(/\s*Province$/i, "").toLowerCase();
+  return haystack.includes(shortProvince);
+}
 
 export const CATEGORIES = ["Tractors", "Ploughs", "Planters", "Harvesters", "Irrigation", "Sprayers", "Other"];
 

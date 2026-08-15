@@ -1,5 +1,5 @@
 import { mockDelay } from "./api";
-import { EQUIPMENT, CATEGORIES, ZAMBIAN_PROVINCES } from "../data/mockData";
+import { EQUIPMENT, CATEGORIES, ZAMBIAN_PROVINCES, ZAMBIA_LOCATIONS, matchesLocation } from "../data/mockData";
 
 // Mock service backing Listings.jsx / ListingDetail.jsx / PostListing.jsx /
 // MyListings.jsx. Reads from mockData now; once a backend exists, replace
@@ -10,7 +10,9 @@ export const equipmentService = {
     await mockDelay();
     let results = [...EQUIPMENT];
     if (filters.category) results = results.filter((e) => e.category === filters.category);
-    if (filters.location) results = results.filter((e) => e.location.includes(filters.location));
+    if (filters.province || filters.district) {
+      results = results.filter((e) => matchesLocation(e.location, filters.province, filters.district));
+    }
     if (filters.search) {
       const q = filters.search.toLowerCase();
       results = results.filter((e) => e.name.toLowerCase().includes(q));
@@ -33,6 +35,11 @@ export const equipmentService = {
   async getProvinces() {
     await mockDelay(100);
     return ZAMBIAN_PROVINCES;
+  },
+
+  async getDistricts(province) {
+    await mockDelay(100);
+    return ZAMBIA_LOCATIONS[province] || [];
   },
 
   async create(listing) {

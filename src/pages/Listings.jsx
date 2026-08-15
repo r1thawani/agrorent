@@ -2,12 +2,13 @@ import { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import EquipmentCard from "../components/EquipmentCard";
 import FilterSidebar from "../components/FilterSidebar";
-import { EQUIPMENT } from "../data/mockData";
+import { EQUIPMENT, matchesLocation } from "../data/mockData";
 
 export default function Listings() {
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [location, setLocation] = useState("");
+  const [province, setProvince] = useState("");
+  const [district, setDistrict] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState("newest");
@@ -21,7 +22,8 @@ export default function Listings() {
   function clearFilters() {
     setSearch("");
     setSelectedCategories([]);
-    setLocation("");
+    setProvince("");
+    setDistrict("");
     setMinPrice("");
     setMaxPrice("");
   }
@@ -29,7 +31,7 @@ export default function Listings() {
   let filtered = EQUIPMENT.filter(eq => {
     if (search && !eq.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (selectedCategories.length && !selectedCategories.includes(eq.category)) return false;
-    if (location && !eq.location.includes(location)) return false;
+    if (!matchesLocation(eq.location, province, district)) return false;
     if (minPrice && eq.priceDay < Number(minPrice)) return false;
     if (maxPrice && eq.priceDay > Number(maxPrice)) return false;
     return true;
@@ -58,8 +60,10 @@ export default function Listings() {
               onSearchChange={setSearch}
               selectedCategories={selectedCategories}
               onToggleCategory={toggleCategory}
-              location={location}
-              onLocationChange={setLocation}
+              province={province}
+              district={district}
+              onProvinceChange={setProvince}
+              onDistrictChange={setDistrict}
               minPrice={minPrice}
               onMinPriceChange={setMinPrice}
               maxPrice={maxPrice}
