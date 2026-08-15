@@ -44,17 +44,25 @@ export default function Listings() {
     <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "80px 24px 32px" }}>
       <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
 
-        {/* Mobile filters button */}
+        {/* Mobile filters button — only shown below the lg breakpoint, where
+            the sidebar is hidden by default (see the "hidden lg:block"
+            wrapper below). Toggling this reveals/hides that same sidebar
+            instead of a separate mobile-only copy. */}
         <button
           onClick={() => setShowMobileFilters(!showMobileFilters)}
-          style={{ display: "none", alignItems: "center", gap: "6px", padding: "8px 16px", fontSize: "13px", border: "1.5px solid #1A5C2E", color: "#1A5C2E", borderRadius: "8px", backgroundColor: "transparent", cursor: "pointer", marginBottom: "16px" }}
+          className="lg:hidden"
+          style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", fontSize: "13px", border: "1.5px solid #1A5C2E", color: "#1A5C2E", borderRadius: "8px", backgroundColor: "transparent", cursor: "pointer", marginBottom: "16px" }}
         >
           <SlidersHorizontal size={15} /> Filters
         </button>
 
-        <div style={{ display: "flex", gap: "24px" }}>
-          {/* Sidebar */}
-          <div style={{ width: "260px", flexShrink: 0, position: "sticky", top: "80px", alignSelf: "flex-start" }}>
+        <div style={{ display: "flex", gap: "24px" }} className="flex-col lg:flex-row">
+          {/* Sidebar — always visible from lg up; below that, only when the
+              "Filters" button has toggled it open. */}
+          <div
+            className={`${showMobileFilters ? "block" : "hidden"} lg:block w-full lg:w-[260px]`}
+            style={{ flexShrink: 0, position: "sticky", top: "80px", alignSelf: "flex-start" }}
+          >
             <FilterSidebar
               search={search}
               onSearchChange={setSearch}
@@ -83,7 +91,7 @@ export default function Listings() {
               </select>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: "20px" }}>
               {filtered.map(eq => <EquipmentCard key={eq.id} {...eq} />)}
             </div>
 

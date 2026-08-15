@@ -47,6 +47,19 @@ export default function EditProfile() {
     setTimeout(() => setSaved(false), 2500);
   }
 
+  function handlePhotoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Same FileReader-to-data-URL approach as PhotoUpload.jsx, so a chosen
+    // photo shows up immediately without needing a backend. Previously this
+    // input had no onChange at all, so picking a file did nothing — the
+    // avatar above never changed.
+    const reader = new FileReader();
+    reader.onload = (ev) => updateProfile({ photo: ev.target.result });
+    reader.readAsDataURL(file);
+    e.target.value = ""; // allow re-selecting the same file later
+  }
+
   function handlePasswordUpdate(e) {
     e.preventDefault();
     if (!pwForm.current || !pwForm.next) {
@@ -88,7 +101,7 @@ export default function EditProfile() {
               }}
             />
             <label style={{ marginTop: "8px", fontSize: "13px", color: "#FF5C00", cursor: "pointer" }}>
-              <input type="file" accept="image/*" style={{ display: "none" }} />
+              <input type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
               Change photo
             </label>
           </div>
