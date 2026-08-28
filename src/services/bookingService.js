@@ -74,4 +74,13 @@ export const bookingService = {
     if (error) throw error;
     return data;
   },
+  async getForEquipment(equipmentId) {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("start_date, end_date, status")
+      .eq("equipment_id", equipmentId)
+      .in("status", ["pending", "confirmed"]);
+    if (error) throw error;
+    return data;
+  },
 };

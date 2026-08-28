@@ -3,17 +3,24 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { MapPin, ChevronLeft, Heart } from "lucide-react";
 import { equipmentService } from "../services/equipmentService";
+import { bookingService } from "../services/bookingService";
+import { reviewService } from "../services/reviewService";
 import StarRating from "../components/StarRating";
 import ReviewCard from "../components/ReviewCard";
 import { useWishlist } from "../context/WishlistContext";
+import { useAuth } from "../hooks/useAuth";
 
-function AvailabilityCalendar() {
+function isDateBooked(dateObj, bookedRanges) {
+  const dateStr = dateObj.toISOString().split("T")[0];
+  return bookedRanges.some((r) => dateStr >= r.start_date && dateStr <= r.end_date);
+}
+
+function AvailabilityCalendar({ bookedRanges }) {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
-  const booked = [5, 6, 7, 12, 13, 14, 22, 23];
   const monthName = today.toLocaleString("default", { month: "long" });
 
   return (
@@ -27,7 +34,8 @@ function AvailabilityCalendar() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", textAlign: "center" }}>
         {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
-          const isBooked = booked.includes(d);
+          const dateObj = new Date(year, month, d);
+          const isBooked = isDateBooked(dateObj, bookedRanges);
           const isToday = d === today.getDate();
           return (
             <div key={d} style={{ width: "28px", height: "28px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", fontSize: "12px", backgroundColor: isBooked ? "#E5E5E5" : "transparent", color: isBooked ? "#999999" : "#111111", textDecoration: isBooked ? "line-through" : "none", border: isToday ? "2px solid #FF5C00" : "none" }}>
@@ -48,28 +56,30 @@ function AvailabilityCalendar() {
   );
 }
 
-// TODO: still static — wire up reviewService.getForEquipment(eq.id) in a later step
-const MOCK_REVIEWS = [
-  { id: 1, name: "Kalinda Mutale", photo: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=64&h=64&fit=crop", date: "January 2025", rating: 5, text: "Excellent tractor, very well maintained. The owner was very helpful and flexible with the pickup time. Would rent again!", reply: "Thank you so much! It was a pleasure working with you." },
-  { id: 2, name: "Bupe Siwale", photo: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=64&h=64&fit=crop", date: "December 2024", rating: 4, text: "Good equipment and fair price. Minor issue but the owner sorted it quickly.", reply: null },
-];
-
 export default function ListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [eq, setEq] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [mainPhoto, setMainPhoto] = useState(0);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [reviews, setReviews] = useState([]);
+  const [bookedRanges, setBookedRanges] = useState([]);
   const { isWishlisted, toggleWishlist } = useWishlist();
+
+  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     equipmentService
       .getById(id)
       .then(setEq)
       .catch(() => setLoadError("Could not load this listing."));
+
+    reviewService.getForEquipment(id).then(setReviews).catch(() => setReviews([]));
+    bookingService.getForEquipment(id).then(setBookedRanges).catch(() => setBookedRanges([]));
   }, [id]);
 
   if (loadError) {
@@ -80,6 +90,7 @@ export default function ListingDetail() {
   }
 
   const saved = isWishlisted(eq.id);
+  const isOwnEquipment = user && eq.owner_id === user.id;
   const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
   const photoUrls = photos.map((p) => p.url);
 
@@ -188,7 +199,7 @@ export default function ListingDetail() {
             {/* Availability */}
             <div style={{ marginTop: "24px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "8px" }}>Availability</h3>
-              <AvailabilityCalendar />
+              <AvailabilityCalendar bookedRanges={bookedRanges} />
             </div>
 
             {/* Reviews */}
@@ -199,9 +210,24 @@ export default function ListingDetail() {
                 <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{eq.rating}</span>
                 <span style={{ fontSize: "13px", color: "#555555" }}>({eq.review_count} reviews)</span>
               </div>
-              {MOCK_REVIEWS.map(r => (
-                <ReviewCard key={r.id} review={r} />
-              ))}
+              {reviews.length === 0 ? (
+                <p style={{ fontSize: "14px", color: "#555555" }}>No reviews yet.</p>
+              ) : (
+                reviews.map(r => (
+                  <ReviewCard
+                    key={r.id}
+                    review={{
+                      id: r.id,
+                      name: r.reviewer?.name,
+                      photo: r.reviewer?.photo_url,
+                      date: new Date(r.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+                      rating: r.rating,
+                      text: r.text,
+                      reply: r.owner_reply,
+                    }}
+                  />
+                ))
+              )}
             </div>
           </div>
 
@@ -216,13 +242,19 @@ export default function ListingDetail() {
                 <div style={{ fontSize: "13px", color: "#555555", marginTop: "4px" }}>K{eq.price_week.toLocaleString()} / week</div>
               )}
 
+              {isOwnEquipment && (
+                <div style={{ marginTop: "12px", backgroundColor: "#FDECEA", borderRadius: "8px", padding: "10px 12px", fontSize: "12px", color: "#A02020" }}>
+                  This is your own listing.
+                </div>
+              )}
+
               <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />
 
               <label style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>Select dates</label>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ flex: 1, height: "40px", padding: "0 8px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }} />
+                <input type="date" value={startDate} min={today} onChange={e => setStartDate(e.target.value)} style={{ flex: 1, height: "40px", padding: "0 8px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }} />
                 <span style={{ color: "#555555" }}>→</span>
-                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ flex: 1, height: "40px", padding: "0 8px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }} />
+                <input type="date" value={endDate} min={startDate || today} onChange={e => setEndDate(e.target.value)} style={{ flex: 1, height: "40px", padding: "0 8px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }} />
               </div>
 
               {days > 0 && (
@@ -233,9 +265,11 @@ export default function ListingDetail() {
                 </div>
               )}
 
-              <Link to={`/listings/${eq.id}/book`} style={{ display: "block", width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, textAlign: "center", lineHeight: "48px", textDecoration: "none", marginTop: "16px" }}>
-                Book Now
-              </Link>
+              {!isOwnEquipment && (
+                <Link to={`/listings/${eq.id}/book`} style={{ display: "block", width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, textAlign: "center", lineHeight: "48px", textDecoration: "none", marginTop: "16px" }}>
+                  Book Now
+                </Link>
+              )}
               <p style={{ textAlign: "center", fontSize: "12px", color: "#555555", marginTop: "8px" }}>You won't be charged yet</p>
 
               <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />

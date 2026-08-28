@@ -48,12 +48,15 @@ export default function BookingPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const today = new Date().toISOString().split("T")[0];
+
   useEffect(() => {
     equipmentService
       .getById(id)
       .then((data) => {
         setEq(data);
-        setStartDate(data.available_from ?? "");
+        const defaultFrom = data.available_from && data.available_from > today ? data.available_from : today;
+        setStartDate(defaultFrom);
         setEndDate(data.available_until ?? "");
       })
       .catch(() => setLoadError("Could not load this listing."));
@@ -66,16 +69,26 @@ export default function BookingPage() {
     return <div style={{ padding: "88px 16px", textAlign: "center" }}>Loading…</div>;
   }
 
+  const isOwnEquipment = user && eq.owner_id === user.id;
   const photoUrl = eq.equipment_photos?.[0]?.url ?? "";
   const rawDays = calculateDays(startDate, endDate);
   const days = rawDays > 0 ? rawDays : 1;
   const { subtotal, fee, total, downPayment, balance } = calculateBooking(eq.price_day, days);
+  const minStartDate = eq.available_from && eq.available_from > today ? eq.available_from : today;
 
   async function handleConfirm(e) {
     e.preventDefault();
 
+    if (isOwnEquipment) {
+      setError("You can't book your own equipment.");
+      return;
+    }
     if (!startDate || !endDate || rawDays < 1) {
       setError("Please choose a valid date range.");
+      return;
+    }
+    if (startDate < today) {
+      setError("Start date can't be in the past.");
       return;
     }
     if ((payMethod === "airtel" || payMethod === "mtn") && !phone) {
@@ -157,9 +170,15 @@ export default function BookingPage() {
           <ChevronLeft size={14} /> Back to listing
         </Link>
 
-        <h1 style={{ fontSize: "26px", fontWeight: 500, color: "#111111", marginBottom: "24px" }}>
+        <h1 style={{ fontSize: "26px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
           Complete your booking
         </h1>
+
+        {isOwnEquipment && (
+          <div style={{ backgroundColor: "#FDECEA", border: "1px solid #DC2626", borderRadius: "8px", padding: "16px", marginBottom: "20px", color: "#A02020", fontSize: "14px" }}>
+            This is your own listing — you can't book it as a renter.
+          </div>
+        )}
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "24px" }}>
           {/* Summary */}
@@ -200,7 +219,7 @@ export default function BookingPage() {
                   <input
                     type="date"
                     value={startDate}
-                    min={eq.available_from}
+                    min={minStartDate}
                     max={eq.available_until}
                     onChange={(e) => setStartDate(e.target.value)}
                     onFocus={() => setFocusedField("start")}
@@ -215,7 +234,7 @@ export default function BookingPage() {
                   <input
                     type="date"
                     value={endDate}
-                    min={startDate || eq.available_from}
+                    min={startDate || minStartDate}
                     max={eq.available_until}
                     onChange={(e) => setEndDate(e.target.value)}
                     onFocus={() => setFocusedField("end")}
@@ -275,6 +294,8 @@ export default function BookingPage() {
                   borderRadius: "12px",
                   padding: "20px",
                   border: "0.5px solid #E0E8E3",
+                  opacity: isOwnEquipment ? 0.5 : 1,
+                  pointerEvents: isOwnEquipment ? "none" : "auto",
                 }}
               >
                 <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
@@ -413,7 +434,7 @@ export default function BookingPage() {
 
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || isOwnEquipment}
                   style={{
                     width: "100%",
                     height: "52px",
@@ -424,8 +445,8 @@ export default function BookingPage() {
                     fontSize: "15px",
                     fontWeight: 500,
                     marginTop: "20px",
-                    cursor: submitting ? "default" : "pointer",
-                    opacity: submitting ? 0.7 : 1,
+                    cursor: submitting || isOwnEquipment ? "default" : "pointer",
+                    opacity: submitting || isOwnEquipment ? 0.7 : 1,
                   }}
                 >
                   {submitting ? "Confirming..." : `Confirm Booking & Pay K${downPayment.toLocaleString()}`}

@@ -4,8 +4,24 @@ import { Link, useNavigate } from "react-router-dom";
 import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
 
+const PHONE_REGEX = /^\+260\d{9}$/;
+
+function getPasswordError(password) {
+  if (password.length < 8) return "Password must be at least 8 characters.";
+  if (!/[A-Z]/.test(password)) return "Password must include at least one uppercase letter.";
+  if (!/[a-z]/.test(password)) return "Password must include at least one lowercase letter.";
+  if (!/[0-9]/.test(password)) return "Password must include at least one number.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "Password must include at least one special character.";
+  return "";
+}
+
+function formatPhoneInput(value) {
+  const digitsOnly = value.replace(/\D/g, "").replace(/^260/, "");
+  return "+260" + digitsOnly.slice(0, 9);
+}
+
 export default function Signup() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirm: "", province: "", district: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "+260", password: "", confirm: "", province: "", district: "" });
   const [role, setRole] = useState("renter");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -13,6 +29,16 @@ export default function Signup() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (!PHONE_REGEX.test(form.phone)) {
+      setError("Please enter your phone number in the format +260XXXXXXXXX.");
+      return;
+    }
+    const pwError = getPasswordError(form.password);
+    if (pwError) {
+      setError(pwError);
+      return;
+    }
     if (form.password !== form.confirm) {
       setError("Passwords do not match.");
       return;
@@ -24,11 +50,7 @@ export default function Signup() {
     setError("");
     try {
       await signup({ name: form.name, email: form.email, password: form.password, role });
-      // Previously there was no way to sign up as an owner at all — role
-      // always defaulted to "renter" — so /my-listings, /post-listing, and
-      // /dashboard/owner were unreachable through any real flow. Now the
-      // choice below actually determines where the new account lands.
-      navigate(role === "owner" ? "/dashboard/owner" : "/dashboard");
+      navigate("/check-email", { state: { email: form.email } });
     } catch (err) {
       setError(err.message || "Signup failed. Please try again.");
     }
@@ -49,19 +71,40 @@ export default function Signup() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {[
-            { label: "Full Name", field: "name", type: "text" },
-            { label: "Email", field: "email", type: "email" },
-            { label: "Phone Number", field: "phone", type: "tel", placeholder: "+260…" },
-            { label: "Password", field: "password", type: "password" },
-            { label: "Confirm Password", field: "confirm", type: "password" },
-          ].map(({ label, field, type, placeholder }) => (
-            <div key={field}>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>{label}</label>
-              <input type={type} value={form[field]} onChange={update(field)} placeholder={placeholder || ""} style={inputStyle} required />
-              {field === "password" && <p style={{ fontSize: "12px", color: "#555555", marginTop: "4px" }}>Minimum 8 characters</p>}
-            </div>
-          ))}
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Full Name</label>
+            <input type="text" value={form.name} onChange={update("name")} style={inputStyle} required />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Email</label>
+            <input type="email" value={form.email} onChange={update("email")} style={inputStyle} required />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Phone Number</label>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm(f => ({ ...f, phone: formatPhoneInput(e.target.value) }))}
+              placeholder="+260XXXXXXXXX"
+              style={inputStyle}
+              required
+            />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Password</label>
+            <input type="password" value={form.password} onChange={update("password")} style={inputStyle} required />
+            <p style={{ fontSize: "12px", color: "#555555", marginTop: "4px" }}>
+              Min 8 characters, with uppercase, lowercase, a number, and a special character.
+            </p>
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Confirm Password</label>
+            <input type="password" value={form.confirm} onChange={update("confirm")} style={inputStyle} required />
+          </div>
 
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Your province / district</label>

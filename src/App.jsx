@@ -36,6 +36,7 @@ import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
+import CheckEmail from "./pages/CheckEmail";
 
 // Everything that needs to know the current route lives in here, inside
 // <BrowserRouter>, since useLocation() only works below the Router.
@@ -95,6 +96,7 @@ function Layout() {
           <Route path="/admin/listings" element={<ProtectedRoute requireRole="admin"><AdminListings /></ProtectedRoute>} />
           <Route path="/admin/bookings" element={<ProtectedRoute requireRole="admin"><AdminBookings /></ProtectedRoute>} />
           <Route path="/admin/disputes" element={<ProtectedRoute requireRole="admin"><AdminDisputes /></ProtectedRoute>} />
+          <Route path="/check-email" element={<CheckEmail />} />
 
           {/* Unmatched routes — was previously blank instead of a real 404 */}
           <Route path="*" element={<NotFound />} />
