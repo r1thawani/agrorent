@@ -1,12 +1,15 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/EditListing.jsx
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
-import { EQUIPMENT, CATEGORIES } from "../data/mockData";
+import { CATEGORIES } from "../data/mockData";
 import { equipmentService } from "../services/equipmentService";
 import PhotoUpload from "../components/PhotoUpload";
+import LocationSelect from "../components/LocationSelect";
 import Sidebar from "../components/Sidebar";
 
-const CONDITIONS = ["New", "Good", "Fair", "Poor"];
+// Matches equipment_condition enum in the database exactly.
+const CONDITIONS = ["New", "Excellent", "Good", "Fair"];
 
 const inputStyle = {
   width: "100%",
@@ -44,27 +47,41 @@ export default function EditListing() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Fall back to first item if id not matched (handles stale mock links)
-  const eq = EQUIPMENT.find((e) => e.id === id) ?? EQUIPMENT[0];
-
-  const [form, setForm] = useState({
-    name: eq.name,
-    category: eq.category,
-    condition: eq.condition,
-    description: eq.description,
-    priceDay: String(eq.priceDay),
-    priceWeek: String(eq.priceWeek ?? ""),
-    pickup: eq.pickup,
-    availFrom: eq.available?.from ?? "",
-    availUntil: eq.available?.until ?? "",
-  });
-
-  // Seed photo state from existing thumbnails if present
-  const [photos, setPhotos] = useState(eq.thumbnails ?? (eq.image ? [eq.image] : []));
+  const [eq, setEq] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [form, setForm] = useState(null);
+  const [photos, setPhotos] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
   const [showDelete, setShowDelete] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    equipmentService
+      .getById(id)
+      .then((data) => {
+        setEq(data);
+        setForm({
+          name: data.name,
+          category: data.category,
+          condition: data.condition,
+          description: data.description || "",
+          priceDay: String(data.price_day ?? ""),
+          priceWeek: String(data.price_week ?? ""),
+          pickup: data.pickup_address || "",
+          province: data.province || "",
+          district: data.district || "",
+          availFrom: data.available_from || "",
+          availUntil: data.available_until || "",
+        });
+        const existingPhotos = (data.equipment_photos || [])
+          .slice()
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((p) => p.url);
+        setPhotos(existingPhotos);
+      })
+      .catch(() => setLoadError("Could not load this listing."));
+  }, [id]);
 
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -76,6 +93,10 @@ export default function EditListing() {
       setFormError("Please fill in the equipment name, category, daily price, and pickup location.");
       return;
     }
+    if (!form.province || !form.district) {
+      setFormError("Please select the province and district for this listing.");
+      return;
+    }
     setFormError("");
     setSubmitting(true);
     try {
@@ -84,16 +105,28 @@ export default function EditListing() {
         category: form.category,
         condition: form.condition,
         description: form.description,
-        priceDay: Number(form.priceDay) || 0,
-        priceWeek: Number(form.priceWeek) || 0,
-        location: form.pickup,
-        pickup: form.pickup,
-        available: { from: form.availFrom, until: form.availUntil },
-        image: photos[0] ?? eq.image,
-        thumbnails: photos.length ? photos : eq.thumbnails,
+        price_day: Number(form.priceDay) || 0,
+        price_week: form.priceWeek ? Number(form.priceWeek) : null,
+        province: form.province,
+        district: form.district,
+        location: `${form.district}, ${form.province}`,
+        pickup_address: form.pickup,
+        available_from: form.availFrom || null,
+        available_until: form.availUntil || null,
       });
+
+      // Only upload photos that are new (data-URL strings from PhotoUpload),
+      // not the ones already loaded from Supabase (real https:// URLs).
+      const newPhotos = photos.filter((p) => p.startsWith("data:"));
+      for (let i = 0; i < newPhotos.length; i++) {
+        const res = await fetch(newPhotos[i]);
+        const blob = await res.blob();
+        await equipmentService.uploadPhoto(eq.id, blob, `photo-${Date.now()}-${i}.jpg`);
+      }
+
       navigate("/my-listings");
-    } catch {
+    } catch (err) {
+      console.error(err);
       setFormError("Something went wrong saving your changes. Please try again.");
     } finally {
       setSubmitting(false);
@@ -105,7 +138,8 @@ export default function EditListing() {
     try {
       await equipmentService.remove(eq.id);
       navigate("/my-listings");
-    } catch {
+    } catch (err) {
+      console.error(err);
       setFormError("Something went wrong deleting this listing. Please try again.");
       setSubmitting(false);
     }
@@ -117,11 +151,32 @@ export default function EditListing() {
       : inputStyle;
   }
 
+  if (loadError) {
+    return (
+      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
+        <Sidebar role="owner" activeLink="/my-listings" />
+        <div style={{ flex: 1, padding: "88px 32px", textAlign: "center", color: "#A02020" }}>
+          {loadError}
+        </div>
+      </div>
+    );
+  }
+
+  if (!eq || !form) {
+    return (
+      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
+        <Sidebar role="owner" activeLink="/my-listings" />
+        <div style={{ flex: 1, padding: "88px 32px", textAlign: "center", color: "#555555" }}>
+          Loading…
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
       <Sidebar role="owner" activeLink="/my-listings" />
 
-      {/* Main content */}
       <div
         style={{
           flex: 1,
@@ -265,19 +320,31 @@ export default function EditListing() {
 
             {/* Section 3 — Location */}
             <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Location</div>
-            <div>
-              <label style={labelStyle}>Pickup location</label>
-              <input
-                value={form.pickup}
-                onChange={update("pickup")}
-                onFocus={() => setFocusedField("pickup")}
-                onBlur={() => setFocusedField(null)}
-                style={getFocusStyle("pickup")}
-                placeholder="e.g. Lusaka, Chilanga Road near Total filling station"
-              />
-              <p style={{ fontSize: 12, color: "#555555", margin: "4px 0 0" }}>
-                Be specific so renters know where to collect.
-              </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Province / district</label>
+                <LocationSelect
+                  province={form.province}
+                  district={form.district}
+                  onProvinceChange={(v) => setForm((f) => ({ ...f, province: v }))}
+                  onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
+                  required
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Pickup location</label>
+                <input
+                  value={form.pickup}
+                  onChange={update("pickup")}
+                  onFocus={() => setFocusedField("pickup")}
+                  onBlur={() => setFocusedField(null)}
+                  style={getFocusStyle("pickup")}
+                  placeholder="e.g. Chilanga Road near Total filling station"
+                />
+                <p style={{ fontSize: 12, color: "#555555", margin: "4px 0 0" }}>
+                  Be specific so renters know where to collect.
+                </p>
+              </div>
             </div>
 
             {/* Section 4 — Availability */}

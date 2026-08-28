@@ -1,12 +1,16 @@
+// FILE: agrorent/src/pages/PostListing.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CATEGORIES } from "../data/mockData";
 import { equipmentService } from "../services/equipmentService";
 import { useAuth } from "../hooks/useAuth";
 import PhotoUpload from "../components/PhotoUpload";
+import LocationSelect from "../components/LocationSelect";
 import Sidebar from "../components/Sidebar";
 
-const CONDITIONS = ["New", "Good", "Fair", "Poor"];
+// Matches equipment_condition enum in the database exactly — "Poor" was
+// removed since it isn't a valid value there and would fail on submit.
+const CONDITIONS = ["New", "Excellent", "Good", "Fair"];
 
 const inputStyle = {
   width: "100%",
@@ -54,6 +58,8 @@ export default function PostListing() {
     priceDay: "",
     priceWeek: "",
     pickup: "",
+    province: "",
+    district: "",
     availFrom: "",
     availUntil: "",
   });
@@ -70,36 +76,41 @@ export default function PostListing() {
       setFormError("Please fill in the equipment name, category, daily price, and pickup location.");
       return;
     }
+    if (!form.province || !form.district) {
+      setFormError("Please select the province and district for this listing.");
+      return;
+    }
     setFormError("");
     setSubmitting(true);
 
-    const placeholderImage =
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&h=360&fit=crop&auto=format";
-
     try {
-      await equipmentService.create({
+      const created = await equipmentService.create({
+        owner_id: user.id,
         name: form.name,
         category: form.category,
-        condition: form.condition,
+        condition: form.condition || "Good",
         description: form.description,
-        priceDay: Number(form.priceDay) || 0,
-        priceWeek: Number(form.priceWeek) || 0,
-        location: form.pickup,
-        pickup: form.pickup,
-        available: { from: form.availFrom, until: form.availUntil },
-        image: photos[0] || placeholderImage,
-        thumbnails: photos.length ? photos : [placeholderImage],
-        owner: {
-          id: user?.email || "you",
-          name: user?.name || "You",
-          photo: user?.photo,
-          rating: 0,
-          reviews: 0,
-          since: new Date().getFullYear().toString(),
-        },
+        price_day: Number(form.priceDay) || 0,
+        price_week: form.priceWeek ? Number(form.priceWeek) : null,
+        province: form.province,
+        district: form.district,
+        location: `${form.district}, ${form.province}`,
+        pickup_address: form.pickup,
+        available_from: form.availFrom || null,
+        available_until: form.availUntil || null,
       });
+
+      // photos are data-URL strings from PhotoUpload — convert each back to
+      // a real Blob before handing it to Supabase Storage's upload().
+      for (let i = 0; i < photos.length; i++) {
+        const res = await fetch(photos[i]);
+        const blob = await res.blob();
+        await equipmentService.uploadPhoto(created.id, blob, `photo-${i}.jpg`);
+      }
+
       navigate("/my-listings");
-    } catch {
+    } catch (err) {
+      console.error(err);
       setFormError("Something went wrong posting your listing. Please try again.");
     } finally {
       setSubmitting(false);
@@ -292,19 +303,31 @@ export default function PostListing() {
 
             {/* Section 3 — Location */}
             <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Location</div>
-            <div>
-              <label style={labelStyle}>Pickup location</label>
-              <input
-                value={form.pickup}
-                onChange={update("pickup")}
-                onFocus={() => setFocusedField("pickup")}
-                onBlur={() => setFocusedField(null)}
-                style={getFocusStyle("pickup")}
-                placeholder="e.g. Lusaka, Chilanga Road near Total filling station"
-              />
-              <p style={{ fontSize: 12, color: "#555555", margin: "4px 0 0" }}>
-                Be specific so renters know where to collect.
-              </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Province / district</label>
+                <LocationSelect
+                  province={form.province}
+                  district={form.district}
+                  onProvinceChange={(v) => setForm((f) => ({ ...f, province: v }))}
+                  onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
+                  required
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Pickup location</label>
+                <input
+                  value={form.pickup}
+                  onChange={update("pickup")}
+                  onFocus={() => setFocusedField("pickup")}
+                  onBlur={() => setFocusedField(null)}
+                  style={getFocusStyle("pickup")}
+                  placeholder="e.g. Chilanga Road near Total filling station"
+                />
+                <p style={{ fontSize: 12, color: "#555555", margin: "4px 0 0" }}>
+                  Be specific so renters know where to collect.
+                </p>
+              </div>
             </div>
 
             {/* Section 4 — Availability */}

@@ -1,7 +1,8 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/ListingDetail.jsx
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { MapPin, ChevronLeft, Heart } from "lucide-react";
-import { EQUIPMENT } from "../data/mockData";
+import { equipmentService } from "../services/equipmentService";
 import StarRating from "../components/StarRating";
 import ReviewCard from "../components/ReviewCard";
 import { useWishlist } from "../context/WishlistContext";
@@ -47,6 +48,7 @@ function AvailabilityCalendar() {
   );
 }
 
+// TODO: still static — wire up reviewService.getForEquipment(eq.id) in a later step
 const MOCK_REVIEWS = [
   { id: 1, name: "Kalinda Mutale", photo: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=64&h=64&fit=crop", date: "January 2025", rating: 5, text: "Excellent tractor, very well maintained. The owner was very helpful and flexible with the pickup time. Would rent again!", reply: "Thank you so much! It was a pleasure working with you." },
   { id: 2, name: "Bupe Siwale", photo: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=64&h=64&fit=crop", date: "December 2024", rating: 4, text: "Good equipment and fair price. Minor issue but the owner sorted it quickly.", reply: null },
@@ -55,19 +57,42 @@ const MOCK_REVIEWS = [
 export default function ListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const eq = EQUIPMENT.find(e => e.id === id) || EQUIPMENT[0];
+
+  const [eq, setEq] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const [mainPhoto, setMainPhoto] = useState(0);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const { isWishlisted, toggleWishlist } = useWishlist();
+
+  useEffect(() => {
+    equipmentService
+      .getById(id)
+      .then(setEq)
+      .catch(() => setLoadError("Could not load this listing."));
+  }, [id]);
+
+  if (loadError) {
+    return <div style={{ padding: "88px 24px", textAlign: "center" }}>{loadError}</div>;
+  }
+  if (!eq) {
+    return <div style={{ padding: "88px 24px", textAlign: "center" }}>Loading…</div>;
+  }
+
   const saved = isWishlisted(eq.id);
+  const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+  const photoUrls = photos.map((p) => p.url);
 
   const days = startDate && endDate
     ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000))
     : 0;
-  const subtotal = days * eq.priceDay;
+  const subtotal = days * eq.price_day;
   const downpayment = Math.round(subtotal * 0.25);
   const remaining = subtotal - downpayment;
+
+  const listedDate = eq.created_at
+    ? new Date(eq.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })
+    : "";
 
   return (
     <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "80px 24px 32px" }}>
@@ -84,10 +109,12 @@ export default function ListingDetail() {
 
             {/* Gallery */}
             <div style={{ borderRadius: "12px", overflow: "hidden", height: "380px", backgroundColor: "#FFF0E6" }}>
-              <img src={eq.thumbnails[mainPhoto]} alt={eq.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {photoUrls[mainPhoto] && (
+                <img src={photoUrls[mainPhoto]} alt={eq.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              )}
             </div>
             <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-              {eq.thumbnails.map((t, i) => (
+              {photoUrls.map((t, i) => (
                 <button key={i} onClick={() => setMainPhoto(i)} style={{ width: "80px", height: "60px", borderRadius: "8px", overflow: "hidden", border: i === mainPhoto ? "2px solid #FF5C00" : "2px solid transparent", flexShrink: 0, padding: 0, cursor: "pointer" }}>
                   <img src={t} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </button>
@@ -143,12 +170,12 @@ export default function ListingDetail() {
               <h3 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "12px" }}>Details</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 {[
-                  { label: "Price per day", value: `K${eq.priceDay.toLocaleString()}` },
-                  { label: "Price per week", value: `K${eq.priceWeek.toLocaleString()}` },
+                  { label: "Price per day", value: `K${eq.price_day.toLocaleString()}` },
+                  { label: "Price per week", value: eq.price_week ? `K${eq.price_week.toLocaleString()}` : "—" },
                   { label: "Condition", value: eq.condition },
                   { label: "Category", value: eq.category },
-                  { label: "Pickup location", value: eq.pickup },
-                  { label: "Listed since", value: eq.listed },
+                  { label: "Pickup location", value: eq.pickup_address },
+                  { label: "Listed since", value: listedDate },
                 ].map(({ label, value }) => (
                   <div key={label}>
                     <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
@@ -170,7 +197,7 @@ export default function ListingDetail() {
                 <h3 style={{ fontSize: "16px", fontWeight: 500, color: "#111111" }}>Reviews</h3>
                 <StarRating rating={eq.rating} />
                 <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{eq.rating}</span>
-                <span style={{ fontSize: "13px", color: "#555555" }}>({eq.reviews} reviews)</span>
+                <span style={{ fontSize: "13px", color: "#555555" }}>({eq.review_count} reviews)</span>
               </div>
               {MOCK_REVIEWS.map(r => (
                 <ReviewCard key={r.id} review={r} />
@@ -182,10 +209,12 @@ export default function ListingDetail() {
           <div style={{ width: "340px", flexShrink: 0, position: "sticky", top: "80px" }}>
             <div style={{ backgroundColor: "#FFFFFF", border: "0.5px solid #E0E8E3", borderRadius: "12px", padding: "20px" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-                <span style={{ fontSize: "24px", fontWeight: 500, color: "#FF5C00" }}>K{eq.priceDay.toLocaleString()}</span>
+                <span style={{ fontSize: "24px", fontWeight: 500, color: "#FF5C00" }}>K{eq.price_day.toLocaleString()}</span>
                 <span style={{ fontSize: "14px", color: "#555555" }}>/ day</span>
               </div>
-              <div style={{ fontSize: "13px", color: "#555555", marginTop: "4px" }}>K{eq.priceWeek.toLocaleString()} / week</div>
+              {eq.price_week && (
+                <div style={{ fontSize: "13px", color: "#555555", marginTop: "4px" }}>K{eq.price_week.toLocaleString()} / week</div>
+              )}
 
               <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />
 
@@ -198,7 +227,7 @@ export default function ListingDetail() {
 
               {days > 0 && (
                 <div style={{ marginTop: "12px", backgroundColor: "#F5F5F0", borderRadius: "8px", padding: "12px", fontSize: "13px", color: "#111111", display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <div>{days} days × K{eq.priceDay.toLocaleString()} = K{subtotal.toLocaleString()}</div>
+                  <div>{days} days × K{eq.price_day.toLocaleString()} = K{subtotal.toLocaleString()}</div>
                   <div>Down payment due now: <strong>K{downpayment.toLocaleString()}</strong></div>
                   <div style={{ fontSize: "12px", color: "#555555" }}>Remaining balance at pickup: K{remaining.toLocaleString()}</div>
                 </div>
@@ -212,23 +241,20 @@ export default function ListingDetail() {
               <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />
 
               <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                <img src={eq.owner.photo} alt={eq.owner.name} style={{ width: "44px", height: "44px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                <img src={eq.owner?.photo_url} alt={eq.owner?.name} style={{ width: "44px", height: "44px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{eq.owner.name}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
-                    <StarRating rating={eq.owner.rating} />
-                    <span style={{ fontSize: "12px", color: "#555555" }}>({eq.owner.reviews})</span>
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#555555", marginTop: "2px" }}>Member since {eq.owner.since}</div>
+                  <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{eq.owner?.name}</div>
                 </div>
               </div>
 
               <Link to="/messages" style={{ display: "block", width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #FF5C00", color: "#FF5C00", fontSize: "14px", fontWeight: 500, textAlign: "center", lineHeight: "40px", textDecoration: "none", marginTop: "12px" }}>
                 Message Owner
               </Link>
-              <Link to={`/profile/${eq.owner.id}`} style={{ display: "block", textAlign: "center", fontSize: "13px", color: "#1A5C2E", textDecoration: "none", marginTop: "8px" }}>
-                View Owner Profile
-              </Link>
+              {eq.owner?.id && (
+                <Link to={`/profile/${eq.owner.id}`} style={{ display: "block", textAlign: "center", fontSize: "13px", color: "#1A5C2E", textDecoration: "none", marginTop: "8px" }}>
+                  View Owner Profile
+                </Link>
+              )}
             </div>
           </div>
 

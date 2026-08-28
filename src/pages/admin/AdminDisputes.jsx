@@ -1,17 +1,30 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/admin/AdminDisputes.jsx
+import { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import AdminTopNav from "../../components/AdminTopNav";
-import { DISPUTES } from "../../data/mockData";
+import { adminService } from "../../services/adminService";
 
 export default function AdminDisputes() {
   const [activeTab, setActiveTab] = useState("open");
   const [notes, setNotes] = useState({});
-  const [disputes, setDisputes] = useState(DISPUTES);
+  const [disputes, setDisputes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  function resolve(id) {
-    setDisputes((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, status: "resolved" } : d))
-    );
+  useEffect(() => {
+    adminService
+      .getAllDisputes()
+      .then(setDisputes)
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function resolve(id) {
+    const noteText = notes[id] ?? "";
+    setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "resolved" } : d)));
+    try {
+      await adminService.resolveDispute(id, noteText);
+    } catch {
+      setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "open" } : d)));
+    }
   }
 
   const filtered = disputes.filter((d) => d.status === activeTab);
@@ -52,175 +65,199 @@ export default function AdminDisputes() {
           </button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {filtered.map((d) => (
-            <div
-              key={d.id}
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: "12px",
-                padding: "20px",
-                border: "0.5px solid #E0E8E3",
-              }}
-            >
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "48px 0", color: "#555555" }}>Loading…</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {filtered.map((d) => (
               <div
+                key={d.id}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "16px",
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: "12px",
+                  padding: "20px",
+                  border: "0.5px solid #E0E8E3",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <AlertTriangle size={16} color="#CC4A00" />
-                  <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>
-                    Dispute #{d.id}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <AlertTriangle size={16} color="#CC4A00" />
+                    <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>
+                      Dispute #{d.id.slice(0, 8)}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: "12px", color: "#555555" }}>
+                    {new Date(d.created_at).toLocaleDateString()}
                   </span>
                 </div>
-                <span style={{ fontSize: "12px", color: "#555555" }}>{d.date}</span>
-              </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "16px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.03em",
-                      color: "#555555",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    Reported by
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <img
-                      src={d.reporter.photo}
-                      alt={d.reporter.name}
-                      style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }}
-                    />
-                    <span style={{ fontSize: "14px", color: "#111111" }}>{d.reporter.name}</span>
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.03em",
-                      color: "#555555",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    Against
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <img
-                      src={d.against.photo}
-                      alt={d.against.name}
-                      style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }}
-                    />
-                    <span style={{ fontSize: "14px", color: "#111111" }}>{d.against.name}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.03em",
-                  color: "#555555",
-                  marginBottom: "4px",
-                }}
-              >
-                Reason
-              </div>
-              <p style={{ fontSize: "14px", color: "#111111", margin: 0 }}>{d.reason}</p>
-
-              {d.status === "open" && (
-                <div style={{ marginTop: "16px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: "#111111",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Resolution notes
-                  </label>
-                  <textarea
-                    value={notes[d.id] ?? ""}
-                    onChange={(e) =>
-                      setNotes((n) => ({ ...n, [d.id]: e.target.value }))
-                    }
-                    placeholder="Describe how this dispute was resolved…"
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      fontSize: "14px",
-                      border: "1px solid #E0E8E3",
-                      borderRadius: "8px",
-                      outline: "none",
-                      resize: "none",
-                      height: "80px",
-                      boxSizing: "border-box",
-                      fontFamily: "inherit",
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
-                    <button
-                      onClick={() => resolve(d.id)}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <div>
+                    <div
                       style={{
-                        padding: "9px 18px",
-                        fontSize: "13px",
+                        fontSize: "12px",
                         fontWeight: 500,
-                        color: "#FFFFFF",
-                        backgroundColor: "#1A5C2E",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Mark as resolved
-                    </button>
-                    <button
-                      style={{
-                        padding: "9px 18px",
-                        fontSize: "13px",
-                        fontWeight: 500,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.03em",
                         color: "#555555",
-                        backgroundColor: "transparent",
-                        border: "0.5px solid #CCCCCC",
-                        borderRadius: "8px",
-                        cursor: "pointer",
+                        marginBottom: "8px",
                       }}
                     >
-                      Dismiss
-                    </button>
+                      Reported by
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <img
+                        src={d.reporter?.photo_url}
+                        alt={d.reporter?.name}
+                        style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover", backgroundColor: "#F5F5F0" }}
+                      />
+                      <span style={{ fontSize: "14px", color: "#111111" }}>{d.reporter?.name}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.03em",
+                        color: "#555555",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      Against
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <img
+                        src={d.against?.photo_url}
+                        alt={d.against?.name}
+                        style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover", backgroundColor: "#F5F5F0" }}
+                      />
+                      <span style={{ fontSize: "14px", color: "#111111" }}>{d.against?.name}</span>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-          ))}
-          {filtered.length === 0 && (
-            <div style={{ textAlign: "center", padding: "48px 0", fontSize: "14px", color: "#555555" }}>
-              No {activeTab} disputes
-            </div>
-          )}
-        </div>
+
+                <div
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.03em",
+                    color: "#555555",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Reason
+                </div>
+                <p style={{ fontSize: "14px", color: "#111111", margin: 0 }}>{d.reason}</p>
+
+                {d.status === "resolved" && d.resolution_notes && (
+                  <div style={{ marginTop: "16px" }}>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.03em",
+                        color: "#555555",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Resolution notes
+                    </div>
+                    <p style={{ fontSize: "14px", color: "#111111", margin: 0 }}>{d.resolution_notes}</p>
+                  </div>
+                )}
+
+                {d.status === "open" && (
+                  <div style={{ marginTop: "16px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#111111",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Resolution notes
+                    </label>
+                    <textarea
+                      value={notes[d.id] ?? ""}
+                      onChange={(e) =>
+                        setNotes((n) => ({ ...n, [d.id]: e.target.value }))
+                      }
+                      placeholder="Describe how this dispute was resolved…"
+                      style={{
+                        width: "100%",
+                        padding: "8px 12px",
+                        fontSize: "14px",
+                        border: "1px solid #E0E8E3",
+                        borderRadius: "8px",
+                        outline: "none",
+                        resize: "none",
+                        height: "80px",
+                        boxSizing: "border-box",
+                        fontFamily: "inherit",
+                      }}
+                    />
+                    <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
+                      <button
+                        onClick={() => resolve(d.id)}
+                        style={{
+                          padding: "9px 18px",
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          color: "#FFFFFF",
+                          backgroundColor: "#1A5C2E",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Mark as resolved
+                      </button>
+                      <button
+                        style={{
+                          padding: "9px 18px",
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          color: "#555555",
+                          backgroundColor: "transparent",
+                          border: "0.5px solid #CCCCCC",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <div style={{ textAlign: "center", padding: "48px 0", fontSize: "14px", color: "#555555" }}>
+                No {activeTab} disputes
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

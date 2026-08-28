@@ -1,34 +1,60 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/LeaveReview.jsx
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Star } from "lucide-react";
-import { BOOKINGS } from "../data/mockData";
+import { bookingService } from "../services/bookingService";
+import { reviewService } from "../services/reviewService";
+import { useAuth } from "../hooks/useAuth";
 
 const LABELS = { 1: "Poor", 2: "Fair", 3: "Good", 4: "Very good", 5: "Excellent" };
 
 export default function LeaveReview() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
-  const booking = BOOKINGS.find((b) => b.id === bookingId);
+  const { user } = useAuth();
 
+  const [booking, setBooking] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [text, setText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
-  function handleSubmit(e) {
+  useEffect(() => {
+    bookingService
+      .getById(bookingId)
+      .then(setBooking)
+      .catch(() => setLoadError("We couldn't find that booking."));
+  }, [bookingId]);
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    // No backend yet — nothing to persist, just return the renter to their bookings.
-    navigate("/my-bookings");
+    if (!rating) {
+      setSubmitError("Please select a star rating.");
+      return;
+    }
+    setSubmitError("");
+    setSubmitting(true);
+    try {
+      await reviewService.create({
+        bookingId: booking.id,
+        equipmentId: booking.equipment_id,
+        reviewerId: user.id,
+        rating,
+        text,
+      });
+      navigate("/my-bookings");
+    } catch (err) {
+      setSubmitError(err.message || "Could not submit your review. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  if (!booking) {
+  if (loadError) {
     return (
-      <div
-        style={{
-          backgroundColor: "#F5F5F0",
-          minHeight: "100vh",
-          padding: "48px 16px",
-        }}
-      >
+      <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "48px 16px" }}>
         <div
           style={{
             maxWidth: "560px",
@@ -41,7 +67,7 @@ export default function LeaveReview() {
           }}
         >
           <p style={{ fontSize: "14px", color: "#555555", marginBottom: "16px" }}>
-            We couldn't find that booking.
+            {loadError}
           </p>
           <Link
             to="/my-bookings"
@@ -54,6 +80,16 @@ export default function LeaveReview() {
     );
   }
 
+  if (!booking) {
+    return (
+      <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "88px 16px", textAlign: "center", color: "#555555" }}>
+        Loading…
+      </div>
+    );
+  }
+
+  const photoUrl = booking.equipment?.equipment_photos?.[0]?.url || "";
+
   return (
     <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "48px 16px" }}>
       <div style={{ maxWidth: "560px", margin: "0 auto" }}>
@@ -65,22 +101,24 @@ export default function LeaveReview() {
             border: "0.5px solid #E0E8E3",
           }}
         >
-          <img
-            src={booking.equipmentImage}
-            alt={booking.equipment}
-            style={{
-              width: "100%",
-              height: "160px",
-              borderRadius: "8px",
-              objectFit: "cover",
-              marginBottom: "16px",
-            }}
-          />
+          {photoUrl && (
+            <img
+              src={photoUrl}
+              alt={booking.equipment?.name}
+              style={{
+                width: "100%",
+                height: "160px",
+                borderRadius: "8px",
+                objectFit: "cover",
+                marginBottom: "16px",
+              }}
+            />
+          )}
           <h2 style={{ fontSize: "18px", fontWeight: 500, color: "#111111" }}>
-            {booking.equipment}
+            {booking.equipment?.name}
           </h2>
           <p style={{ fontSize: "13px", color: "#555555", marginTop: "2px" }}>
-            Rented {booking.startDate} – {booking.endDate}
+            Rented {booking.start_date} – {booking.end_date}
           </p>
 
           <div style={{ margin: "20px 0", borderTop: "1px solid #E0E8E3" }} />
@@ -155,8 +193,13 @@ export default function LeaveReview() {
               </div>
             </div>
 
+            {submitError && (
+              <p style={{ fontSize: "13px", color: "#A02020", marginTop: "16px" }}>{submitError}</p>
+            )}
+
             <button
               type="submit"
+              disabled={submitting}
               style={{
                 width: "100%",
                 height: "48px",
@@ -167,10 +210,11 @@ export default function LeaveReview() {
                 fontSize: "15px",
                 fontWeight: 500,
                 marginTop: "32px",
-                cursor: "pointer",
+                cursor: submitting ? "default" : "pointer",
+                opacity: submitting ? 0.7 : 1,
               }}
             >
-              Submit review
+              {submitting ? "Submitting…" : "Submit review"}
             </button>
             <button
               type="button"

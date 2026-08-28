@@ -1,13 +1,45 @@
+// FILE: agrorent/src/pages/Wishlist.jsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import Sidebar from "../components/Sidebar";
-import { EQUIPMENT } from "../data/mockData";
 import EquipmentCard from "../components/EquipmentCard";
+import { equipmentService } from "../services/equipmentService";
 import { useWishlist } from "../context/WishlistContext";
 
 export default function Wishlist() {
   const { wishlistIds } = useWishlist();
-  const saved = EQUIPMENT.filter((eq) => wishlistIds.includes(eq.id));
+  const [saved, setSaved] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (wishlistIds.length === 0) {
+      setSaved([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    equipmentService
+      .getAll()
+      .then((all) => {
+        const filtered = all.filter((eq) => wishlistIds.includes(eq.id));
+        const mapped = filtered.map((eq) => {
+          const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+          return {
+            id: eq.id,
+            name: eq.name,
+            category: eq.category,
+            priceDay: eq.price_day,
+            location: eq.location,
+            rating: eq.rating,
+            reviews: eq.review_count,
+            image: photos[0]?.url || "",
+          };
+        });
+        setSaved(mapped);
+      })
+      .finally(() => setLoading(false));
+  }, [wishlistIds]);
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
@@ -19,7 +51,11 @@ export default function Wishlist() {
             Saved equipment
           </h1>
 
-          {saved.length === 0 ? (
+          {loading && (
+            <div style={{ textAlign: "center", padding: "64px 0", color: "#555555" }}>Loading…</div>
+          )}
+
+          {!loading && saved.length === 0 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "64px 0", gap: "16px" }}>
               <Heart size={32} color="#E0E8E3" />
               <div style={{ fontSize: "18px", fontWeight: 500, color: "#111111" }}>Nothing saved yet</div>
@@ -41,7 +77,9 @@ export default function Wishlist() {
                 Browse Equipment
               </Link>
             </div>
-          ) : (
+          )}
+
+          {!loading && saved.length > 0 && (
             <div
               style={{
                 display: "grid",
@@ -50,10 +88,6 @@ export default function Wishlist() {
               }}
             >
               {saved.map((eq) => (
-                // EquipmentCard's own heart button (top-right of the image) is
-                // wired to the same WishlistContext, so tapping it here — where
-                // everything shown is already saved — removes it from the list.
-                // No need for a second, separately-positioned remove button.
                 <EquipmentCard key={eq.id} {...eq} />
               ))}
             </div>

@@ -1,14 +1,16 @@
+// FILE: agrorent/src/pages/admin/AdminBookings.jsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AdminTopNav from "../../components/AdminTopNav";
 import AdminTable from "../../components/AdminTable";
-import { BOOKINGS } from "../../data/mockData";
+import { adminService } from "../../services/adminService";
 
-// Reuses the exact Section 5 status badge palette — no new colors.
 const STATUS_BADGE = {
   confirmed: { bg: "#D4EDDA", color: "#0F3D1E", label: "Confirmed" },
   pending: { bg: "#FFE8D6", color: "#CC4A00", label: "Pending" },
   completed: { bg: "#F5F5F0", color: "#555555", label: "Completed" },
   cancelled: { bg: "#FDECEA", color: "#A02020", label: "Cancelled" },
+  declined: { bg: "#FDECEA", color: "#A02020", label: "Declined" },
 };
 
 function StatusBadge({ status }) {
@@ -30,8 +32,6 @@ function StatusBadge({ status }) {
   );
 }
 
-// Local formatting helper — one consumer so far, kept inline per the
-// "local until a second consumer needs it" convention (BookingRow/ListingRow/etc).
 function formatDateRange(startDate, endDate) {
   const opts = { day: "numeric", month: "short", year: "numeric" };
   const start = new Date(startDate);
@@ -42,37 +42,54 @@ function formatDateRange(startDate, endDate) {
 }
 
 export default function AdminBookings() {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    adminService
+      .getAllBookings()
+      .then(setBookings)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const rows = bookings.map((b) => ({
+    ...b,
+    renterName: b.renter?.name || "",
+    ownerName: b.owner?.name || "",
+    equipmentName: b.equipment?.name || "",
+  }));
+
   const columns = [
     {
       key: "id",
       label: "Booking ID",
       render: (row) => (
         <span style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>
-          #{row.id}
+          #{row.id.slice(0, 8)}
         </span>
       ),
     },
     {
-      key: "renter",
+      key: "renterName",
       label: "Renter",
       render: (row) => (
         <span style={{ fontSize: "13px", color: "#111111" }}>
-          {row.renter || row.renterId}
+          {row.renterName}
         </span>
       ),
     },
     {
-      key: "owner",
+      key: "ownerName",
       label: "Owner",
       render: (row) => (
-        <span style={{ fontSize: "13px", color: "#555555" }}>{row.owner}</span>
+        <span style={{ fontSize: "13px", color: "#555555" }}>{row.ownerName}</span>
       ),
     },
     {
-      key: "equipment",
+      key: "equipmentName",
       label: "Equipment",
       render: (row) => (
-        <span style={{ fontSize: "13px", color: "#111111" }}>{row.equipment}</span>
+        <span style={{ fontSize: "13px", color: "#111111" }}>{row.equipmentName}</span>
       ),
     },
     {
@@ -80,16 +97,16 @@ export default function AdminBookings() {
       label: "Dates",
       render: (row) => (
         <span style={{ fontSize: "13px", color: "#555555" }}>
-          {formatDateRange(row.startDate, row.endDate)}
+          {formatDateRange(row.start_date, row.end_date)}
         </span>
       ),
     },
     {
-      key: "totalPrice",
+      key: "total_price",
       label: "Amount",
       render: (row) => (
         <span style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>
-          K{row.totalPrice.toLocaleString()}
+          K{Number(row.total_price).toLocaleString()}
         </span>
       ),
     },
@@ -103,7 +120,7 @@ export default function AdminBookings() {
       label: "Actions",
       render: (row) => (
         <Link
-          to={`/listings/${row.equipmentId}`}
+          to={`/listings/${row.equipment_id}`}
           style={{ fontSize: "13px", color: "#1A5C2E", textDecoration: "none" }}
         >
           View details
@@ -116,7 +133,7 @@ export default function AdminBookings() {
     {
       key: "status",
       label: "Status",
-      options: ["All status", "pending", "confirmed", "completed", "cancelled"],
+      options: ["All status", "pending", "confirmed", "completed", "cancelled", "declined"],
     },
   ];
 
@@ -127,14 +144,18 @@ export default function AdminBookings() {
         <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>
           All bookings
         </h1>
-        <AdminTable
-          columns={columns}
-          rows={BOOKINGS}
-          searchKeys={["renter", "equipment"]}
-          searchPlaceholder="Search bookings…"
-          filters={filters}
-          emptyMessage="No bookings match your filters"
-        />
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "80px 0", color: "#555555" }}>Loading…</div>
+        ) : (
+          <AdminTable
+            columns={columns}
+            rows={rows}
+            searchKeys={["renterName", "equipmentName"]}
+            searchPlaceholder="Search bookings…"
+            filters={filters}
+            emptyMessage="No bookings match your filters"
+          />
+        )}
       </div>
     </div>
   );

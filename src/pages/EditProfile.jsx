@@ -1,8 +1,10 @@
+// FILE: agrorent/src/pages/EditProfile.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
+import { supabase } from "../lib/supabaseClient";
 
 function getFocusStyle(field, focusedField) {
   return {
@@ -30,6 +32,7 @@ export default function EditProfile() {
   );
   const [focusedField, setFocusedField] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [pwError, setPwError] = useState("");
@@ -37,30 +40,32 @@ export default function EditProfile() {
 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  function handleSave(e) {
+  // NOTE: bio and phone aren't stored anywhere yet — the profiles table
+  // only has name/email/photo_url/role/status. Only name is actually
+  // persisted here; province/district and bio are UI-only for now until
+  // those columns exist.
+  async function handleSave(e) {
     e.preventDefault();
-    // Actually persist to the logged-in user in AuthContext — previously
-    // this just flashed a fake "saved" message without changing anything,
-    // so the Sidebar/Dashboard kept showing the old hardcoded name.
-    updateProfile({ name: form.name, location: `${form.district}, ${form.province}` });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaveError("");
+    try {
+      await updateProfile({ name: form.name });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setSaveError(err.message || "Could not save your changes. Please try again.");
+    }
   }
 
   function handlePhotoChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Same FileReader-to-data-URL approach as PhotoUpload.jsx, so a chosen
-    // photo shows up immediately without needing a backend. Previously this
-    // input had no onChange at all, so picking a file did nothing — the
-    // avatar above never changed.
     const reader = new FileReader();
-    reader.onload = (ev) => updateProfile({ photo: ev.target.result });
+    reader.onload = (ev) => updateProfile({ photo_url: ev.target.result });
     reader.readAsDataURL(file);
-    e.target.value = ""; // allow re-selecting the same file later
+    e.target.value = "";
   }
 
-  function handlePasswordUpdate(e) {
+  async function handlePasswordUpdate(e) {
     e.preventDefault();
     if (!pwForm.current || !pwForm.next) {
       setPwError("Please fill in all password fields.");
@@ -71,9 +76,15 @@ export default function EditProfile() {
       return;
     }
     setPwError("");
-    setPwSaved(true);
-    setPwForm({ current: "", next: "", confirm: "" });
-    setTimeout(() => setPwSaved(false), 2500);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pwForm.next });
+      if (error) throw error;
+      setPwSaved(true);
+      setPwForm({ current: "", next: "", confirm: "" });
+      setTimeout(() => setPwSaved(false), 2500);
+    } catch (err) {
+      setPwError(err.message || "Could not update your password. Please try again.");
+    }
   }
 
   return (
@@ -89,7 +100,7 @@ export default function EditProfile() {
           {/* Photo */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "28px" }}>
             <img
-              src={user?.photo || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=192&h=192&fit=crop"}
+              src={user?.photo_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=192&h=192&fit=crop"}
               alt="Profile"
               style={{
                 width: "96px",
@@ -141,6 +152,9 @@ export default function EditProfile() {
                   onBlur={() => setFocusedField(null)}
                   style={getFocusStyle("phone", focusedField)}
                 />
+                <p style={{ fontSize: "11px", color: "#999999", marginTop: "4px" }}>
+                  Not saved yet — coming soon.
+                </p>
               </div>
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
@@ -153,6 +167,9 @@ export default function EditProfile() {
                   onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
                   required
                 />
+                <p style={{ fontSize: "11px", color: "#999999", marginTop: "4px" }}>
+                  Not saved yet — coming soon.
+                </p>
               </div>
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
@@ -179,6 +196,8 @@ export default function EditProfile() {
                   {bio.length} / 200
                 </div>
               </div>
+
+              {saveError && <div style={{ fontSize: "13px", color: "#A02020" }}>{saveError}</div>}
 
               {saved && (
                 <div style={{ fontSize: "13px", color: "#0F3D1E", backgroundColor: "#D4EDDA", borderRadius: "8px", padding: "8px 12px" }}>
@@ -320,9 +339,10 @@ export default function EditProfile() {
                 </button>
                 <button
                   onClick={() => {
-                    // No backend to actually delete an account on, but this
-                    // should at least end the session — previously this
-                    // button had no onClick at all and did nothing.
+                    // Actually deleting the auth account requires Supabase's
+                    // admin API (a service-role key), which must never be
+                    // exposed in frontend code — so this can only end the
+                    // session for now, not delete the underlying account.
                     logout();
                     navigate("/");
                   }}

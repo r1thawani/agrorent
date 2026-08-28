@@ -1,34 +1,17 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/Earnings.jsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import StatCard from "../components/StatCard";
+import { bookingService } from "../services/bookingService";
+import { useAuth } from "../hooks/useAuth";
 
-// Local to this page, same convention as the reference zip's Earnings.tsx (its
-// MONTHLY_DATA/PAYOUTS aren't in mockData.ts either) and the project's existing
-// "local until a second consumer needs it" rule. No mockData.js export added for
-// this sub-phase - flag to the person if Earnings-shaped data should move there.
-const MONTHLY_DATA = [
-  { month: "Jul", amount: 4200 },
-  { month: "Aug", amount: 6800 },
-  { month: "Sep", amount: 9100 },
-  { month: "Oct", amount: 7400 },
-  { month: "Nov", amount: 11200 },
-  { month: "Dec", amount: 8300 },
-  { month: "Jan", amount: 5600 },
-  { month: "Feb", amount: 14250 },
-];
-
-const PAYOUTS = [
-  { date: "20 Jan 2025", equipment: "John Deere 5075E Tractor", amount: 1750, status: "Paid" },
-  { date: "15 Jan 2025", equipment: "4-Row Maize Planter", amount: 600, status: "Paid" },
-  { date: "3 Jan 2025", equipment: "3-Disc Plough", amount: 240, status: "Paid" },
-  { date: "28 Dec 2024", equipment: "John Deere 5075E Tractor", amount: 1250, status: "Paid" },
-];
-
-// Reuses the existing status-badge color table (Section 5) - "Paid" maps to the
-// same green used for Available/Confirmed, since there's no dedicated payout
-// status color defined yet.
 function PayoutStatusBadge({ status }) {
+  const styles = {
+    completed: { bg: "#D4EDDA", color: "#0F3D1E", label: "Completed" },
+    confirmed: { bg: "#FFE8D6", color: "#CC4A00", label: "Confirmed" },
+  };
+  const s = styles[status] || { bg: "#E0E8E3", color: "#555555", label: status };
   return (
     <span
       style={{
@@ -36,20 +19,17 @@ function PayoutStatusBadge({ status }) {
         padding: "3px 10px",
         borderRadius: "20px",
         fontWeight: 500,
-        backgroundColor: "#D4EDDA",
-        color: "#0F3D1E",
+        backgroundColor: s.bg,
+        color: s.color,
       }}
     >
-      {status}
+      {s.label}
     </span>
   );
 }
 
-// Small local bar-chart, built with plain divs since recharts isn't an installed
-// dependency (Section 10 - not to be added without asking). Not extracted to
-// components/ since no other page needs a chart yet.
 function MiniBarChart({ data }) {
-  const max = Math.max(...data.map((d) => d.amount));
+  const max = Math.max(...data.map((d) => d.amount), 1);
   return (
     <div style={{ display: "flex", alignItems: "flex-end", gap: "14px", height: "180px" }}>
       {data.map((d) => (
@@ -71,12 +51,57 @@ function MiniBarChart({ data }) {
   );
 }
 
+function lastEightMonths() {
+  const months = [];
+  const now = new Date();
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleString("default", { month: "short" }) });
+  }
+  return months;
+}
+
 export default function Earnings() {
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [payoutRequested, setPayoutRequested] = useState(false);
 
-  const totalEarnings = MONTHLY_DATA.reduce((sum, d) => sum + d.amount, 0);
-  const thisMonth = MONTHLY_DATA[MONTHLY_DATA.length - 1].amount;
-  const pendingPayout = 3250;
+  useEffect(() => {
+    if (!user) return;
+    bookingService
+      .getRequestsForOwner(user.id)
+      .then(setBookings)
+      .finally(() => setLoading(false));
+  }, [user]);
+
+  // "Earnings" = total value of bookings that actually went through
+  // (confirmed or completed). "Pending payout" = the balance still owed at
+  // pickup on confirmed-but-not-yet-completed bookings — there's no separate
+  // payout/transfer system in the database yet, so this is the closest real
+  // signal available rather than a fabricated number.
+  const earningBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "completed");
+  const totalEarnings = earningBookings.reduce((sum, b) => sum + Number(b.total_price), 0);
+  const pendingPayout = bookings
+    .filter((b) => b.status === "confirmed")
+    .reduce((sum, b) => sum + Number(b.balance_due), 0);
+
+  const months = lastEightMonths();
+  const monthlyData = months.map(({ key, label }) => {
+    const amount = earningBookings
+      .filter((b) => {
+        const d = new Date(b.created_at);
+        return `${d.getFullYear()}-${d.getMonth()}` === key;
+      })
+      .reduce((sum, b) => sum + Number(b.total_price), 0);
+    return { month: label, amount };
+  });
+  const thisMonth = monthlyData[monthlyData.length - 1]?.amount || 0;
+
+  const payoutHistory = earningBookings
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 10);
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
@@ -88,90 +113,110 @@ export default function Earnings() {
             Earnings
           </h1>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "28px" }}>
-            <StatCard label="Total earnings" value={`K${totalEarnings.toLocaleString()}`} valueColor="#FF5C00" />
-            <StatCard label="This month" value={`K${thisMonth.toLocaleString()}`} valueColor="#FF5C00" />
-            <StatCard label="Pending payout" value={`K${pendingPayout.toLocaleString()}`} />
-          </div>
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "64px 0", color: "#555555" }}>Loading…</div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "28px" }}>
+                <StatCard label="Total earnings" value={`K${totalEarnings.toLocaleString()}`} valueColor="#FF5C00" />
+                <StatCard label="This month" value={`K${thisMonth.toLocaleString()}`} valueColor="#FF5C00" />
+                <StatCard label="Balance due at pickup" value={`K${pendingPayout.toLocaleString()}`} />
+              </div>
 
-          {/* Chart */}
-          <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "20px", marginBottom: "28px", border: "0.5px solid #E0E8E3" }}>
-            <h2 style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
-              Monthly earnings
-            </h2>
-            <MiniBarChart data={MONTHLY_DATA} />
-          </div>
+              {/* Chart */}
+              <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "20px", marginBottom: "28px", border: "0.5px solid #E0E8E3" }}>
+                <h2 style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
+                  Monthly earnings
+                </h2>
+                <MiniBarChart data={monthlyData} />
+              </div>
 
-          {/* Payout history */}
-          <div style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
-              Payout history
-            </h2>
-            <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", overflow: "hidden", border: "0.5px solid #E0E8E3" }}>
-              {PAYOUTS.map((p, i) => (
-                <div
-                  key={i}
+              {/* Booking earnings history */}
+              <div style={{ marginBottom: "28px" }}>
+                <h2 style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
+                  Recent booking earnings
+                </h2>
+                {payoutHistory.length === 0 ? (
+                  <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "24px", textAlign: "center", color: "#555555", fontSize: "14px", border: "0.5px solid #E0E8E3" }}>
+                    No earnings yet.
+                  </div>
+                ) : (
+                  <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", overflow: "hidden", border: "0.5px solid #E0E8E3" }}>
+                    {payoutHistory.map((b, i) => (
+                      <div
+                        key={b.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "12px 16px",
+                          borderBottom: i !== payoutHistory.length - 1 ? "1px solid #E0E8E3" : "none",
+                        }}
+                      >
+                        <span style={{ fontSize: "13px", color: "#555555", width: "120px", flexShrink: 0 }}>
+                          {new Date(b.created_at).toLocaleDateString()}
+                        </span>
+                        <span style={{ fontSize: "14px", color: "#111111", flex: 1 }}>
+                          Booking for {b.equipment?.name}
+                        </span>
+                        <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111", marginRight: "12px" }}>
+                          K{Number(b.total_price).toLocaleString()}
+                        </span>
+                        <PayoutStatusBadge status={b.status} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <p style={{ fontSize: "12px", color: "#999999", marginBottom: "28px" }}>
+                Payout transfers to your mobile money account aren't set up yet — the figures
+                above reflect booking value, not an actual completed bank transfer.
+              </p>
+
+              {!payoutRequested ? (
+                <button
+                  onClick={() => setPayoutRequested(true)}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "12px 16px",
-                    borderBottom: i !== PAYOUTS.length - 1 ? "1px solid #E0E8E3" : "none",
+                    padding: "10px 24px",
+                    fontSize: "14px",
+                    color: "#FFFFFF",
+                    borderRadius: "8px",
+                    fontWeight: 500,
+                    backgroundColor: "#1A5C2E",
+                    border: "none",
+                    cursor: "pointer",
+                    marginBottom: "28px",
                   }}
                 >
-                  <span style={{ fontSize: "13px", color: "#555555", width: "120px", flexShrink: 0 }}>{p.date}</span>
-                  <span style={{ fontSize: "14px", color: "#111111", flex: 1 }}>Payout for {p.equipment}</span>
-                  <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111", marginRight: "12px" }}>
-                    K{p.amount.toLocaleString()}
-                  </span>
-                  <PayoutStatusBadge status={p.status} />
+                  Request payout
+                </button>
+              ) : (
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: "#0F3D1E",
+                    backgroundColor: "#D4EDDA",
+                    borderRadius: "8px",
+                    padding: "10px 16px",
+                    marginBottom: "28px",
+                    display: "inline-block",
+                  }}
+                >
+                  Payout requested — you'll be notified once it's processed.
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
 
-          {!payoutRequested ? (
-            <button
-              onClick={() => setPayoutRequested(true)}
-              style={{
-                padding: "10px 24px",
-                fontSize: "14px",
-                color: "#FFFFFF",
-                borderRadius: "8px",
-                fontWeight: 500,
-                backgroundColor: "#1A5C2E",
-                border: "none",
-                cursor: "pointer",
-                marginBottom: "28px",
-              }}
-            >
-              Request payout
-            </button>
-          ) : (
-            <div
-              style={{
-                fontSize: "13px",
-                color: "#0F3D1E",
-                backgroundColor: "#D4EDDA",
-                borderRadius: "8px",
-                padding: "10px 16px",
-                marginBottom: "28px",
-                display: "inline-block",
-              }}
-            >
-              Payout requested - you'll be notified once it's processed.
-            </div>
+              <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "20px", border: "0.5px solid #E0E8E3" }}>
+                <h2 style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "12px" }}>
+                  Your payout account
+                </h2>
+                <div style={{ fontSize: "14px", color: "#111111" }}>Not set up yet</div>
+                <Link to="/profile/edit" style={{ fontSize: "13px", color: "#1A5C2E", marginTop: "8px", display: "inline-block" }}>
+                  Edit payout details
+                </Link>
+              </div>
+            </>
           )}
-
-          {/* Payout account */}
-          <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "20px", border: "0.5px solid #E0E8E3" }}>
-            <h2 style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "12px" }}>
-              Your payout account
-            </h2>
-            <div style={{ fontSize: "14px", color: "#111111" }}>Airtel Money — +260 97 123 4567</div>
-            <Link to="/profile/edit" style={{ fontSize: "13px", color: "#1A5C2E", marginTop: "8px", display: "inline-block" }}>
-              Edit payout details
-            </Link>
-          </div>
         </div>
       </div>
     </div>

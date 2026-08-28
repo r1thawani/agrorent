@@ -1,19 +1,27 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/BookingRequests.jsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { BOOKING_REQUESTS } from "../data/mockData";
 import { bookingService } from "../services/bookingService";
+import { useAuth } from "../hooks/useAuth";
 
 const TABS = ["Pending", "Accepted", "Declined"];
 
+// Maps the tab label to the real database status value.
+const TAB_TO_STATUS = {
+  Pending: "pending",
+  Accepted: "confirmed",
+  Declined: "declined",
+};
+
 const STATUS_STYLES = {
-  pending: { bg: "#FFE8D6", text: "#CC4A00" },
-  accepted: { bg: "#D4EDDA", text: "#0F3D1E" },
-  declined: { bg: "#FDECEA", text: "#A02020" },
+  pending: { bg: "#FFE8D6", text: "#CC4A00", label: "Pending" },
+  confirmed: { bg: "#D4EDDA", text: "#0F3D1E", label: "Accepted" },
+  declined: { bg: "#FDECEA", text: "#A02020", label: "Declined" },
 };
 
 function StatusBadge({ status }) {
-  const s = STATUS_STYLES[status];
+  const s = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
   return (
     <span
       style={{
@@ -24,15 +32,15 @@ function StatusBadge({ status }) {
         borderRadius: "20px",
         backgroundColor: s.bg,
         color: s.text,
-        textTransform: "capitalize",
       }}
     >
-      {status}
+      {s.label}
     </span>
   );
 }
 
 function RequestRow({ request, onAccept, onDecline }) {
+  const dateRange = `${request.start_date} → ${request.end_date}`;
   return (
     <div
       style={{
@@ -46,30 +54,31 @@ function RequestRow({ request, onAccept, onDecline }) {
       }}
     >
       <img
-        src={request.renterPhoto}
-        alt={request.renter}
+        src={request.renter?.photo_url}
+        alt={request.renter?.name}
         style={{
           width: "44px",
           height: "44px",
           borderRadius: "50%",
           objectFit: "cover",
           flexShrink: 0,
+          backgroundColor: "#F5F5F0",
         }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111" }}>
-          {request.renter}
+          {request.renter?.name}
         </div>
         <div style={{ fontSize: "13px", color: "#555555", marginTop: "2px" }}>
           wants to rent{" "}
           <Link
-            to={`/listings/${request.equipmentId}`}
+            to={`/listings/${request.equipment_id}`}
             style={{ fontWeight: 500, color: "#1A5C2E", textDecoration: "none" }}
           >
-            {request.equipment}
+            {request.equipment?.name}
           </Link>
         </div>
-        <div style={{ fontSize: "13px", color: "#555555" }}>{request.dates}</div>
+        <div style={{ fontSize: "13px", color: "#555555" }}>{dateRange}</div>
         <div
           style={{
             fontSize: "15px",
@@ -78,7 +87,7 @@ function RequestRow({ request, onAccept, onDecline }) {
             marginTop: "4px",
           }}
         >
-          K{request.value.toLocaleString()} total
+          K{Number(request.total_price).toLocaleString()} total
         </div>
       </div>
       <div style={{ flexShrink: 0 }}>
@@ -135,25 +144,39 @@ function RequestRow({ request, onAccept, onDecline }) {
 }
 
 export default function BookingRequests() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("Pending");
-  const [requests, setRequests] = useState(BOOKING_REQUESTS);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  const filtered = requests.filter(
-    (r) => r.status === activeTab.toLowerCase()
-  );
+  useEffect(() => {
+    if (!user) return;
+    bookingService
+      .getRequestsForOwner(user.id)
+      .then(setRequests)
+      .catch(() => setLoadError("Could not load booking requests."))
+      .finally(() => setLoading(false));
+  }, [user]);
+
+  const filtered = requests.filter((r) => r.status === TAB_TO_STATUS[activeTab]);
 
   async function accept(id) {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "accepted" } : r))
-    );
-    await bookingService.accept(id);
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "confirmed" } : r)));
+    try {
+      await bookingService.accept(id);
+    } catch {
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r)));
+    }
   }
 
   async function decline(id) {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "declined" } : r))
-    );
-    await bookingService.decline(id);
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "declined" } : r)));
+    try {
+      await bookingService.decline(id);
+    } catch {
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r)));
+    }
   }
 
   return (
@@ -202,7 +225,15 @@ export default function BookingRequests() {
           })}
         </div>
 
-        {filtered.length === 0 ? (
+        {loading && (
+          <div style={{ textAlign: "center", padding: "40px", color: "#555555" }}>Loading…</div>
+        )}
+
+        {loadError && (
+          <div style={{ textAlign: "center", padding: "40px", color: "#A02020" }}>{loadError}</div>
+        )}
+
+        {!loading && !loadError && filtered.length === 0 && (
           <div
             style={{
               backgroundColor: "#FFFFFF",
@@ -216,7 +247,9 @@ export default function BookingRequests() {
           >
             No {activeTab.toLowerCase()} requests
           </div>
-        ) : (
+        )}
+
+        {!loading && !loadError && filtered.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {filtered.map((r) => (
               <RequestRow

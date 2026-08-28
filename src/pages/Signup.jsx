@@ -1,3 +1,4 @@
+// FILE: agrorent/src/pages/Signup.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LocationSelect from "../components/LocationSelect";
@@ -10,7 +11,7 @@ export default function Signup() {
   const navigate = useNavigate();
   const { signup } = useAuth();
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (form.password !== form.confirm) {
       setError("Passwords do not match.");
@@ -21,12 +22,16 @@ export default function Signup() {
       return;
     }
     setError("");
-    signup({ name: form.name, email: form.email, role, location: `${form.district}, ${form.province}` });
-    // Previously there was no way to sign up as an owner at all — role
-    // always defaulted to "renter" — so /my-listings, /post-listing, and
-    // /dashboard/owner were unreachable through any real flow. Now the
-    // choice below actually determines where the new account lands.
-    navigate(role === "owner" ? "/dashboard/owner" : "/dashboard");
+    try {
+      await signup({ name: form.name, email: form.email, password: form.password, role });
+      // Previously there was no way to sign up as an owner at all — role
+      // always defaulted to "renter" — so /my-listings, /post-listing, and
+      // /dashboard/owner were unreachable through any real flow. Now the
+      // choice below actually determines where the new account lands.
+      navigate(role === "owner" ? "/dashboard/owner" : "/dashboard");
+    } catch (err) {
+      setError(err.message || "Signup failed. Please try again.");
+    }
   }
 
   const update = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));

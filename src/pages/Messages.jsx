@@ -1,13 +1,28 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/Messages.jsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import Sidebar from "../components/Sidebar";
-import { MESSAGES } from "../data/mockData";
+import { messageService } from "../services/messageService";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Messages() {
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  const filtered = MESSAGES.filter(
+  useEffect(() => {
+    if (!user) return;
+    messageService
+      .getConversations(user.id)
+      .then(setConversations)
+      .catch(() => setLoadError("Could not load messages."))
+      .finally(() => setLoading(false));
+  }, [user]);
+
+  const filtered = conversations.filter(
     (m) =>
       m.person.toLowerCase().includes(query.toLowerCase()) ||
       m.equipment.toLowerCase().includes(query.toLowerCase())
@@ -71,7 +86,19 @@ export default function Messages() {
               </div>
             </div>
 
-            {filtered.length === 0 ? (
+            {loading && (
+              <div style={{ padding: "48px 16px", textAlign: "center", color: "#555555", fontSize: "14px" }}>
+                Loading…
+              </div>
+            )}
+
+            {loadError && (
+              <div style={{ padding: "48px 16px", textAlign: "center", color: "#A02020", fontSize: "14px" }}>
+                {loadError}
+              </div>
+            )}
+
+            {!loading && !loadError && filtered.length === 0 && (
               <div
                 style={{
                   padding: "48px 16px",
@@ -82,74 +109,74 @@ export default function Messages() {
               >
                 No conversations found.
               </div>
-            ) : (
-              filtered.map((conv) => (
-                <Link
-                  key={conv.id}
-                  to={`/messages/${conv.id}`}
+            )}
+
+            {!loading && !loadError && filtered.map((conv) => (
+              <Link
+                key={conv.id}
+                to={`/messages/${conv.id}`}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "12px",
+                  padding: "16px",
+                  borderBottom: "1px solid #E0E8E3",
+                  textDecoration: "none",
+                  backgroundColor: conv.unread ? "#FFF8F5" : "#FFFFFF",
+                }}
+              >
+                <img
+                  src={conv.photo}
+                  alt={conv.person}
                   style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "12px",
-                    padding: "16px",
-                    borderBottom: "1px solid #E0E8E3",
-                    textDecoration: "none",
-                    backgroundColor: conv.unread ? "#FFF8F5" : "#FFFFFF",
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    flexShrink: 0,
                   }}
-                >
-                  <img
-                    src={conv.photo}
-                    alt={conv.person}
-                    style={{
-                      width: "44px",
-                      height: "44px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>
-                        {conv.person}
-                      </span>
-                      <span style={{ fontSize: "11px", color: "#555555", flexShrink: 0, marginLeft: "8px" }}>
-                        {conv.time}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: "12px", color: "#555555", marginTop: "2px" }}>
-                      Re: {conv.equipment}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>
+                      {conv.person}
+                    </span>
+                    <span style={{ fontSize: "11px", color: "#555555", flexShrink: 0, marginLeft: "8px" }}>
+                      {conv.time}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#555555", marginTop: "2px" }}>
+                    Re: {conv.equipment}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        color: conv.unread ? "#111111" : "#555555",
+                        fontWeight: conv.unread ? 500 : 400,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        flex: 1,
+                      }}
+                    >
+                      {conv.lastMessage}
+                    </span>
+                    {conv.unread && (
                       <span
                         style={{
-                          fontSize: "13px",
-                          color: conv.unread ? "#111111" : "#555555",
-                          fontWeight: conv.unread ? 500 : 400,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          flex: 1,
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          backgroundColor: "#FF5C00",
+                          flexShrink: 0,
                         }}
-                      >
-                        {conv.lastMessage}
-                      </span>
-                      {conv.unread && (
-                        <span
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            borderRadius: "50%",
-                            backgroundColor: "#FF5C00",
-                            flexShrink: 0,
-                          }}
-                        />
-                      )}
-                    </div>
+                      />
+                    )}
                   </div>
-                </Link>
-              ))
-            )}
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </div>

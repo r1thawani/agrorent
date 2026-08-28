@@ -1,77 +1,73 @@
-import { mockDelay } from "./api";
-import { EQUIPMENT, CATEGORIES, ZAMBIAN_PROVINCES, ZAMBIA_LOCATIONS, matchesLocation } from "../data/mockData";
+// FILE: agrorent/src/services/equipmentService.js
+import { supabase } from "../lib/supabaseClient";
 
-// Mock service backing Listings.jsx / ListingDetail.jsx / PostListing.jsx /
-// MyListings.jsx. Reads from mockData now; once a backend exists, replace
-// the bodies with `api.get("/equipment")` etc. — callers already treat
-// these as async, so no page needs to change.
 export const equipmentService = {
   async getAll(filters = {}) {
-    await mockDelay();
-    let results = [...EQUIPMENT];
-    if (filters.category) results = results.filter((e) => e.category === filters.category);
-    if (filters.province || filters.district) {
-      results = results.filter((e) => matchesLocation(e.location, filters.province, filters.district));
-    }
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      results = results.filter((e) => e.name.toLowerCase().includes(q));
-    }
-    return results;
+    let query = supabase.from("equipment").select("*, equipment_photos(url, sort_order)");
+    if (filters.category) query = query.eq("category", filters.category);
+    if (filters.province) query = query.eq("province", filters.province);
+    if (filters.district) query = query.eq("district", filters.district);
+    if (filters.search) query = query.ilike("name", `%${filters.search}%`);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
   },
 
   async getById(id) {
-    await mockDelay();
-    const eq = EQUIPMENT.find((e) => e.id === id);
-    if (!eq) throw new Error(`Equipment ${id} not found`);
-    return eq;
+    const { data, error } = await supabase
+      .from("equipment")
+      .select("*, equipment_photos(url, sort_order), owner:profiles!equipment_owner_id_fkey(id, name, photo_url)")
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async getCategories() {
-    await mockDelay(100);
-    return CATEGORIES;
-  },
-
-  async getProvinces() {
-    await mockDelay(100);
-    return ZAMBIAN_PROVINCES;
-  },
-
-  async getDistricts(province) {
-    await mockDelay(100);
-    return ZAMBIA_LOCATIONS[province] || [];
+    return ["Tractors", "Ploughs", "Planters", "Harvesters", "Irrigation", "Sprayers", "Other"];
   },
 
   async create(listing) {
-    await mockDelay();
-    // No backend yet, so "persist" means push into the in-memory EQUIPMENT
-    // array. It's the same array every page reads via getAll()/getById(),
-    // so a new listing is visible everywhere immediately, and it survives
-    // client-side navigation (only a full reload resets it).
-    const newItem = {
-      rating: 0,
-      reviews: 0,
-      listed: "Just now",
-      ...listing,
-      id: `${Date.now()}`,
-    };
-    EQUIPMENT.unshift(newItem);
-    return newItem;
+    const { data, error } = await supabase.from("equipment").insert(listing).select().single();
+    if (error) throw error;
+    return data;
   },
 
   async update(id, changes) {
-    await mockDelay();
-    const index = EQUIPMENT.findIndex((e) => e.id === id);
-    if (index === -1) throw new Error(`Equipment ${id} not found`);
-    EQUIPMENT[index] = { ...EQUIPMENT[index], ...changes };
-    return EQUIPMENT[index];
+    const { data, error } = await supabase.from("equipment").update(changes).eq("id", id).select().single();
+    if (error) throw error;
+    return data;
   },
 
   async remove(id) {
-    await mockDelay();
-    const index = EQUIPMENT.findIndex((e) => e.id === id);
-    if (index === -1) throw new Error(`Equipment ${id} not found`);
-    EQUIPMENT.splice(index, 1);
+    const { error } = await supabase.from("equipment").delete().eq("id", id);
+    if (error) throw error;
     return { id, deleted: true };
+  },
+
+  async uploadPhoto(equipmentId, fileOrBlob, filename = `photo-${Date.now()}.jpg`) {
+    const path = `${equipmentId}/${Date.now()}-${filename}`;
+    const { error: uploadError } = await supabase.storage.from("equipment-photos").upload(path, fileOrBlob);
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage.from("equipment-photos").getPublicUrl(path);
+
+    const { data, error } = await supabase
+      .from("equipment_photos")
+      .insert({ equipment_id: equipmentId, url: publicUrl })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async getMine(ownerId) {
+    const { data, error } = await supabase
+      .from("equipment")
+      .select("*, equipment_photos(url, sort_order)")
+      .eq("owner_id", ownerId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
   },
 };

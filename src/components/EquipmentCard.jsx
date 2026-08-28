@@ -1,3 +1,4 @@
+// FILE: agrorent/src/components/EquipmentCard.jsx
 import { MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useWishlist } from "../context/WishlistContext";

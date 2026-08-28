@@ -1,11 +1,13 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/admin/AdminListings.jsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AdminTopNav from "../../components/AdminTopNav";
 import AdminTable from "../../components/AdminTable";
-import { EQUIPMENT, CATEGORIES } from "../../data/mockData";
+import { adminService } from "../../services/adminService";
+import { equipmentService } from "../../services/equipmentService";
 
-// Badge styling — reuses the exact Section 5 badge palette + the green category
-// tint already established on EquipmentCard.jsx. No new colors invented.
+const CATEGORIES = ["Tractors", "Ploughs", "Planters", "Harvesters", "Irrigation", "Sprayers", "Other"];
+
 function Badge({ bg, color, children }) {
   return (
     <span
@@ -25,29 +27,46 @@ function Badge({ bg, color, children }) {
 }
 
 export default function AdminListings() {
-  // No "status" field exists on EQUIPMENT in mockData.js yet, so — same
-  // convention as MyListings.jsx (4C) seeding isAvailable/mockBookings locally —
-  // admin status is kept as local component state, not written back to
-  // mockData.js. Defaults every listing to "active".
-  const [statusById, setStatusById] = useState(() =>
-    Object.fromEntries(EQUIPMENT.map((eq) => [eq.id, "active"]))
-  );
-  const [deletedIds, setDeletedIds] = useState([]);
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  function toggleFlag(id) {
-    setStatusById((prev) => ({
-      ...prev,
-      [id]: prev[id] === "flagged" ? "active" : "flagged",
-    }));
+  useEffect(() => {
+    adminService
+      .getAllListings()
+      .then(setListings)
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function toggleFlag(id) {
+    const target = listings.find((eq) => eq.id === id);
+    const prevFlagged = target.flagged;
+    setListings((prev) => prev.map((eq) => (eq.id === id ? { ...eq, flagged: !prevFlagged } : eq)));
+    try {
+      await adminService.toggleListingFlag(id, prevFlagged);
+    } catch {
+      setListings((prev) => prev.map((eq) => (eq.id === id ? { ...eq, flagged: prevFlagged } : eq)));
+    }
   }
 
-  function removeListing(id) {
-    setDeletedIds((prev) => [...prev, id]);
+  async function removeListing(id) {
+    setListings((prev) => prev.filter((eq) => eq.id !== id));
+    try {
+      await equipmentService.remove(id);
+    } catch {
+      // If deletion fails, the row simply won't come back until refresh.
+    }
   }
 
-  const rows = EQUIPMENT.filter((eq) => !deletedIds.includes(eq.id)).map(
-    (eq) => ({ ...eq, status: statusById[eq.id] })
-  );
+  const rows = listings.map((eq) => {
+    const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+    return {
+      ...eq,
+      image: photos[0]?.url || "",
+      ownerName: eq.owner?.name || "",
+      status: eq.flagged ? "flagged" : "active",
+      posted: eq.created_at ? new Date(eq.created_at).toLocaleDateString() : "",
+    };
+  });
 
   const columns = [
     {
@@ -64,6 +83,7 @@ export default function AdminListings() {
               borderRadius: "8px",
               objectFit: "cover",
               flexShrink: 0,
+              backgroundColor: "#F5F5F0",
             }}
           />
           <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>
@@ -76,7 +96,7 @@ export default function AdminListings() {
       key: "owner",
       label: "Owner",
       render: (row) => (
-        <span style={{ fontSize: "13px", color: "#555555" }}>{row.owner.name}</span>
+        <span style={{ fontSize: "13px", color: "#555555" }}>{row.ownerName}</span>
       ),
     },
     {
@@ -85,10 +105,10 @@ export default function AdminListings() {
       render: (row) => <Badge bg="#D4EDDA" color="#0F3D1E">{row.category}</Badge>,
     },
     {
-      key: "priceDay",
+      key: "price_day",
       label: "Price/day",
       render: (row) => (
-        <span style={{ fontSize: "13px", color: "#111111" }}>K{row.priceDay}</span>
+        <span style={{ fontSize: "13px", color: "#111111" }}>K{row.price_day}</span>
       ),
     },
     {
@@ -102,10 +122,10 @@ export default function AdminListings() {
         ),
     },
     {
-      key: "listed",
+      key: "posted",
       label: "Posted",
       render: (row) => (
-        <span style={{ fontSize: "13px", color: "#555555" }}>{row.listed}</span>
+        <span style={{ fontSize: "13px", color: "#555555" }}>{row.posted}</span>
       ),
     },
     {
@@ -170,14 +190,18 @@ export default function AdminListings() {
         <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>
           All listings
         </h1>
-        <AdminTable
-          columns={columns}
-          rows={rows}
-          searchKeys={["name"]}
-          searchPlaceholder="Search listings…"
-          filters={filters}
-          emptyMessage="No listings match your filters"
-        />
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "80px 0", color: "#555555" }}>Loading…</div>
+        ) : (
+          <AdminTable
+            columns={columns}
+            rows={rows}
+            searchKeys={["name"]}
+            searchPlaceholder="Search listings…"
+            filters={filters}
+            emptyMessage="No listings match your filters"
+          />
+        )}
       </div>
     </div>
   );

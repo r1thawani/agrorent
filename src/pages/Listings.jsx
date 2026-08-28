@@ -1,10 +1,15 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/Listings.jsx
+import { useState, useEffect } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import EquipmentCard from "../components/EquipmentCard";
 import FilterSidebar from "../components/FilterSidebar";
-import { EQUIPMENT, matchesLocation } from "../data/mockData";
+import { equipmentService } from "../services/equipmentService";
 
 export default function Listings() {
+  const [allEquipment, setAllEquipment] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [province, setProvince] = useState("");
@@ -13,6 +18,14 @@ export default function Listings() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState("newest");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  useEffect(() => {
+    equipmentService
+      .getAll()
+      .then(setAllEquipment)
+      .catch(() => setLoadError("Could not load listings."))
+      .finally(() => setLoading(false));
+  }, []);
 
   const toggleCategory = (cat) =>
     setSelectedCategories(prev =>
@@ -28,10 +41,27 @@ export default function Listings() {
     setMaxPrice("");
   }
 
-  let filtered = EQUIPMENT.filter(eq => {
+  // Map each Supabase row into the flat, camelCase shape EquipmentCard
+  // already expects, so the card component itself needs no changes.
+  const mapped = allEquipment.map((eq) => {
+    const sortedPhotos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+    return {
+      id: eq.id,
+      name: eq.name,
+      category: eq.category,
+      priceDay: eq.price_day,
+      location: eq.location,
+      rating: eq.rating,
+      reviews: eq.review_count,
+      image: sortedPhotos[0]?.url || "",
+    };
+  });
+
+  let filtered = mapped.filter(eq => {
     if (search && !eq.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (selectedCategories.length && !selectedCategories.includes(eq.category)) return false;
-    if (!matchesLocation(eq.location, province, district)) return false;
+    if (province && !eq.location.toLowerCase().includes(province.toLowerCase())) return false;
+    if (district && !eq.location.toLowerCase().includes(district.toLowerCase())) return false;
     if (minPrice && eq.priceDay < Number(minPrice)) return false;
     if (maxPrice && eq.priceDay > Number(maxPrice)) return false;
     return true;
@@ -44,10 +74,6 @@ export default function Listings() {
     <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "80px 24px 32px" }}>
       <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
 
-        {/* Mobile filters button — only shown below the lg breakpoint, where
-            the sidebar is hidden by default (see the "hidden lg:block"
-            wrapper below). Toggling this reveals/hides that same sidebar
-            instead of a separate mobile-only copy. */}
         <button
           onClick={() => setShowMobileFilters(!showMobileFilters)}
           className="lg:hidden"
@@ -57,8 +83,6 @@ export default function Listings() {
         </button>
 
         <div style={{ display: "flex", gap: "24px" }} className="flex-col lg:flex-row">
-          {/* Sidebar — always visible from lg up; below that, only when the
-              "Filters" button has toggled it open. */}
           <div
             className={`${showMobileFilters ? "block" : "hidden"} lg:block w-full lg:w-[260px]`}
             style={{ flexShrink: 0, position: "sticky", top: "80px", alignSelf: "flex-start" }}
@@ -80,10 +104,11 @@ export default function Listings() {
             />
           </div>
 
-          {/* Listings area */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-              <span style={{ fontSize: "13px", color: "#555555" }}>{filtered.length} results found</span>
+              <span style={{ fontSize: "13px", color: "#555555" }}>
+                {loading ? "Loading…" : `${filtered.length} results found`}
+              </span>
               <select value={sort} onChange={e => setSort(e.target.value)} style={{ height: "36px", padding: "0 12px", fontSize: "13px", border: "1px solid #E0E8E3", borderRadius: "8px", outline: "none", backgroundColor: "#FFFFFF" }}>
                 <option value="newest">Newest first</option>
                 <option value="price-asc">Price: low to high</option>
@@ -91,17 +116,24 @@ export default function Listings() {
               </select>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: "20px" }}>
-              {filtered.map(eq => <EquipmentCard key={eq.id} {...eq} />)}
-            </div>
+            {loadError && (
+              <div style={{ textAlign: "center", padding: "64px 0", color: "#A02020", fontSize: "14px" }}>
+                {loadError}
+              </div>
+            )}
 
-            {filtered.length === 0 && (
+            {!loading && !loadError && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: "20px" }}>
+                {filtered.map(eq => <EquipmentCard key={eq.id} {...eq} />)}
+              </div>
+            )}
+
+            {!loading && !loadError && filtered.length === 0 && (
               <div style={{ textAlign: "center", padding: "64px 0", color: "#555555", fontSize: "14px" }}>
                 No equipment found matching your filters.
               </div>
             )}
 
-            {/* Pagination */}
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginTop: "32px" }}>
               <button style={{ padding: "6px 14px", fontSize: "13px", color: "#555555", border: "1px solid #E0E8E3", borderRadius: "8px", backgroundColor: "#FFFFFF", cursor: "pointer", opacity: 0.4 }} disabled>Previous</button>
               {[1, 2, 3].map(p => (

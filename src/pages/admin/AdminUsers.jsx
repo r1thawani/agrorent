@@ -1,22 +1,9 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/admin/AdminUsers.jsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AdminTopNav from "../../components/AdminTopNav";
 import AdminTable from "../../components/AdminTable";
-import { ADMIN_USERS } from "../../data/mockData";
-
-// Page-level file → 100% inline style (Pattern A), per Section 4.
-// Status/Role badge colors are NOT in Section 5's official badge table
-// (that table only covers booking/listing statuses), so this page reuses
-// the closest existing semantics rather than inventing new hexes:
-//   - "active"    → same green as Available/Confirmed (#D4EDDA / #0F3D1E)
-//   - "suspended" → same red as Cancelled (#FDECEA / #A02020)
-//   - "owner"     → same green tint used for Owner elsewhere in the app
-//   - "renter"    → neutral tint (#F5F5F0 / #555555), same as Completed
-//   - "admin"     → solid green-dark pill (#0F3D1E bg / white text), to
-//                   read as a distinct, higher-authority role
-// Flagging this mapping — not pre-specified in the handoff, chosen to stay
-// inside the existing palette rather than pull in Tailwind defaults (the
-// reference zip uses blue-100/purple-100, which aren't in our design system).
+import { adminService } from "../../services/adminService";
 
 function RoleBadge({ role }) {
   const styles = {
@@ -64,14 +51,27 @@ function StatusBadge({ status }) {
 }
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState(ADMIN_USERS);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  function toggleStatus(id) {
+  useEffect(() => {
+    adminService
+      .getAllUsers()
+      .then(setUsers)
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function toggleStatus(id) {
+    const target = users.find((u) => u.id === id);
+    const prevStatus = target.status;
     setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id ? { ...u, status: u.status === "active" ? "suspended" : "active" } : u
-      )
+      prev.map((u) => (u.id === id ? { ...u, status: u.status === "active" ? "suspended" : "active" } : u))
     );
+    try {
+      await adminService.toggleUserStatus(id, prevStatus);
+    } catch {
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status: prevStatus } : u)));
+    }
   }
 
   const columns = [
@@ -81,9 +81,9 @@ export default function AdminUsers() {
       render: (u) => (
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <img
-            src={u.photo}
+            src={u.photo_url}
             alt={u.name}
-            style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }}
+            style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", backgroundColor: "#F5F5F0" }}
           />
           <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{u.name}</span>
         </div>
@@ -98,7 +98,7 @@ export default function AdminUsers() {
     {
       key: "joined",
       label: "Joined",
-      render: (u) => <span style={{ fontSize: "13px", color: "#555555" }}>{u.joined}</span>,
+      render: (u) => <span style={{ fontSize: "13px", color: "#555555" }}>{new Date(u.created_at).toLocaleDateString()}</span>,
     },
     { key: "status", label: "Status", render: (u) => <StatusBadge status={u.status} /> },
     {
@@ -107,11 +107,6 @@ export default function AdminUsers() {
       render: (u) => (
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {u.role === "admin" ? (
-            // An admin account managing itself (or another admin) through
-            // the general Users table doesn't make sense — there was
-            // previously nothing stopping this, so a site admin could
-            // suspend their own account by mistake. Protect admin rows
-            // instead, same as most real admin consoles do.
             <span style={{ fontSize: "13px", color: "#555555" }}>Protected</span>
           ) : (
             <button
@@ -148,17 +143,21 @@ export default function AdminUsers() {
           <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>
             All users
           </h1>
-          <AdminTable
-            columns={columns}
-            rows={users}
-            searchKeys={["name", "email"]}
-            searchPlaceholder="Search by name or email…"
-            filters={[
-              { key: "role", label: "Role", options: ["All roles", "renter", "owner", "admin"] },
-            ]}
-            pageSize={5}
-            emptyMessage="No users match your search."
-          />
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "80px 0", color: "#555555" }}>Loading…</div>
+          ) : (
+            <AdminTable
+              columns={columns}
+              rows={users}
+              searchKeys={["name", "email"]}
+              searchPlaceholder="Search by name or email…"
+              filters={[
+                { key: "role", label: "Role", options: ["All roles", "renter", "owner", "admin"] },
+              ]}
+              pageSize={5}
+              emptyMessage="No users match your search."
+            />
+          )}
         </div>
       </main>
     </div>

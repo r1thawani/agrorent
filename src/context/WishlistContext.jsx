@@ -1,38 +1,73 @@
-import { createContext, useContext, useState } from "react";
-
-// Same pattern as AuthContext.jsx / NotificationContext.jsx: lifted to
-// context so "is this equipment saved?" is shared across every place a
-// heart icon can appear (EquipmentCard on Home/Listings/PublicProfile,
-// ListingDetail, and the Wishlist page itself) instead of each page
-// keeping its own local copy that disagrees with the others.
-//
-// Previously the heart button on EquipmentCard called e.preventDefault()
-// and nothing else — it never actually saved anything — and the Wishlist
-// page just hardcoded EQUIPMENT.slice(0, 4) instead of showing what was
-// really saved. This context is the actual source of truth for that.
-//
-// No backend yet, so (like AuthContext) this doesn't persist across a full
-// page reload — it's just React state. Swap setWishlist for real API calls
-// when the backend exists; the shape of wishlistIds/toggleWishlist is
-// designed to stay the same so callers won't need to change.
+// FILE: agrorent/src/context/WishlistContext.jsx
+import { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../hooks/useAuth";
 
 const WishlistContext = createContext(null);
 
 export function WishlistProvider({ children }) {
+  const { user } = useAuth();
   const [wishlistIds, setWishlistIds] = useState([]);
+
+  // Load this user's real saved items from Supabase whenever they log in
+  // (or clear the list when they log out).
+  useEffect(() => {
+    if (!user) {
+      setWishlistIds([]);
+      return;
+    }
+    supabase
+      .from("wishlists")
+      .select("equipment_id")
+      .eq("user_id", user.id)
+      .then(({ data, error }) => {
+        if (!error && data) setWishlistIds(data.map((row) => row.equipment_id));
+      });
+  }, [user]);
 
   function isWishlisted(id) {
     return wishlistIds.includes(id);
   }
 
-  function toggleWishlist(id) {
-    setWishlistIds((prev) =>
-      prev.includes(id) ? prev.filter((existing) => existing !== id) : [...prev, id]
-    );
+  async function toggleWishlist(id) {
+    if (!user) return;
+    const alreadySaved = wishlistIds.includes(id);
+
+    // Optimistic UI update, rolled back if the Supabase call fails.
+    setWishlistIds((prev) => (alreadySaved ? prev.filter((x) => x !== id) : [...prev, id]));
+
+    try {
+      if (alreadySaved) {
+        const { error } = await supabase
+          .from("wishlists")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("equipment_id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("wishlists")
+          .insert({ user_id: user.id, equipment_id: id });
+        if (error) throw error;
+      }
+    } catch {
+      setWishlistIds((prev) => (alreadySaved ? [...prev, id] : prev.filter((x) => x !== id)));
+    }
   }
 
-  function removeFromWishlist(id) {
+  async function removeFromWishlist(id) {
+    if (!user) return;
     setWishlistIds((prev) => prev.filter((existing) => existing !== id));
+    try {
+      const { error } = await supabase
+        .from("wishlists")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("equipment_id", id);
+      if (error) throw error;
+    } catch {
+      setWishlistIds((prev) => [...prev, id]);
+    }
   }
 
   const value = { wishlistIds, isWishlisted, toggleWishlist, removeFromWishlist };

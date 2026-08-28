@@ -1,17 +1,28 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/Conversation.jsx
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Send } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import MessageBubble from "../components/MessageBubble";
-import { MESSAGES } from "../data/mockData";
+import { messageService } from "../services/messageService";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Conversation() {
   const { id } = useParams();
-  const original = MESSAGES.find((m) => m.id === id);
-  const [thread, setThread] = useState(original ? [...original.messages] : []);
+  const { user } = useAuth();
+  const [conv, setConv] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const [input, setInput] = useState("");
 
-  if (!original) {
+  useEffect(() => {
+    if (!user) return;
+    messageService
+      .getConversation(id, user.id)
+      .then(setConv)
+      .catch(() => setLoadError("Conversation not found."));
+  }, [id, user]);
+
+  if (loadError) {
     return (
       <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", paddingTop: "56px" }}>
         <div
@@ -26,7 +37,7 @@ export default function Conversation() {
           <Sidebar role="renter" />
           <div style={{ flex: 1, minWidth: 0, textAlign: "center", padding: "64px 0" }}>
             <div style={{ fontSize: "16px", color: "#111111", marginBottom: "8px" }}>
-              Conversation not found
+              {loadError}
             </div>
             <Link to="/messages" style={{ fontSize: "14px", color: "#FF5C00" }}>
               Back to Messages
@@ -37,12 +48,31 @@ export default function Conversation() {
     );
   }
 
-  function sendMessage(e) {
+  if (!conv) {
+    return (
+      <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", paddingTop: "56px" }}>
+        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 24px", textAlign: "center", color: "#555555" }}>
+          Loading…
+        </div>
+      </div>
+    );
+  }
+
+  async function sendMessage(e) {
     e.preventDefault();
     const text = input.trim();
     if (!text) return;
-    setThread((prev) => [...prev, { id: Date.now(), from: "me", text, time: "Now" }]);
+
+    const optimisticMsg = { id: `temp-${Date.now()}`, from: "me", text, time: "Now" };
+    setConv((prev) => ({ ...prev, messages: [...prev.messages, optimisticMsg] }));
     setInput("");
+
+    try {
+      await messageService.sendMessage(id, user.id, text);
+    } catch {
+      // Roll back on failure
+      setConv((prev) => ({ ...prev, messages: prev.messages.filter((m) => m.id !== optimisticMsg.id) }));
+    }
   }
 
   return (
@@ -99,15 +129,15 @@ export default function Conversation() {
               }}
             >
               <img
-                src={original.photo}
-                alt={original.person}
+                src={conv.photo}
+                alt={conv.person}
                 style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover" }}
               />
               <div>
                 <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111" }}>
-                  {original.person}
+                  {conv.person}
                 </div>
-                <div style={{ fontSize: "12px", color: "#555555" }}>Re: {original.equipment}</div>
+                <div style={{ fontSize: "12px", color: "#555555" }}>Re: {conv.equipment}</div>
               </div>
             </div>
 
@@ -123,7 +153,7 @@ export default function Conversation() {
                 backgroundColor: "#F5F5F0",
               }}
             >
-              {thread.map((msg) => (
+              {conv.messages.map((msg) => (
                 <MessageBubble key={msg.id} message={msg} />
               ))}
             </div>

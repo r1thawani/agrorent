@@ -1,8 +1,9 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/MyBookings.jsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { BOOKINGS } from "../data/mockData";
 import { bookingService } from "../services/bookingService";
+import { useAuth } from "../hooks/useAuth";
 
 const TABS = [
   { key: "all", label: "All" },
@@ -12,13 +13,12 @@ const TABS = [
   { key: "cancelled", label: "Cancelled" },
 ];
 
-// Matches the status badge table in Section 5 of the design system exactly
-// (same colors StatCard/Sidebar/etc. already use elsewhere).
 const STATUS_STYLES = {
   confirmed: { bg: "#D4EDDA", color: "#0F3D1E", label: "Confirmed" },
   pending: { bg: "#FFE8D6", color: "#CC4A00", label: "Pending" },
   completed: { bg: "#F5F5F0", color: "#555555", label: "Completed" },
   cancelled: { bg: "#FDECEA", color: "#A02020", label: "Cancelled" },
+  declined: { bg: "#FDECEA", color: "#A02020", label: "Declined" },
 };
 
 function StatusBadge({ status }) {
@@ -40,12 +40,11 @@ function StatusBadge({ status }) {
   );
 }
 
-// Local sub-component, not extracted to components/ — same convention as
-// ListingRow inside MyListings.jsx (4C): only extract once a second page
-// needs the same row visual. BookingRequests.jsx (4E) is owner-side and
-// will need a different row shape (accept/decline actions), so this stays local.
 function BookingRow({ booking, onCancel }) {
-  const dateRange = `${booking.startDate} → ${booking.endDate}`;
+  const photos = (booking.equipment?.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+  const image = photos[0]?.url || "";
+  const dateRange = `${booking.start_date} → ${booking.end_date}`;
+
   return (
     <div
       style={{
@@ -59,20 +58,20 @@ function BookingRow({ booking, onCancel }) {
       }}
     >
       <img
-        src={booking.equipmentImage}
-        alt={booking.equipment}
+        src={image}
+        alt={booking.equipment?.name}
         style={{ width: "72px", height: "60px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111" }}>{booking.equipment}</div>
+        <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111" }}>{booking.equipment?.name}</div>
         <div style={{ fontSize: "13px", color: "#555555", margin: "2px 0 6px" }}>{dateRange}</div>
         <StatusBadge status={booking.status} />
       </div>
       <div style={{ fontSize: "15px", fontWeight: 500, color: "#FF5C00", flexShrink: 0 }}>
-        K{booking.totalPrice.toLocaleString()}
+        K{Number(booking.total_price).toLocaleString()}
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0 }}>
-        <Link to={`/listings/${booking.equipmentId}`} style={{ fontSize: "13px", color: "#1A5C2E", textDecoration: "none" }}>
+        <Link to={`/listings/${booking.equipment_id}`} style={{ fontSize: "13px", color: "#1A5C2E", textDecoration: "none" }}>
           View details
         </Link>
         {(booking.status === "pending" || booking.status === "confirmed") && (
@@ -105,15 +104,28 @@ function BookingRow({ booking, onCancel }) {
 }
 
 export default function MyBookings() {
-  // Local copy of BOOKINGS so "Cancel booking" can update status without a backend.
-  const [bookings, setBookings] = useState(BOOKINGS);
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+
+  useEffect(() => {
+    if (!user) return;
+    bookingService
+      .getMyBookings(user.id)
+      .then(setBookings)
+      .catch(() => setLoadError("Could not load your bookings."))
+      .finally(() => setLoading(false));
+  }, [user]);
 
   async function handleCancel(id) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
-    // Sync the shared BOOKINGS store too (see bookingService), so this
-    // status change is still there if the user navigates away and back.
-    await bookingService.cancel(id);
+    try {
+      await bookingService.cancel(id);
+    } catch {
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b)));
+    }
   }
 
   const filtered = activeTab === "all" ? bookings : bookings.filter((b) => b.status === activeTab);
@@ -145,7 +157,13 @@ export default function MyBookings() {
           ))}
         </div>
 
-        {filtered.length === 0 ? (
+        {loading && <div style={{ textAlign: "center", padding: "40px", color: "#555555" }}>Loading…</div>}
+
+        {loadError && (
+          <div style={{ textAlign: "center", padding: "40px", color: "#A02020" }}>{loadError}</div>
+        )}
+
+        {!loading && !loadError && filtered.length === 0 && (
           <div
             style={{
               backgroundColor: "#FFFFFF",
@@ -160,7 +178,9 @@ export default function MyBookings() {
               No {activeTab === "all" ? "" : STATUS_STYLES[activeTab]?.label.toLowerCase() + " "}bookings
             </div>
           </div>
-        ) : (
+        )}
+
+        {!loading && !loadError && filtered.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {filtered.map((b) => (
               <BookingRow key={b.id} booking={b} onCancel={handleCancel} />

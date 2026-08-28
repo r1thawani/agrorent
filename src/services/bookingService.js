@@ -1,58 +1,77 @@
-import { mockDelay } from "./api";
-import { BOOKINGS, BOOKING_REQUESTS } from "../data/mockData";
+// FILE: agrorent/src/services/bookingService.js
+import { supabase } from "../lib/supabaseClient";
+import { calculateBooking } from "../utils/calculateBooking";
 
-// Mock service backing MyBookings.jsx, BookingRequests.jsx, BookingPage.jsx,
-// BookingConfirmation.jsx, and the dashboard widgets. Same swap-to-real-API
-// pattern as equipmentService.js.
 export const bookingService = {
-  async getMyBookings() {
-    await mockDelay();
-    return BOOKINGS;
+  async getMyBookings(renterId) {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("*, equipment(name, price_day, equipment_photos(url, sort_order))")
+      .eq("renter_id", renterId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
   },
 
-  async getRequestsForOwner() {
-    await mockDelay();
-    return BOOKING_REQUESTS;
+  async getRequestsForOwner(ownerId) {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("*, equipment(name), renter:profiles!bookings_renter_id_fkey(name, photo_url)")
+      .eq("owner_id", ownerId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
   },
 
-  async getById(id) {
-    await mockDelay();
-    const booking = BOOKINGS.find((b) => b.id === id);
-    if (!booking) throw new Error(`Booking ${id} not found`);
-    return booking;
+   async getById(id) {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("*, equipment(name, price_day, equipment_photos(url, sort_order))")
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return data;
   },
 
-  async create(bookingDraft) {
-    await mockDelay();
-    // Push into BOOKINGS so MyBookings.jsx (and the dashboard) sees it on
-    // its next render — same "mutate the shared array" pattern as
-    // equipmentService, since there's no backend to persist to yet.
-    const newBooking = { status: "pending", ...bookingDraft, id: `b${Date.now()}` };
-    BOOKINGS.unshift(newBooking);
-    return newBooking;
+  async create({ equipmentId, renterId, ownerId, priceDay, startDate, endDate, totalDays }) {
+    const calc = calculateBooking(priceDay, totalDays);
+    const { data, error } = await supabase
+      .from("bookings")
+      .insert({
+        equipment_id: equipmentId,
+        renter_id: renterId,
+        owner_id: ownerId,
+        start_date: startDate,
+        end_date: endDate,
+        total_days: totalDays,
+        price_day_snapshot: priceDay,
+        subtotal: calc.subtotal,
+        service_fee: calc.fee,
+        total_price: calc.total,
+        down_payment: calc.downPayment,
+        balance_due: calc.total - calc.downPayment,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async cancel(id) {
-    await mockDelay();
-    const booking = BOOKINGS.find((b) => b.id === id);
-    if (!booking) throw new Error(`Booking ${id} not found`);
-    booking.status = "cancelled";
-    return booking;
+    const { data, error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id).select().single();
+    if (error) throw error;
+    return data;
   },
 
   async accept(id) {
-    await mockDelay();
-    const request = BOOKING_REQUESTS.find((r) => r.id === id);
-    if (!request) throw new Error(`Booking request ${id} not found`);
-    request.status = "accepted";
-    return request;
+    const { data, error } = await supabase.from("bookings").update({ status: "confirmed" }).eq("id", id).select().single();
+    if (error) throw error;
+    return data;
   },
 
   async decline(id) {
-    await mockDelay();
-    const request = BOOKING_REQUESTS.find((r) => r.id === id);
-    if (!request) throw new Error(`Booking request ${id} not found`);
-    request.status = "declined";
-    return request;
+    const { data, error } = await supabase.from("bookings").update({ status: "declined" }).eq("id", id).select().single();
+    if (error) throw error;
+    return data;
   },
 };

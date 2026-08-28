@@ -1,0 +1,5 @@
+# FILE: agrorent/.gitignore
+node_modules
+dist
+.env.local
+.env

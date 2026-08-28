@@ -1,58 +1,74 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/MyListings.jsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PlusCircle } from "lucide-react";
-import { EQUIPMENT } from "../data/mockData";
 import { equipmentService } from "../services/equipmentService";
+import { bookingService } from "../services/bookingService";
+import { useAuth } from "../hooks/useAuth";
 import Sidebar from "../components/Sidebar";
 
-// Seed each listing with mock bookings/earnings counts for display.
-// EQUIPMENT is the shared source of truth (mutated by equipmentService), so
-// anything posted via PostListing shows up here too — new items just don't
-// have mock booking/earnings history yet, so they default to 0.
-function seedFromEquipment() {
-  const seedStats = [3, 7, 1, 12, 2, 5];
-  const seedMultiplier = [9, 14, 3, 20, 4, 8];
-  return EQUIPMENT.map((eq, i) => ({
-    ...eq,
-    isAvailable: eq.isAvailable ?? true,
-    mockBookings: seedStats[i] ?? 0,
-    mockEarnings: eq.priceDay * (seedMultiplier[i] ?? 0),
-  }));
-}
-
 export default function MyListings() {
-  const [listings, setListings] = useState(seedFromEquipment);
+  const { user } = useAuth();
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+
+    Promise.all([
+      equipmentService.getMine(user.id),
+      bookingService.getRequestsForOwner(user.id),
+    ])
+      .then(([equipment, bookings]) => {
+        const merged = equipment.map((eq) => {
+          const eqBookings = bookings.filter((b) => b.equipment_id === eq.id);
+          const earnings = eqBookings
+            .filter((b) => b.status === "confirmed" || b.status === "completed")
+            .reduce((sum, b) => sum + Number(b.total_price), 0);
+          const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
+
+          return {
+            ...eq,
+            image: photos[0]?.url || "",
+            listed: eq.created_at ? new Date(eq.created_at).toLocaleDateString() : "",
+            isAvailable: eq.is_available,
+            bookingsCount: eqBookings.length,
+            earnings,
+          };
+        });
+        setListings(merged);
+      })
+      .catch(() => setLoadError("Could not load your listings."))
+      .finally(() => setLoading(false));
+  }, [user]);
 
   async function toggleAvailability(id) {
     const target = listings.find((eq) => eq.id === id);
-    setListings((prev) =>
-      prev.map((eq) =>
-        eq.id === id ? { ...eq, isAvailable: !eq.isAvailable } : eq
-      )
-    );
-    // Keep the shared EQUIPMENT store in sync so other pages (Listings,
-    // Home) reflect the change too, next time they load.
-    await equipmentService.update(id, { isAvailable: !target?.isAvailable });
+    const nextValue = !target?.isAvailable;
+    setListings((prev) => prev.map((eq) => (eq.id === id ? { ...eq, isAvailable: nextValue } : eq)));
+    try {
+      await equipmentService.update(id, { is_available: nextValue });
+    } catch {
+      setListings((prev) => prev.map((eq) => (eq.id === id ? { ...eq, isAvailable: !nextValue } : eq)));
+    }
   }
 
   async function deleteListing(id) {
     setListings((prev) => prev.filter((eq) => eq.id !== id));
-    await equipmentService.remove(id);
+    try {
+      await equipmentService.remove(id);
+    } catch {
+      // If deletion fails, the listing simply won't show back up until refresh —
+      // acceptable tradeoff for keeping this simple.
+    }
   }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
       <Sidebar role="owner" activeLink="/my-listings" />
 
-      {/* Main content */}
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          padding: "40px 32px",
-        }}
-      >
-        {/* Header row */}
+      <div style={{ flex: 1, minWidth: 0, padding: "40px 32px" }}>
         <div
           style={{
             display: "flex",
@@ -86,8 +102,15 @@ export default function MyListings() {
           </Link>
         </div>
 
-        {/* Empty state */}
-        {listings.length === 0 ? (
+        {loading && (
+          <div style={{ textAlign: "center", padding: "80px 0", color: "#555555" }}>Loading…</div>
+        )}
+
+        {loadError && (
+          <div style={{ textAlign: "center", padding: "80px 0", color: "#A02020" }}>{loadError}</div>
+        )}
+
+        {!loading && !loadError && listings.length === 0 && (
           <div
             style={{
               display: "flex",
@@ -127,7 +150,9 @@ export default function MyListings() {
               Post a listing
             </Link>
           </div>
-        ) : (
+        )}
+
+        {!loading && !loadError && listings.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {listings.map((eq) => (
               <ListingRow
@@ -162,7 +187,6 @@ function ListingRow({ eq, onToggle, onDelete }) {
         gap: 14,
       }}
     >
-      {/* Thumbnail */}
       <img
         src={eq.image}
         alt={eq.name}
@@ -172,10 +196,10 @@ function ListingRow({ eq, onToggle, onDelete }) {
           borderRadius: 8,
           objectFit: "cover",
           flexShrink: 0,
+          backgroundColor: "#F5F5F0",
         }}
       />
 
-      {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <span
@@ -190,7 +214,6 @@ function ListingRow({ eq, onToggle, onDelete }) {
           >
             {eq.name}
           </span>
-          {/* Availability badge */}
           <span
             style={{
               fontSize: 11,
@@ -205,7 +228,6 @@ function ListingRow({ eq, onToggle, onDelete }) {
             {eq.isAvailable ? "Available" : "Unavailable"}
           </span>
         </div>
-        {/* Category badge */}
         <span
           style={{
             display: "inline-block",
@@ -223,7 +245,6 @@ function ListingRow({ eq, onToggle, onDelete }) {
         <div style={{ fontSize: 12, color: "#555555" }}>Posted {eq.listed}</div>
       </div>
 
-      {/* Stats */}
       <div
         style={{
           display: "flex",
@@ -235,18 +256,17 @@ function ListingRow({ eq, onToggle, onDelete }) {
         <div>
           <div style={{ fontSize: 12, color: "#555555" }}>Bookings</div>
           <div style={{ fontSize: 14, fontWeight: 500, color: "#111111" }}>
-            {eq.mockBookings}
+            {eq.bookingsCount}
           </div>
         </div>
         <div>
           <div style={{ fontSize: 12, color: "#555555" }}>Earnings</div>
           <div style={{ fontSize: 14, fontWeight: 500, color: "#111111" }}>
-            K{eq.mockEarnings.toLocaleString()}
+            K{eq.earnings.toLocaleString()}
           </div>
         </div>
       </div>
 
-      {/* Actions */}
       {confirmDelete ? (
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           <button

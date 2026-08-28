@@ -1,21 +1,25 @@
-import { mockDelay } from "./api";
+// FILE: agrorent/src/services/reviewService.js
+import { supabase } from "../lib/supabaseClient";
 
-// Mock service backing LeaveReview.jsx and ListingDetail.jsx's reviews list.
-// ListingDetail.jsx currently has its own MOCK_REVIEWS array inline (kept
-// there since it's display-only seed data) — this service is what
-// LeaveReview.jsx's submit handler would call once there's a backend to
-// persist the new review to.
 export const reviewService = {
-  async getForEquipment(_equipmentId) {
-    await mockDelay();
-    // ListingDetail.jsx owns its own mock review list for now; this stays
-    // async-shaped so swapping in a real fetch later doesn't change callers.
-    return [];
+  async getForEquipment(equipmentId) {
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("*, reviewer:profiles!reviews_reviewer_id_fkey(name, photo_url)")
+      .eq("equipment_id", equipmentId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
   },
 
-  async create({ bookingId, rating, text }) {
-    await mockDelay();
+  async create({ bookingId, equipmentId, reviewerId, rating, text }) {
     if (!rating) throw new Error("A rating is required");
-    return { id: `rev${Date.now()}`, bookingId, rating, text, date: "Just now" };
+    const { data, error } = await supabase
+      .from("reviews")
+      .insert({ booking_id: bookingId, equipment_id: equipmentId, reviewer_id: reviewerId, rating, text })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 };

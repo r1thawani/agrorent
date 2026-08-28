@@ -1,3 +1,4 @@
+// FILE: agrorent/src/pages/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
@@ -28,16 +29,14 @@ export default function Login() {
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   const pickAccountType = (accountType) => setForm((f) => ({ ...f, accountType }));
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // No backend yet, so this doesn't verify the password — it just marks
-    // the app as "logged in" as this email. Admin logs in with a fixed
-    // "admin" role; a regular "User" login always lands in renter mode,
-    // and can switch to owner mode from the dashboard afterwards — see
-    // AuthContext.jsx and Sidebar.jsx.
-    const role = form.accountType === "admin" ? "admin" : "renter";
-    login(form.email, role);
-    navigate(ACCOUNT_TYPE_HOME[form.accountType], { replace: true });
+    try {
+      await login(form.email, form.password);
+      navigate(ACCOUNT_TYPE_HOME[form.accountType], { replace: true });
+    } catch (err) {
+      alert(err.message || "Login failed. Check your email and password.");
+    }
   }
 
   const inputStyle = { width: "100%", height: "44px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", boxSizing: "border-box" };
@@ -92,7 +91,7 @@ export default function Login() {
             </div>
             <p style={{ fontSize: "12px", color: "#555555", marginTop: "6px" }}>
               {form.accountType === "admin"
-                ? "Demo only — no backend yet, so this just picks which dashboard you land on."
+                ? "Admin accounts are created directly in the database — sign up as a regular user, then have an admin update your role."
                 : "Renting and listing both live under one account — switch between them anytime from your dashboard."}
             </p>
           </div>

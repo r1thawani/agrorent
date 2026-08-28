@@ -1,8 +1,10 @@
-import { useState } from "react";
+// FILE: agrorent/src/pages/BookingPage.jsx
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Lock, ChevronLeft } from "lucide-react";
-import { EQUIPMENT } from "../data/mockData";
+import { equipmentService } from "../services/equipmentService";
 import { bookingService } from "../services/bookingService";
+import { paymentService } from "../services/paymentService";
 import { useAuth } from "../hooks/useAuth";
 import { calculateDays } from "../utils/calculateDays";
 import { calculateBooking } from "../utils/calculateBooking";
@@ -13,9 +15,6 @@ const PAY_OPTIONS = [
   { id: "card", label: "Bank card", desc: "Visa or Mastercard" },
 ];
 
-// Same focus-highlight pattern established in PostListing.jsx/EditListing.jsx (4C):
-// a focusedField state string + a helper that returns the border style, instead of
-// CSS :focus selectors or Tailwind focus: variants.
 function getFocusStyle(field, focusedField) {
   return {
     width: "100%",
@@ -33,10 +32,12 @@ export default function BookingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const eq = EQUIPMENT.find((e) => e.id === id) ?? EQUIPMENT[0];
 
-  const [startDate, setStartDate] = useState(eq.available?.from ?? "");
-  const [endDate, setEndDate] = useState(eq.available?.until ?? "");
+  const [eq, setEq] = useState(null);
+  const [loadError, setLoadError] = useState("");
+
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [payMethod, setPayMethod] = useState("airtel");
   const [phone, setPhone] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -47,9 +48,28 @@ export default function BookingPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    equipmentService
+      .getById(id)
+      .then((data) => {
+        setEq(data);
+        setStartDate(data.available_from ?? "");
+        setEndDate(data.available_until ?? "");
+      })
+      .catch(() => setLoadError("Could not load this listing."));
+  }, [id]);
+
+  if (loadError) {
+    return <div style={{ padding: "88px 16px", textAlign: "center" }}>{loadError}</div>;
+  }
+  if (!eq) {
+    return <div style={{ padding: "88px 16px", textAlign: "center" }}>Loading…</div>;
+  }
+
+  const photoUrl = eq.equipment_photos?.[0]?.url ?? "";
   const rawDays = calculateDays(startDate, endDate);
   const days = rawDays > 0 ? rawDays : 1;
-  const { subtotal, fee, total, downPayment, balance } = calculateBooking(eq.priceDay, days);
+  const { subtotal, fee, total, downPayment, balance } = calculateBooking(eq.price_day, days);
 
   async function handleConfirm(e) {
     e.preventDefault();
@@ -69,36 +89,31 @@ export default function BookingPage() {
     setError("");
     setSubmitting(true);
 
-    const bookingRef = `AGR-2025-${String(Math.floor(1000 + Math.random() * 9000))}`;
-
     try {
-      // Actually create the booking (previously this just navigated to a
-      // confirmation screen without ever adding to BOOKINGS, so it never
-      // showed up on MyBookings/OwnerDashboard afterwards).
-      await bookingService.create({
+      const booking = await bookingService.create({
         equipmentId: eq.id,
-        equipment: eq.name,
-        equipmentImage: eq.image,
-        renterId: user?.email || "you",
-        renter: user?.name || "You",
-        ownerId: eq.owner?.id,
-        owner: eq.owner?.name,
+        renterId: user.id,
+        ownerId: eq.owner_id,
+        priceDay: eq.price_day,
         startDate,
         endDate,
         totalDays: days,
-        totalPrice: total,
-        downPayment,
       });
 
-      navigate(`/booking/${bookingRef}/confirmation`, {
+      await paymentService.chargeDownPayment({
+        bookingId: booking.id,
+        amount: downPayment,
+        method: payMethod === "card" ? "card" : "mobile-money",
+      });
+
+      navigate(`/booking/${booking.id}/confirmation`, {
         state: {
-          bookingRef,
+          bookingRef: booking.id,
           equipment: eq.name,
-          equipmentImage: eq.image,
-          ownerName: eq.owner.name,
-          ownerPhoto: eq.owner.photo,
-          ownerPhone: eq.owner.phone ?? "+260 97 000 0000",
-          pickup: eq.pickup,
+          equipmentImage: photoUrl,
+          ownerName: eq.owner?.name,
+          ownerPhoto: eq.owner?.photo_url,
+          pickup: eq.pickup_address,
           startDate,
           endDate,
           days,
@@ -107,7 +122,8 @@ export default function BookingPage() {
           balance,
         },
       });
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("Something went wrong confirming your booking. Please try again.");
     } finally {
       setSubmitting(false);
@@ -160,18 +176,18 @@ export default function BookingPage() {
                 Booking summary
               </h2>
               <img
-                src={eq.image}
+                src={photoUrl}
                 alt={eq.name}
                 style={{ width: "100%", height: "160px", borderRadius: "8px", objectFit: "cover", marginBottom: "12px" }}
               />
               <div style={{ fontSize: "16px", fontWeight: 500, color: "#111111" }}>{eq.name}</div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
                 <img
-                  src={eq.owner.photo}
+                  src={eq.owner?.photo_url}
                   alt=""
                   style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover" }}
                 />
-                <span style={{ fontSize: "13px", color: "#555555" }}>by {eq.owner.name}</span>
+                <span style={{ fontSize: "13px", color: "#555555" }}>by {eq.owner?.name}</span>
               </div>
 
               <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />
@@ -184,8 +200,8 @@ export default function BookingPage() {
                   <input
                     type="date"
                     value={startDate}
-                    min={eq.available?.from}
-                    max={eq.available?.until}
+                    min={eq.available_from}
+                    max={eq.available_until}
                     onChange={(e) => setStartDate(e.target.value)}
                     onFocus={() => setFocusedField("start")}
                     onBlur={() => setFocusedField(null)}
@@ -199,8 +215,8 @@ export default function BookingPage() {
                   <input
                     type="date"
                     value={endDate}
-                    min={startDate || eq.available?.from}
-                    max={eq.available?.until}
+                    min={startDate || eq.available_from}
+                    max={eq.available_until}
                     onChange={(e) => setEndDate(e.target.value)}
                     onFocus={() => setFocusedField("end")}
                     onBlur={() => setFocusedField(null)}
@@ -217,7 +233,7 @@ export default function BookingPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ color: "#111111" }}>
-                    {days} days × K{eq.priceDay.toLocaleString()}
+                    {days} days × K{eq.price_day.toLocaleString()}
                   </span>
                   <span>K{subtotal.toLocaleString()}</span>
                 </div>
