@@ -12,6 +12,7 @@ export default function EquipmentCard({
   rating,
   reviews,
   image,
+  unavailableUntil,
 }) {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const saved = isWishlisted(id);
@@ -24,7 +25,7 @@ export default function EquipmentCard({
     >
       {/* Image area */}
       <div className="relative h-[180px]" style={{ backgroundColor: "#FFF0E6" }}>
-        <img src={image} alt={name} className="w-full h-full object-cover" />
+        <img src={image} alt={name} className="w-full h-full object-cover" style={{ opacity: unavailableUntil ? 0.6 : 1 }} />
         <button
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm"
           aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
@@ -39,6 +40,14 @@ export default function EquipmentCard({
             {saved ? "♥" : "♡"}
           </span>
         </button>
+        {unavailableUntil && (
+          <span
+            className="absolute top-2 left-2 text-xs px-2.5 py-1 rounded-full font-medium"
+            style={{ backgroundColor: "#FDECEA", color: "#A02020" }}
+          >
+            Unavailable
+          </span>
+        )}
       </div>
 
       {/* Card body */}
@@ -61,13 +70,18 @@ export default function EquipmentCard({
           K{priceDay.toLocaleString()} / day
         </div>
 
-        {/* Location */}
-        <div className="flex items-center gap-1 mt-1">
-          <MapPin size={12} className="flex-shrink-0" style={{ color: "#555555" }} />
-          <span className="text-[12px] truncate" style={{ color: "#555555" }}>
-            {location}
-          </span>
-        </div>
+        {unavailableUntil ? (
+          <div className="text-[12px] mt-1" style={{ color: "#A02020" }}>
+            Unavailable until {new Date(unavailableUntil).toLocaleDateString()}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 mt-1">
+            <MapPin size={12} className="flex-shrink-0" style={{ color: "#555555" }} />
+            <span className="text-[12px] truncate" style={{ color: "#555555" }}>
+              {location}
+            </span>
+          </div>
+        )}
 
         {/* Star rating */}
         <div className="flex items-center gap-1 mt-1">

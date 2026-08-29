@@ -14,7 +14,7 @@ export default function CheckEmail() {
         <p style={{ fontSize: "14px", color: "#555555", marginBottom: "24px" }}>
           We've sent a confirmation link to <strong>{email}</strong>. Click it to activate your account, then come back here to log in.
         </p>
-        
+        <a
           href="https://mail.google.com/mail/u/0/#inbox"
           target="_blank"
           rel="noopener noreferrer"

@@ -35,6 +35,7 @@ export default function BookingPage() {
 
   const [eq, setEq] = useState(null);
   const [loadError, setLoadError] = useState("");
+  const [bookedRanges, setBookedRanges] = useState([]);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -60,6 +61,8 @@ export default function BookingPage() {
         setEndDate(data.available_until ?? "");
       })
       .catch(() => setLoadError("Could not load this listing."));
+
+    bookingService.getForEquipment(id).then(setBookedRanges).catch(() => setBookedRanges([]));
   }, [id]);
 
   if (loadError) {
@@ -89,6 +92,11 @@ export default function BookingPage() {
     }
     if (startDate < today) {
       setError("Start date can't be in the past.");
+      return;
+    }
+    const hasOverlap = bookedRanges.some((b) => startDate <= b.end_date && b.start_date <= endDate);
+    if (hasOverlap) {
+      setError("This equipment is already booked for part of your selected dates. Please choose different dates.");
       return;
     }
     if ((payMethod === "airtel" || payMethod === "mtn") && !phone) {
@@ -137,7 +145,7 @@ export default function BookingPage() {
       });
     } catch (err) {
       console.error(err);
-      setError("Something went wrong confirming your booking. Please try again.");
+      setError(err.message || "Something went wrong confirming your booking. Please try again.");
     } finally {
       setSubmitting(false);
     }

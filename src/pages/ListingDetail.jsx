@@ -94,6 +94,10 @@ export default function ListingDetail() {
   const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
   const photoUrls = photos.map((p) => p.url);
 
+  const activeBooking = bookedRanges.find(
+    (r) => r.status === "confirmed" && r.start_date <= today && today <= r.end_date
+  );
+
   const days = startDate && endDate
     ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000))
     : 0;
@@ -137,6 +141,11 @@ export default function ListingDetail() {
               <div style={{ display: "flex", gap: "8px" }}>
                 <span style={{ fontSize: "11px", fontWeight: 500, padding: "3px 10px", borderRadius: "20px", backgroundColor: "#D4EDDA", color: "#0F3D1E" }}>{eq.category}</span>
                 <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "20px", backgroundColor: "#F5F5F0", color: "#555555" }}>{eq.condition} condition</span>
+                {activeBooking && (
+                  <span style={{ fontSize: "11px", fontWeight: 500, padding: "3px 10px", borderRadius: "20px", backgroundColor: "#FDECEA", color: "#A02020" }}>
+                    Unavailable
+                  </span>
+                )}
               </div>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                 <h1 style={{ fontSize: "24px", fontWeight: 500, color: "#111111", marginTop: "12px" }}>{eq.name}</h1>
@@ -265,10 +274,15 @@ export default function ListingDetail() {
                 </div>
               )}
 
-              {!isOwnEquipment && (
+              {!isOwnEquipment && !activeBooking && (
                 <Link to={`/listings/${eq.id}/book`} style={{ display: "block", width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, textAlign: "center", lineHeight: "48px", textDecoration: "none", marginTop: "16px" }}>
                   Book Now
                 </Link>
+              )}
+              {activeBooking && (
+                <div style={{ marginTop: "16px", backgroundColor: "#FDECEA", borderRadius: "8px", padding: "12px", fontSize: "13px", color: "#A02020", textAlign: "center" }}>
+                  Currently unavailable — booked until {new Date(activeBooking.end_date).toLocaleDateString()}
+                </div>
               )}
               <p style={{ textAlign: "center", fontSize: "12px", color: "#555555", marginTop: "8px" }}>You won't be charged yet</p>
 

@@ -1,3 +1,4 @@
+// FILE: agrorent/src/App.jsx
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -11,7 +12,6 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
-import OwnerDashboard from "./pages/OwnerDashboard";
 import PostListing from "./pages/PostListing";
 import EditListing from "./pages/EditListing";
 import MyListings from "./pages/MyListings";
@@ -38,15 +38,6 @@ import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 import CheckEmail from "./pages/CheckEmail";
 
-// Everything that needs to know the current route lives in here, inside
-// <BrowserRouter>, since useLocation() only works below the Router.
-//
-// Admin pages (/admin/*) bring their own top bar — AdminTopNav, rendered by
-// each Admin*.jsx page — plus their own back-office feel. Stacking the
-// public marketing Navbar (Browse/How it works/renter dashboard link) and
-// Footer (Browse Equipment/List Your Equipment/etc.) on top of that used to
-// make the admin section feel like two different, disconnected products.
-// So for any /admin/* route, this is the ONLY place those are hidden.
 function Layout() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
@@ -69,8 +60,10 @@ function Layout() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/check-email" element={<CheckEmail />} />
 
-          {/* Any logged-in user */}
+          {/* Any logged-in user — role no longer restricts any of these,
+              since every account can both rent and list. */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/listings/:id/book" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
           <Route path="/booking/:id/confirmation" element={<ProtectedRoute><BookingConfirmation /></ProtectedRoute>} />
@@ -81,14 +74,11 @@ function Layout() {
           <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
           <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
-
-          {/* Owner role required */}
-          <Route path="/dashboard/owner" element={<ProtectedRoute requireRole="owner"><OwnerDashboard /></ProtectedRoute>} />
-          <Route path="/post-listing" element={<ProtectedRoute requireRole="owner"><PostListing /></ProtectedRoute>} />
-          <Route path="/listings/:id/edit" element={<ProtectedRoute requireRole="owner"><EditListing /></ProtectedRoute>} />
-          <Route path="/my-listings" element={<ProtectedRoute requireRole="owner"><MyListings /></ProtectedRoute>} />
-          <Route path="/booking-requests" element={<ProtectedRoute requireRole="owner"><BookingRequests /></ProtectedRoute>} />
-          <Route path="/earnings" element={<ProtectedRoute requireRole="owner"><Earnings /></ProtectedRoute>} />
+          <Route path="/post-listing" element={<ProtectedRoute><PostListing /></ProtectedRoute>} />
+          <Route path="/listings/:id/edit" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
+          <Route path="/my-listings" element={<ProtectedRoute><MyListings /></ProtectedRoute>} />
+          <Route path="/booking-requests" element={<ProtectedRoute><BookingRequests /></ProtectedRoute>} />
+          <Route path="/earnings" element={<ProtectedRoute><Earnings /></ProtectedRoute>} />
 
           {/* Admin role required */}
           <Route path="/admin" element={<ProtectedRoute requireRole="admin"><AdminDashboard /></ProtectedRoute>} />
@@ -96,9 +86,8 @@ function Layout() {
           <Route path="/admin/listings" element={<ProtectedRoute requireRole="admin"><AdminListings /></ProtectedRoute>} />
           <Route path="/admin/bookings" element={<ProtectedRoute requireRole="admin"><AdminBookings /></ProtectedRoute>} />
           <Route path="/admin/disputes" element={<ProtectedRoute requireRole="admin"><AdminDisputes /></ProtectedRoute>} />
-          <Route path="/check-email" element={<CheckEmail />} />
 
-          {/* Unmatched routes — was previously blank instead of a real 404 */}
+          {/* Unmatched routes */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

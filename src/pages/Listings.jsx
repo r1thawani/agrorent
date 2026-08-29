@@ -4,9 +4,11 @@ import { SlidersHorizontal } from "lucide-react";
 import EquipmentCard from "../components/EquipmentCard";
 import FilterSidebar from "../components/FilterSidebar";
 import { equipmentService } from "../services/equipmentService";
+import { bookingService } from "../services/bookingService";
 
 export default function Listings() {
   const [allEquipment, setAllEquipment] = useState([]);
+  const [bookedMap, setBookedMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -20,9 +22,11 @@ export default function Listings() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => {
-    equipmentService
-      .getAll()
-      .then(setAllEquipment)
+    Promise.all([equipmentService.getAll(), bookingService.getCurrentlyBookedMap()])
+      .then(([eq, booked]) => {
+        setAllEquipment(eq);
+        setBookedMap(booked);
+      })
       .catch(() => setLoadError("Could not load listings."))
       .finally(() => setLoading(false));
   }, []);
@@ -54,6 +58,7 @@ export default function Listings() {
       rating: eq.rating,
       reviews: eq.review_count,
       image: sortedPhotos[0]?.url || "",
+      unavailableUntil: bookedMap[eq.id] || null,
     };
   });
 

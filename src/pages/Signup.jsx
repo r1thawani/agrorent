@@ -1,6 +1,7 @@
 // FILE: agrorent/src/pages/Signup.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Sparkles } from "lucide-react";
 import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
 
@@ -20,12 +21,43 @@ function formatPhoneInput(value) {
   return "+260" + digitsOnly.slice(0, 9);
 }
 
+// Generates a random password guaranteed to satisfy getPasswordError() —
+// one character from each required set, plus random fill, then shuffled
+// so the required characters aren't always in the same position.
+function generateStrongPassword() {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghijkmnpqrstuvwxyz";
+  const numbers = "23456789";
+  const special = "!@#$%^&*?";
+  const all = upper + lower + numbers + special;
+
+  const pick = (chars) => chars[Math.floor(Math.random() * chars.length)];
+
+  let chars = [pick(upper), pick(lower), pick(numbers), pick(special)];
+  for (let i = 0; i < 6; i++) chars.push(pick(all));
+
+  // Shuffle
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
+
 export default function Signup() {
   const [form, setForm] = useState({ name: "", email: "", phone: "+260", password: "", confirm: "", province: "", district: "" });
-  const [role, setRole] = useState("renter");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [suggested, setSuggested] = useState(false);
   const navigate = useNavigate();
   const { signup } = useAuth();
+
+  function suggestPassword() {
+    const newPassword = generateStrongPassword();
+    setForm((f) => ({ ...f, password: newPassword, confirm: newPassword }));
+    setShowPassword(true);
+    setSuggested(true);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -49,16 +81,19 @@ export default function Signup() {
     }
     setError("");
     try {
-      await signup({ name: form.name, email: form.email, password: form.password, role });
+      await signup({ name: form.name, email: form.email, password: form.password });
       navigate("/check-email", { state: { email: form.email } });
     } catch (err) {
       setError(err.message || "Signup failed. Please try again.");
     }
   }
 
-  const update = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
+  const update = (field) => (e) => {
+    setForm(f => ({ ...f, [field]: e.target.value }));
+    if (field === "password" || field === "confirm") setSuggested(false);
+  };
 
-  const inputStyle = { width: "100%", height: "44px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", boxSizing: "border-box" };
+  const inputStyle = { width: "100%", height: "44px", padding: "0 40px 0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", boxSizing: "border-box" };
 
   return (
     <div style={{ minHeight: "calc(100vh - 56px)", backgroundColor: "#F5F5F0", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px" }}>
@@ -67,18 +102,18 @@ export default function Signup() {
         <div style={{ textAlign: "center", marginBottom: "28px" }}>
           <div style={{ fontSize: "18px", fontWeight: 500, color: "#1A5C2E" }}>AgroRent</div>
           <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginTop: "4px" }}>Create your account</h1>
-          <p style={{ fontSize: "14px", color: "#555555", marginTop: "4px" }}>It's free. Start renting or listing today.</p>
+          <p style={{ fontSize: "14px", color: "#555555", marginTop: "4px" }}>It's free. Start renting and listing today.</p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Full Name</label>
-            <input type="text" value={form.name} onChange={update("name")} style={inputStyle} required />
+            <input type="text" value={form.name} onChange={update("name")} style={{ ...inputStyle, paddingRight: 12 }} required />
           </div>
 
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Email</label>
-            <input type="email" value={form.email} onChange={update("email")} style={inputStyle} required />
+            <input type="email" value={form.email} onChange={update("email")} style={{ ...inputStyle, paddingRight: 12 }} required />
           </div>
 
           <div>
@@ -88,22 +123,60 @@ export default function Signup() {
               value={form.phone}
               onChange={(e) => setForm(f => ({ ...f, phone: formatPhoneInput(e.target.value) }))}
               placeholder="+260XXXXXXXXX"
-              style={inputStyle}
+              style={{ ...inputStyle, paddingRight: 12 }}
               required
             />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Password</label>
-            <input type="password" value={form.password} onChange={update("password")} style={inputStyle} required />
-            <p style={{ fontSize: "12px", color: "#555555", marginTop: "4px" }}>
-              Min 8 characters, with uppercase, lowercase, a number, and a special character.
-            </p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+              <label style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>Password</label>
+              <button
+                type="button"
+                onClick={suggestPassword}
+                style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "#FF5C00", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+              >
+                <Sparkles size={13} />
+                Suggest a strong password
+              </button>
+            </div>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={update("password")}
+                style={inputStyle}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} color="#555555" /> : <Eye size={16} color="#555555" />}
+              </button>
+            </div>
+            {suggested ? (
+              <p style={{ fontSize: "12px", color: "#0F3D1E", marginTop: "4px" }}>
+                Suggested password filled in — make sure to save it somewhere safe.
+              </p>
+            ) : (
+              <p style={{ fontSize: "12px", color: "#555555", marginTop: "4px" }}>
+                Min 8 characters, with uppercase, lowercase, a number, and a special character.
+              </p>
+            )}
           </div>
 
           <div>
             <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Confirm Password</label>
-            <input type="password" value={form.confirm} onChange={update("confirm")} style={inputStyle} required />
+            <input
+              type={showPassword ? "text" : "password"}
+              value={form.confirm}
+              onChange={update("confirm")}
+              style={{ ...inputStyle, paddingRight: 12 }}
+              required
+            />
           </div>
 
           <div>
@@ -115,36 +188,6 @@ export default function Signup() {
               onDistrictChange={(v) => setForm(f => ({ ...f, district: v }))}
               required
             />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>I'm signing up to</label>
-            <div style={{ display: "flex", gap: "10px" }}>
-              {[
-                { value: "renter", label: "Rent equipment" },
-                { value: "owner", label: "List my equipment" },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setRole(opt.value)}
-                  style={{
-                    flex: 1,
-                    height: "44px",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    border: role === opt.value ? "1.5px solid #FF5C00" : "1.5px solid #E0E8E3",
-                    backgroundColor: role === opt.value ? "#FFF0E6" : "#FFFFFF",
-                    color: role === opt.value ? "#FF5C00" : "#555555",
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <p style={{ fontSize: "12px", color: "#555555", marginTop: "6px" }}>This just picks where you land first — every account can both rent and list. Switch anytime with the "Switch to Owner/Renter Mode" button in your dashboard sidebar.</p>
           </div>
 
           {error && <p style={{ fontSize: "13px", color: "#A02020", margin: 0 }}>{error}</p>}

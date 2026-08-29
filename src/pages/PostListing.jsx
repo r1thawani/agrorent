@@ -8,8 +8,6 @@ import PhotoUpload from "../components/PhotoUpload";
 import LocationSelect from "../components/LocationSelect";
 import Sidebar from "../components/Sidebar";
 
-// Matches equipment_condition enum in the database exactly — "Poor" was
-// removed since it isn't a valid value there and would fail on submit.
 const CONDITIONS = ["New", "Excellent", "Good", "Fair"];
 
 const inputStyle = {
@@ -65,6 +63,8 @@ export default function PostListing() {
   });
   const [focusedField, setFocusedField] = useState(null);
 
+  const today = new Date().toISOString().split("T")[0];
+
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
@@ -78,6 +78,18 @@ export default function PostListing() {
     }
     if (!form.province || !form.district) {
       setFormError("Please select the province and district for this listing.");
+      return;
+    }
+    if (form.availFrom && form.availFrom < today) {
+      setFormError("Available from date can't be in the past.");
+      return;
+    }
+    if (form.availUntil && form.availUntil < today) {
+      setFormError("Available until date can't be in the past.");
+      return;
+    }
+    if (form.availFrom && form.availUntil && form.availUntil < form.availFrom) {
+      setFormError("Available until date can't be before the available from date.");
       return;
     }
     setFormError("");
@@ -100,8 +112,6 @@ export default function PostListing() {
         available_until: form.availUntil || null,
       });
 
-      // photos are data-URL strings from PhotoUpload — convert each back to
-      // a real Blob before handing it to Supabase Storage's upload().
       for (let i = 0; i < photos.length; i++) {
         const res = await fetch(photos[i]);
         const blob = await res.blob();
@@ -125,7 +135,7 @@ export default function PostListing() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
-      <Sidebar role="owner" activeLink="/post-listing" />
+      <Sidebar activeLink="/post-listing" />
 
       {/* Main content */}
       <div
@@ -338,6 +348,7 @@ export default function PostListing() {
                 <input
                   type="date"
                   value={form.availFrom}
+                  min={today}
                   onChange={update("availFrom")}
                   onFocus={() => setFocusedField("availFrom")}
                   onBlur={() => setFocusedField(null)}
@@ -350,6 +361,7 @@ export default function PostListing() {
                 <input
                   type="date"
                   value={form.availUntil}
+                  min={form.availFrom || today}
                   onChange={update("availUntil")}
                   onFocus={() => setFocusedField("availUntil")}
                   onBlur={() => setFocusedField(null)}

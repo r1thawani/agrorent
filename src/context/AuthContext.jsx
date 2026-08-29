@@ -31,25 +31,23 @@ export function AuthProvider({ children }) {
   async function login(email, password) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    const { data: { session } } = await supabase.auth.getSession();
+    const profile = await loadProfile(session.user.id);
+    setUser(profile);
+    return profile;
   }
 
- // FILE: agrorent/src/context/AuthContext.jsx (replace just the signup function)
-async function signup({ name, email, password, role = "renter" }) {
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { name } },
-  });
-  if (error) throw error;
-}
+  async function signup({ name, email, password }) {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+    if (error) throw error;
+  }
 
   async function logout() {
     await supabase.auth.signOut();
-  }
-
-  async function setRole(role) {
-    setUser((u) => (u ? { ...u, role } : u));
-    if (user) await supabase.from("profiles").update({ role }).eq("id", user.id);
   }
 
   async function updateProfile(changes) {
@@ -57,7 +55,7 @@ async function signup({ name, email, password, role = "renter" }) {
     if (user) await supabase.from("profiles").update(changes).eq("id", user.id);
   }
 
-  const value = { user, isAuthenticated: !!user, loading, login, signup, logout, setRole, updateProfile };
+  const value = { user, isAuthenticated: !!user, loading, login, signup, logout, updateProfile };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
