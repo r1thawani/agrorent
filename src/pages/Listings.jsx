@@ -5,6 +5,7 @@ import EquipmentCard from "../components/EquipmentCard";
 import FilterSidebar from "../components/FilterSidebar";
 import { equipmentService } from "../services/equipmentService";
 import { bookingService } from "../services/bookingService";
+import { toEquipmentCardProps } from "../utils/equipmentMappers";
 
 export default function Listings() {
   const [allEquipment, setAllEquipment] = useState([]);
@@ -47,20 +48,10 @@ export default function Listings() {
 
   // Map each Supabase row into the flat, camelCase shape EquipmentCard
   // already expects, so the card component itself needs no changes.
-  const mapped = allEquipment.map((eq) => {
-    const sortedPhotos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
-    return {
-      id: eq.id,
-      name: eq.name,
-      category: eq.category,
-      priceDay: eq.price_day,
-      location: eq.location,
-      rating: eq.rating,
-      reviews: eq.review_count,
-      image: sortedPhotos[0]?.url || "",
-      unavailableUntil: bookedMap[eq.id] || null,
-    };
-  });
+  const mapped = allEquipment.map((eq) => ({
+    ...toEquipmentCardProps(eq),
+    unavailableUntil: bookedMap[eq.id] || null,
+  }));
 
   let filtered = mapped.filter(eq => {
     if (search && !eq.name.toLowerCase().includes(search.toLowerCase())) return false;

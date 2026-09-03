@@ -1,10 +1,12 @@
 // FILE: agrorent/src/pages/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
   const [error, setError] = useState("");
@@ -43,7 +45,23 @@ export default function Login() {
               <label style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>Password</label>
               <Link to="/forgot-password" style={{ fontSize: "12px", color: "#FF5C00", textDecoration: "none" }}>Forgot password?</Link>
             </div>
-            <input type="password" value={form.password} onChange={update("password")} required style={inputStyle} />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={update("password")}
+                required
+                style={{ ...inputStyle, paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} color="#555555" /> : <Eye size={16} color="#555555" />}
+              </button>
+            </div>
           </div>
 
           {error && <p style={{ fontSize: "13px", color: "#A02020", margin: 0 }}>{error}</p>}

@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ScrollManager from "./components/ScrollManager";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./pages/Home";
 import Listings from "./pages/Listings";
 import ListingDetail from "./pages/ListingDetail";
@@ -47,6 +48,7 @@ function Layout() {
       <ScrollManager />
       {!isAdminRoute && <Navbar />}
       <main style={{ flex: "1" }}>
+        <ErrorBoundary>
         <Routes>
           {/* Public — no login required */}
           <Route path="/" element={<Home />} />
@@ -90,6 +92,7 @@ function Layout() {
           {/* Unmatched routes */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </ErrorBoundary>
       </main>
       {!isAdminRoute && <Footer />}
     </div>

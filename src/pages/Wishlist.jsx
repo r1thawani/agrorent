@@ -5,6 +5,7 @@ import { Heart } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import EquipmentCard from "../components/EquipmentCard";
 import { equipmentService } from "../services/equipmentService";
+import { toEquipmentCardProps } from "../utils/equipmentMappers";
 import { useWishlist } from "../context/WishlistContext";
 
 export default function Wishlist() {
@@ -23,20 +24,7 @@ export default function Wishlist() {
       .getAll()
       .then((all) => {
         const filtered = all.filter((eq) => wishlistIds.includes(eq.id));
-        const mapped = filtered.map((eq) => {
-          const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
-          return {
-            id: eq.id,
-            name: eq.name,
-            category: eq.category,
-            priceDay: eq.price_day,
-            location: eq.location,
-            rating: eq.rating,
-            reviews: eq.review_count,
-            image: photos[0]?.url || "",
-          };
-        });
-        setSaved(mapped);
+        setSaved(filtered.map(toEquipmentCardProps));
       })
       .finally(() => setLoading(false));
   }, [wishlistIds]);

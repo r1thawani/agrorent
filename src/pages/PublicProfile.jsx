@@ -4,6 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import { MapPin, Star } from "lucide-react";
 import EquipmentCard from "../components/EquipmentCard";
 import { equipmentService } from "../services/equipmentService";
+import { toEquipmentCardProps } from "../utils/equipmentMappers";
 import { supabase } from "../lib/supabaseClient";
 
 export default function PublicProfile() {
@@ -104,19 +105,7 @@ export default function PublicProfile() {
   const primaryLocation = listings[0]?.location || "";
 
   // Map real equipment rows into the flat shape EquipmentCard expects.
-  const mappedListings = listings.map((eq) => {
-    const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
-    return {
-      id: eq.id,
-      name: eq.name,
-      category: eq.category,
-      priceDay: eq.price_day,
-      location: eq.location,
-      rating: eq.rating,
-      reviews: eq.review_count,
-      image: photos[0]?.url || "",
-    };
-  });
+  const mappedListings = listings.map(toEquipmentCardProps);
 
   return (
     <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", paddingTop: "56px" }}>
