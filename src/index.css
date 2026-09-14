@@ -1,5 +1,40 @@
 @import "tailwindcss";
 
+/* Design tokens as real Tailwind utilities (bg-orange, text-ink, border-border,
+   etc.) — generated from the actual hex values used across the app (counted
+   via grep), so every page migrating off inline styles has one shared,
+   already-correct palette to reach for instead of re-guessing hex codes.
+   Kept alongside the :root custom properties below rather than replacing
+   them, so nothing that already reads var(--orange) etc. breaks. */
+@theme {
+  /* Brand */
+  --color-orange: #FF5C00;
+  --color-orange-dark: #CC4A00;
+  --color-orange-tint: #FFE8D6;
+  --color-green: #1A5C2E;
+  --color-green-dark: #0F3D1E;
+  --color-green-tint: #D4EDDA;
+  --color-green-tint-2: #A8E6BE;
+
+  /* Feedback (errors / destructive actions) */
+  --color-red: #A02020;
+  --color-red-tint: #FDECEA;
+  --color-red-border: #DC2626;
+
+  /* Text */
+  --color-ink: #111111;
+  --color-ink-muted: #555555;
+  --color-ink-faint: #999999;
+
+  /* Surfaces */
+  --color-page: #F5F5F0;
+  --color-page-warm: #FFF8F5;
+  --color-peach: #FFF0E6;
+  --color-border: #E0E8E3;
+  --color-border-muted: #CCCCCC;
+  --color-divider: #E5E5E5;
+}
+
 * {
   margin: 0;
   padding: 0;
