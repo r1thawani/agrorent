@@ -7,6 +7,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "./Avatar";
 
 const ADMIN_LINKS = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -60,10 +61,10 @@ export default function AdminTopNav() {
 
         <div className="flex items-center gap-3.5 shrink-0">
           <div className="flex items-center gap-2">
-            <img
-              src={user?.photo || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop"}
-              alt={user?.name || "Admin"}
-              className="w-7 h-7 rounded-full object-cover"
+            <Avatar
+              src={user?.photo_url || null}
+              name={user?.name}
+              className="w-7 h-7 text-[9px]"
             />
             <span className="text-white text-[13px]">{user?.name || "Admin"}</span>
           </div>
