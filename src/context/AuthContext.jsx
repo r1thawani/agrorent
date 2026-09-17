@@ -38,12 +38,16 @@ export function AuthProvider({ children }) {
   }
 
   async function signup({ name, email, password }) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { name } },
     });
     if (error) throw error;
+    // identities is empty when the email is already registered (Supabase silent-duplicate behaviour)
+    if (data.user?.identities?.length === 0) {
+      throw new Error("An account with this email already exists. Please log in instead.");
+    }
   }
 
   async function logout() {

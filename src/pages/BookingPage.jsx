@@ -84,6 +84,20 @@ export default function BookingPage() {
       setError("Please enter your mobile money number.");
       return;
     }
+    if (payMethod === "card") {
+      if (!cardNumber || cardNumber.replace(/\s/g, "").length < 16) {
+        setError("Please enter a valid 16-digit card number.");
+        return;
+      }
+      if (!expiry || !/^\d{2}\/\d{2}$/.test(expiry)) {
+        setError("Please enter a valid expiry date in MM/YY format.");
+        return;
+      }
+      if (!cvv || cvv.length < 3) {
+        setError("Please enter a valid CVV (3–4 digits).");
+        return;
+      }
+    }
     if (!agreed) { setError("Please agree to the Terms of Service to continue."); return; }
     setError("");
     setSubmitting(true);
@@ -263,7 +277,7 @@ export default function BookingPage() {
                       </div>
                       <div className="flex-1">
                         <label className="block text-[13px] font-medium text-ink mb-2">CVV</label>
-                        <input type="text" value={cvv} placeholder="123"
+                        <input type="password" value={cvv} placeholder="•••"
                           onChange={(e) => setCvv(e.target.value)}
                           onFocus={() => setFocusedField("cvv")} onBlur={() => setFocusedField(null)}
                           className={inputCls("cvv")} />

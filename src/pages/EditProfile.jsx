@@ -37,8 +37,12 @@ export default function EditProfile() {
   async function handleSave(e) {
     e.preventDefault();
     setSaveError("");
+    if (!form.name.trim()) {
+      setSaveError("Name cannot be empty.");
+      return;
+    }
     try {
-      await updateProfile({ name: form.name });
+      await updateProfile({ name: form.name.trim() });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
@@ -55,12 +59,22 @@ export default function EditProfile() {
     e.target.value = "";
   }
 
+  function getPasswordError(pw) {
+    if (pw.length < 8) return "New password must be at least 8 characters.";
+    if (!/[A-Z]/.test(pw)) return "New password must include at least one uppercase letter.";
+    if (!/[a-z]/.test(pw)) return "New password must include at least one lowercase letter.";
+    if (!/[0-9]/.test(pw)) return "New password must include at least one number.";
+    return "";
+  }
+
   async function handlePasswordUpdate(e) {
     e.preventDefault();
-    if (!pwForm.current || !pwForm.next) {
+    if (!pwForm.current || !pwForm.next || !pwForm.confirm) {
       setPwError("Please fill in all password fields.");
       return;
     }
+    const pwStrengthError = getPasswordError(pwForm.next);
+    if (pwStrengthError) { setPwError(pwStrengthError); return; }
     if (pwForm.next !== pwForm.confirm) {
       setPwError("New password and confirmation don't match.");
       return;
@@ -108,7 +122,7 @@ export default function EditProfile() {
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-ink mb-2">Phone Number</label>
-                <input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                <input type="tel" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                   onFocus={() => setFocusedField("phone")} onBlur={() => setFocusedField(null)}
                   className={inputCls("phone")} />
                 <p className="text-[11px] text-ink-faint mt-1">Not saved yet — coming soon.</p>

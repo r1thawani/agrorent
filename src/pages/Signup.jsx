@@ -40,7 +40,7 @@ function generateStrongPassword() {
 }
 
 export default function Signup() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "+260", password: "", confirm: "", province: "", district: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "+260", dob: "", password: "", confirm: "", province: "", district: "" });
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [suggested, setSuggested] = useState(false);
@@ -54,11 +54,25 @@ export default function Signup() {
     setSuggested(true);
   }
 
+  const maxDob = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split("T")[0];
+  })();
+
   async function handleSubmit(e) {
     e.preventDefault();
 
     if (!PHONE_REGEX.test(form.phone)) {
       setError("Please enter your phone number in the format +260XXXXXXXXX.");
+      return;
+    }
+    if (!form.dob) {
+      setError("Please enter your date of birth.");
+      return;
+    }
+    if (form.dob > maxDob) {
+      setError("You must be at least 18 years old to create an account.");
       return;
     }
     const pwError = getPasswordError(form.password);
@@ -112,6 +126,19 @@ export default function Signup() {
               required
               className="w-full h-11 px-3 text-[13px] border-[1.5px] border-border rounded-lg outline-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-ink mb-3">Date of Birth</label>
+            <input
+              type="date"
+              value={form.dob}
+              max={maxDob}
+              onChange={update("dob")}
+              required
+              className="w-full h-11 px-3 text-[13px] border-[1.5px] border-border rounded-lg outline-none"
+            />
+            <p className="text-xs text-ink-muted mt-1">You must be at least 18 years old to sign up.</p>
           </div>
 
           <div>

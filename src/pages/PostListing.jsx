@@ -36,13 +36,33 @@ export default function PostListing() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.name || !form.category || !form.priceDay || !form.pickup) {
+    if (!form.name.trim() || !form.category || !form.priceDay || !form.pickup.trim()) {
       setFormError("Please fill in the equipment name, category, daily price, and pickup location.");
+      return;
+    }
+    if (!form.description.trim() || form.description.trim().length < 20) {
+      setFormError("Please add a description of at least 20 characters.");
       return;
     }
     if (!form.province || !form.district) {
       setFormError("Please select the province and district for this listing.");
       return;
+    }
+    const priceDay = Number(form.priceDay);
+    if (!priceDay || priceDay < 1) {
+      setFormError("Daily price must be at least K1.");
+      return;
+    }
+    if (priceDay > 100000) {
+      setFormError("Daily price cannot exceed K100,000.");
+      return;
+    }
+    if (form.priceWeek) {
+      const priceWeek = Number(form.priceWeek);
+      if (priceWeek < 1 || priceWeek > 500000) {
+        setFormError("Weekly price must be between K1 and K500,000.");
+        return;
+      }
     }
     if (form.availFrom && form.availFrom < today) {
       setFormError("Available from date can't be in the past.");
@@ -59,6 +79,15 @@ export default function PostListing() {
     setFormError("");
     setSubmitting(true);
     try {
+      const existing = await equipmentService.getMine(user.id);
+      const duplicate = existing.find(
+        (e) => e.name.trim().toLowerCase() === form.name.trim().toLowerCase()
+      );
+      if (duplicate) {
+        setFormError(`You already have a listing called "${form.name.trim()}". Please use a different name or edit the existing listing.`);
+        setSubmitting(false);
+        return;
+      }
       const created = await equipmentService.create({
         owner_id: user.id,
         name: form.name,
@@ -156,7 +185,7 @@ export default function PostListing() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted">K</span>
                     <input type="number" value={form.priceDay} onChange={update("priceDay")}
                       onFocus={() => setFocusedField("priceDay")} onBlur={() => setFocusedField(null)}
-                      className={`${inputCls("priceDay")} pl-7`} min="0" required />
+                      className={`${inputCls("priceDay")} pl-7`} min="1" max="100000" required />
                   </div>
                 </div>
                 <div className="max-w-[50%]">
@@ -165,7 +194,7 @@ export default function PostListing() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted">K</span>
                     <input type="number" value={form.priceWeek} onChange={update("priceWeek")}
                       onFocus={() => setFocusedField("priceWeek")} onBlur={() => setFocusedField(null)}
-                      className={`${inputCls("priceWeek")} pl-7`} min="0" />
+                      className={`${inputCls("priceWeek")} pl-7`} min="1" max="500000" />
                   </div>
                   <p className="text-xs text-ink-muted mt-1">Leave blank if you only rent daily.</p>
                 </div>
@@ -187,7 +216,7 @@ export default function PostListing() {
                   <input value={form.pickup} onChange={update("pickup")}
                     onFocus={() => setFocusedField("pickup")} onBlur={() => setFocusedField(null)}
                     className={inputCls("pickup")}
-                    placeholder="e.g. Chilanga Road near Total filling station" />
+                    placeholder="e.g. Chilanga Road near Total filling station" required />
                   <p className="text-xs text-ink-muted mt-1">Be specific so renters know where to collect.</p>
                 </div>
               </div>

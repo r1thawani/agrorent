@@ -47,6 +47,8 @@ export default function EditListing() {
       .catch(() => setLoadError("Could not load this listing."));
   }, [id]);
 
+  const today = new Date().toISOString().split("T")[0];
+
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
@@ -59,12 +61,40 @@ export default function EditListing() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.name || !form.category || !form.priceDay || !form.pickup) {
+    if (!form.name.trim() || !form.category || !form.priceDay || !form.pickup.trim()) {
       setFormError("Please fill in the equipment name, category, daily price, and pickup location.");
       return;
     }
     if (!form.province || !form.district) {
       setFormError("Please select the province and district for this listing.");
+      return;
+    }
+    const priceDay = Number(form.priceDay);
+    if (!priceDay || priceDay < 1) {
+      setFormError("Daily price must be at least K1.");
+      return;
+    }
+    if (priceDay > 100000) {
+      setFormError("Daily price cannot exceed K100,000.");
+      return;
+    }
+    if (form.priceWeek) {
+      const priceWeek = Number(form.priceWeek);
+      if (priceWeek < 1 || priceWeek > 500000) {
+        setFormError("Weekly price must be between K1 and K500,000.");
+        return;
+      }
+    }
+    if (form.availFrom && form.availFrom < today) {
+      setFormError("Available from date can't be in the past.");
+      return;
+    }
+    if (form.availUntil && form.availUntil < today) {
+      setFormError("Available until date can't be in the past.");
+      return;
+    }
+    if (form.availFrom && form.availUntil && form.availUntil < form.availFrom) {
+      setFormError("Available until date can't be before the available from date.");
       return;
     }
     setFormError("");
@@ -145,7 +175,7 @@ export default function EditListing() {
                   <label className="block text-[13px] font-medium text-ink mb-2">Equipment name</label>
                   <input value={form.name} onChange={update("name")}
                     onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)}
-                    className={inputCls("name")} />
+                    className={inputCls("name")} required />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -192,7 +222,9 @@ export default function EditListing() {
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted">K</span>
                       <input type="number" value={form[field]} onChange={update(field)}
                         onFocus={() => setFocusedField(field)} onBlur={() => setFocusedField(null)}
-                        className={`${inputCls(field)} pl-7`} min="0" />
+                        className={`${inputCls(field)} pl-7`}
+                        min="1" max={field === "priceDay" ? "100000" : "500000"}
+                        required={field === "priceDay"} />
                     </div>
                   </div>
                 ))}
@@ -214,7 +246,7 @@ export default function EditListing() {
                   <input value={form.pickup} onChange={update("pickup")}
                     onFocus={() => setFocusedField("pickup")} onBlur={() => setFocusedField(null)}
                     className={inputCls("pickup")}
-                    placeholder="e.g. Chilanga Road near Total filling station" />
+                    placeholder="e.g. Chilanga Road near Total filling station" required />
                   <p className="text-xs text-ink-muted mt-1">Be specific so renters know where to collect.</p>
                 </div>
               </div>
@@ -223,14 +255,14 @@ export default function EditListing() {
               <div className="flex items-end gap-3">
                 <div className="flex-1">
                   <label className="block text-[13px] font-medium text-ink mb-2">Available from</label>
-                  <input type="date" value={form.availFrom} onChange={update("availFrom")}
+                  <input type="date" value={form.availFrom} min={today} onChange={update("availFrom")}
                     onFocus={() => setFocusedField("availFrom")} onBlur={() => setFocusedField(null)}
                     className={inputCls("availFrom")} />
                 </div>
                 <span className="text-sm text-ink-muted pb-3">to</span>
                 <div className="flex-1">
                   <label className="block text-[13px] font-medium text-ink mb-2">Available until</label>
-                  <input type="date" value={form.availUntil} onChange={update("availUntil")}
+                  <input type="date" value={form.availUntil} min={form.availFrom || today} onChange={update("availUntil")}
                     onFocus={() => setFocusedField("availUntil")} onBlur={() => setFocusedField(null)}
                     className={inputCls("availUntil")} />
                 </div>
