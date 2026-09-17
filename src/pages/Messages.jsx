@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/Messages.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
@@ -15,8 +14,7 @@ export default function Messages() {
 
   useEffect(() => {
     if (!user) return;
-    messageService
-      .getConversations(user.id)
+    messageService.getConversations(user.id)
       .then(setConversations)
       .catch(() => setLoadError("Could not load messages."))
       .finally(() => setLoading(false));
@@ -29,149 +27,56 @@ export default function Messages() {
   );
 
   return (
-    <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", paddingTop: "56px" }}>
-      <div
-        style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          padding: "32px 24px",
-          display: "flex",
-          gap: "24px",
-        }}
-      >
-        <Sidebar role="renter" />
+    <div className="bg-page min-h-screen pt-14">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6">
+        <Sidebar />
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 style={{ fontSize: "26px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>
-            Messages
-          </h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[26px] font-medium text-ink mb-5">Messages</h1>
 
-          <div
-            style={{
-              backgroundColor: "#FFFFFF",
-              border: "0.5px solid #E0E8E3",
-              borderRadius: "12px",
-              overflow: "hidden",
-            }}
-          >
-            <div style={{ padding: "16px", borderBottom: "1px solid #E0E8E3" }}>
-              <div style={{ position: "relative" }}>
-                <Search
-                  size={16}
-                  color="#555555"
-                  style={{
-                    position: "absolute",
-                    left: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                  }}
-                />
+          <div className="bg-white border border-border/50 rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <div className="relative">
+                <Search size={16} color="#555555" className="absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search conversations..."
-                  style={{
-                    width: "100%",
-                    height: "36px",
-                    padding: "0 12px 0 34px",
-                    fontSize: "14px",
-                    color: "#111111",
-                    border: "1px solid #E0E8E3",
-                    borderRadius: "8px",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
+                  className="w-full h-9 pl-[34px] pr-3 text-sm text-ink border border-border rounded-lg outline-none"
                 />
               </div>
             </div>
 
-            {loading && (
-              <div style={{ padding: "48px 16px", textAlign: "center", color: "#555555", fontSize: "14px" }}>
-                Loading…
-              </div>
-            )}
-
-            {loadError && (
-              <div style={{ padding: "48px 16px", textAlign: "center", color: "#A02020", fontSize: "14px" }}>
-                {loadError}
-              </div>
-            )}
+            {loading && <div className="py-12 text-center text-sm text-ink-muted">Loading…</div>}
+            {loadError && <div className="py-12 text-center text-sm text-red">{loadError}</div>}
 
             {!loading && !loadError && filtered.length === 0 && (
-              <div
-                style={{
-                  padding: "48px 16px",
-                  textAlign: "center",
-                  color: "#555555",
-                  fontSize: "14px",
-                }}
-              >
-                No conversations found.
-              </div>
+              <div className="py-12 text-center text-sm text-ink-muted">No conversations found.</div>
             )}
 
             {!loading && !loadError && filtered.map((conv) => (
               <Link
                 key={conv.id}
                 to={`/messages/${conv.id}`}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "12px",
-                  padding: "16px",
-                  borderBottom: "1px solid #E0E8E3",
-                  textDecoration: "none",
-                  backgroundColor: conv.unread ? "#FFF8F5" : "#FFFFFF",
-                }}
+                className={`flex items-start gap-3 px-4 py-4 border-b border-border no-underline last:border-b-0 ${
+                  conv.unread ? "bg-page-warm" : "bg-white"
+                }`}
               >
-                <img
-                  src={conv.photo}
-                  alt={conv.person}
-                  style={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>
-                      {conv.person}
-                    </span>
-                    <span style={{ fontSize: "11px", color: "#555555", flexShrink: 0, marginLeft: "8px" }}>
-                      {conv.time}
-                    </span>
+                <img src={conv.photo} alt={conv.person}
+                  className="w-11 h-11 rounded-full object-cover shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm font-medium text-ink">{conv.person}</span>
+                    <span className="text-[11px] text-ink-muted shrink-0 ml-2">{conv.time}</span>
                   </div>
-                  <div style={{ fontSize: "12px", color: "#555555", marginTop: "2px" }}>
-                    Re: {conv.equipment}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
-                    <span
-                      style={{
-                        fontSize: "13px",
-                        color: conv.unread ? "#111111" : "#555555",
-                        fontWeight: conv.unread ? 500 : 400,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        flex: 1,
-                      }}
-                    >
+                  <div className="text-xs text-ink-muted mt-0.5">Re: {conv.equipment}</div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`text-[13px] truncate flex-1 ${conv.unread ? "font-medium text-ink" : "text-ink-muted"}`}>
                       {conv.lastMessage}
                     </span>
                     {conv.unread && (
-                      <span
-                        style={{
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "50%",
-                          backgroundColor: "#FF5C00",
-                          flexShrink: 0,
-                        }}
-                      />
+                      <span className="w-2 h-2 rounded-full bg-orange shrink-0" />
                     )}
                   </div>
                 </div>

@@ -12,128 +12,48 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "calc(100vh - 56px)",
-        backgroundColor: "#F5F5F0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "48px 16px",
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "#FFFFFF",
-          borderRadius: "12px",
-          border: "0.5px solid #E0E8E3",
-          padding: "40px",
-          width: "100%",
-          maxWidth: "400px",
-        }}
-      >
+    <div className="min-h-[calc(100vh-56px)] bg-page flex items-center justify-center px-4 py-12">
+      <div className="bg-white rounded-xl border border-border/50 p-10 w-full max-w-[400px]">
         {sent ? (
-          <div style={{ textAlign: "center" }}>
-            <CheckCircle size={40} style={{ color: "#1A5C2E", margin: "0 auto" }} />
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: 500,
-                color: "#111111",
-                marginTop: "16px",
-              }}
-            >
-              Check your email
-            </h2>
-            <p style={{ fontSize: "14px", color: "#555555", marginTop: "8px" }}>
+          <div className="text-center">
+            <CheckCircle size={40} className="text-green mx-auto" />
+            <h2 className="text-xl font-medium text-ink mt-4">Check your email</h2>
+            <p className="text-sm text-ink-muted mt-2">
               We sent a reset link to {email}. Check your inbox.
             </p>
           </div>
         ) : (
           <>
-            <div style={{ textAlign: "center", marginBottom: "28px" }}>
-              <div style={{ fontSize: "18px", fontWeight: 500, color: "#1A5C2E" }}>
-                AgroRent
-              </div>
-              <h1
-                style={{
-                  fontSize: "22px",
-                  fontWeight: 500,
-                  color: "#111111",
-                  marginTop: "4px",
-                }}
-              >
-                Forgot your password?
-              </h1>
-              <p style={{ fontSize: "14px", color: "#555555", marginTop: "4px" }}>
+            <div className="text-center mb-7">
+              <div className="text-lg font-medium text-green">AgroRent</div>
+              <h1 className="text-[22px] font-medium text-ink mt-1">Forgot your password?</h1>
+              <p className="text-sm text-ink-muted mt-1">
                 Enter your email and we'll send you a link to reset it.
               </p>
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-            >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "#111111",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Email address
-                </label>
+                <label className="block text-[13px] font-medium text-ink mb-2">Email address</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  style={{
-                    width: "100%",
-                    height: "44px",
-                    padding: "0 12px",
-                    fontSize: "14px",
-                    border: "1px solid #E0E8E3",
-                    borderRadius: "8px",
-                    outline: "none",
-                    transition: "border-color 0.15s ease",
-                  }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF5C00")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "#E0E8E3")}
+                  className="w-full h-11 px-3 text-sm border border-border rounded-lg outline-none transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
-                style={{
-                  width: "100%",
-                  height: "48px",
-                  borderRadius: "8px",
-                  border: "none",
-                  color: "#FFFFFF",
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  backgroundColor: "#FF5C00",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                className="w-full h-12 rounded-lg border-none text-white text-[15px] font-medium bg-orange cursor-pointer"
               >
                 Send Reset Link
               </button>
             </form>
 
-            <div style={{ textAlign: "center", marginTop: "20px" }}>
-              <Link
-                to="/login"
-                style={{ fontSize: "14px", color: "#1A5C2E", textDecoration: "none" }}
-              >
-                Back to Login
-              </Link>
+            <div className="text-center mt-5">
+              <Link to="/login" className="text-sm text-green no-underline">Back to Login</Link>
             </div>
           </>
         )}

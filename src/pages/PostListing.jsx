@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/PostListing.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CATEGORIES } from "../data/mockData";
@@ -10,38 +9,6 @@ import Sidebar from "../components/Sidebar";
 
 const CONDITIONS = ["New", "Excellent", "Good", "Fair"];
 
-const inputStyle = {
-  width: "100%",
-  height: 44,
-  padding: "0 12px",
-  fontSize: 14,
-  border: "1px solid #E0E8E3",
-  borderRadius: 8,
-  outline: "none",
-  backgroundColor: "#fff",
-  color: "#111111",
-  boxSizing: "border-box",
-};
-
-const labelStyle = {
-  display: "block",
-  fontSize: 13,
-  fontWeight: 500,
-  color: "#111111",
-  marginBottom: 6,
-};
-
-const sectionHeaderStyle = {
-  fontSize: 12,
-  fontWeight: 500,
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-  color: "#555555",
-  paddingBottom: 8,
-  borderBottom: "1px solid #E0E8E3",
-  marginBottom: 20,
-};
-
 export default function PostListing() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -49,17 +16,9 @@ export default function PostListing() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
-    name: "",
-    category: "",
-    condition: "",
-    description: "",
-    priceDay: "",
-    priceWeek: "",
-    pickup: "",
-    province: "",
-    district: "",
-    availFrom: "",
-    availUntil: "",
+    name: "", category: "", condition: "", description: "",
+    priceDay: "", priceWeek: "", pickup: "",
+    province: "", district: "", availFrom: "", availUntil: "",
   });
   const [focusedField, setFocusedField] = useState(null);
 
@@ -69,9 +28,14 @@ export default function PostListing() {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
+  function inputCls(field) {
+    return `w-full h-11 px-3 text-sm text-ink rounded-lg outline-none bg-white ${
+      focusedField === field ? "border border-orange" : "border border-border/50"
+    }`;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-
     if (!form.name || !form.category || !form.priceDay || !form.pickup) {
       setFormError("Please fill in the equipment name, category, daily price, and pickup location.");
       return;
@@ -94,7 +58,6 @@ export default function PostListing() {
     }
     setFormError("");
     setSubmitting(true);
-
     try {
       const created = await equipmentService.create({
         owner_id: user.id,
@@ -111,302 +74,158 @@ export default function PostListing() {
         available_from: form.availFrom || null,
         available_until: form.availUntil || null,
       });
-
       for (let i = 0; i < photos.length; i++) {
         const res = await fetch(photos[i]);
         const blob = await res.blob();
         await equipmentService.uploadPhoto(created.id, blob, `photo-${i}.jpg`);
       }
-
       navigate("/my-listings");
-    } catch (err) {
-      console.error(err);
+    } catch {
       setFormError("Something went wrong posting your listing. Please try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  function getFocusStyle(field) {
-    return focusedField === field
-      ? { ...inputStyle, borderColor: "#FF5C00" }
-      : inputStyle;
-  }
+  const sectionLabel = "text-[11px] font-medium uppercase tracking-[0.06em] text-ink-muted pb-2 border-b border-border mb-5";
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
-      <Sidebar activeLink="/post-listing" />
+    <div className="min-h-screen bg-page pt-14">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6">
+        <Sidebar activeLink="/post-listing" />
 
-      {/* Main content */}
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          padding: "40px 32px",
-          maxWidth: 760,
-        }}
-      >
-        <h1 style={{ fontSize: 22, fontWeight: 500, color: "#111111", marginBottom: 28, marginTop: 0 }}>
-          Post your equipment
-        </h1>
+        <div className="flex-1 min-w-0 max-w-[760px]">
+          <h1 className="text-[22px] font-medium text-ink mb-7">Post your equipment</h1>
 
-        <form onSubmit={handleSubmit}>
-          <div
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: 12,
-              padding: 32,
-              border: "0.5px solid #E0E8E3",
-            }}
-          >
-            {/* Section 1 — Basic info */}
-            <div style={sectionHeaderStyle}>Basic information</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={labelStyle}>Equipment name</label>
-                <input
-                  value={form.name}
-                  onChange={update("name")}
-                  onFocus={() => setFocusedField("name")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("name")}
-                  placeholder="e.g. John Deere 5075E Tractor"
-                  required
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <form onSubmit={handleSubmit}>
+            <div className="bg-white rounded-xl p-8 border border-border/50">
+              <div className={sectionLabel}>Basic information</div>
+              <div className="flex flex-col gap-6">
                 <div>
-                  <label style={labelStyle}>Category</label>
-                  <select
-                    value={form.category}
-                    onChange={update("category")}
-                    onFocus={() => setFocusedField("category")}
-                    onBlur={() => setFocusedField(null)}
-                    style={getFocusStyle("category")}
+                  <label className="block text-[13px] font-medium text-ink mb-2">Equipment name</label>
+                  <input value={form.name} onChange={update("name")}
+                    onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("name")}
+                    placeholder="e.g. John Deere 5075E Tractor" required />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-2">Category</label>
+                    <select value={form.category} onChange={update("category")}
+                      onFocus={() => setFocusedField("category")} onBlur={() => setFocusedField(null)}
+                      className={inputCls("category")} required>
+                      <option value="">Select…</option>
+                      {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-2">Condition</label>
+                    <select value={form.condition} onChange={update("condition")}
+                      onFocus={() => setFocusedField("condition")} onBlur={() => setFocusedField(null)}
+                      className={inputCls("condition")} required>
+                      <option value="">Select…</option>
+                      {CONDITIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-2">Description</label>
+                  <div className="relative">
+                    <textarea value={form.description} onChange={update("description")}
+                      onFocus={() => setFocusedField("description")} onBlur={() => setFocusedField(null)}
+                      maxLength={1000} rows={5}
+                      placeholder="Describe your equipment — age, brand, features, any important notes for renters…"
+                      className={`w-full px-3 py-2.5 text-sm text-ink rounded-lg outline-none resize-y min-h-[120px] ${
+                        focusedField === "description" ? "border border-orange" : "border border-border/50"
+                      }`}
+                    />
+                    <span className="absolute bottom-2 right-2.5 text-[11px] text-ink-muted">
+                      {form.description.length} / 1000
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`${sectionLabel} mt-8`}>Pricing</div>
+              <div className="flex flex-col gap-6">
+                <div className="max-w-[50%]">
+                  <label className="block text-[13px] font-medium text-ink mb-2">Price per day</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted">K</span>
+                    <input type="number" value={form.priceDay} onChange={update("priceDay")}
+                      onFocus={() => setFocusedField("priceDay")} onBlur={() => setFocusedField(null)}
+                      className={`${inputCls("priceDay")} pl-7`} min="0" required />
+                  </div>
+                </div>
+                <div className="max-w-[50%]">
+                  <label className="block text-[13px] font-medium text-ink mb-2">Price per week (optional)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted">K</span>
+                    <input type="number" value={form.priceWeek} onChange={update("priceWeek")}
+                      onFocus={() => setFocusedField("priceWeek")} onBlur={() => setFocusedField(null)}
+                      className={`${inputCls("priceWeek")} pl-7`} min="0" />
+                  </div>
+                  <p className="text-xs text-ink-muted mt-1">Leave blank if you only rent daily.</p>
+                </div>
+              </div>
+
+              <div className={`${sectionLabel} mt-8`}>Location</div>
+              <div className="flex flex-col gap-6">
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-2">Province / district</label>
+                  <LocationSelect
+                    province={form.province} district={form.district}
+                    onProvinceChange={(v) => setForm((f) => ({ ...f, province: v }))}
+                    onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
                     required
-                  >
-                    <option value="">Select…</option>
-                    {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
                 <div>
-                  <label style={labelStyle}>Condition</label>
-                  <select
-                    value={form.condition}
-                    onChange={update("condition")}
-                    onFocus={() => setFocusedField("condition")}
-                    onBlur={() => setFocusedField(null)}
-                    style={getFocusStyle("condition")}
-                    required
-                  >
-                    <option value="">Select…</option>
-                    {CONDITIONS.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  <label className="block text-[13px] font-medium text-ink mb-2">Pickup location</label>
+                  <input value={form.pickup} onChange={update("pickup")}
+                    onFocus={() => setFocusedField("pickup")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("pickup")}
+                    placeholder="e.g. Chilanga Road near Total filling station" />
+                  <p className="text-xs text-ink-muted mt-1">Be specific so renters know where to collect.</p>
                 </div>
               </div>
 
-              <div>
-                <label style={labelStyle}>Description</label>
-                <div style={{ position: "relative" }}>
-                  <textarea
-                    value={form.description}
-                    onChange={update("description")}
-                    onFocus={() => setFocusedField("description")}
-                    onBlur={() => setFocusedField(null)}
-                    maxLength={1000}
-                    rows={5}
-                    placeholder="Describe your equipment — age, brand, features, any important notes for renters…"
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      fontSize: 14,
-                      border: `1px solid ${focusedField === "description" ? "#FF5C00" : "#E0E8E3"}`,
-                      borderRadius: 8,
-                      outline: "none",
-                      resize: "vertical",
-                      minHeight: 120,
-                      color: "#111111",
-                      boxSizing: "border-box",
-                      fontFamily: "inherit",
-                    }}
-                  />
-                  <span
-                    style={{
-                      position: "absolute",
-                      bottom: 8,
-                      right: 10,
-                      fontSize: 11,
-                      color: "#555555",
-                    }}
-                  >
-                    {form.description.length} / 1000
-                  </span>
+              <div className={`${sectionLabel} mt-8`}>Availability</div>
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className="block text-[13px] font-medium text-ink mb-2">Available from</label>
+                  <input type="date" value={form.availFrom} min={today} onChange={update("availFrom")}
+                    onFocus={() => setFocusedField("availFrom")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("availFrom")} />
+                </div>
+                <span className="text-sm text-ink-muted pb-3">to</span>
+                <div className="flex-1">
+                  <label className="block text-[13px] font-medium text-ink mb-2">Available until</label>
+                  <input type="date" value={form.availUntil} min={form.availFrom || today} onChange={update("availUntil")}
+                    onFocus={() => setFocusedField("availUntil")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("availUntil")} />
                 </div>
               </div>
+              <p className="text-xs text-ink-muted mt-1">You can update availability at any time from your listings.</p>
+
+              <div className={`${sectionLabel} mt-8`}>Photos</div>
+              <PhotoUpload photos={photos} onChange={setPhotos} maxPhotos={10} />
             </div>
 
-            {/* Section 2 — Pricing */}
-            <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Pricing</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ maxWidth: "50%" }}>
-                <label style={labelStyle}>Price per day</label>
-                <div style={{ position: "relative" }}>
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      fontSize: 14,
-                      color: "#555555",
-                    }}
-                  >
-                    K
-                  </span>
-                  <input
-                    type="number"
-                    value={form.priceDay}
-                    onChange={update("priceDay")}
-                    onFocus={() => setFocusedField("priceDay")}
-                    onBlur={() => setFocusedField(null)}
-                    style={{ ...getFocusStyle("priceDay"), paddingLeft: 28 }}
-                    min="0"
-                    required
-                  />
-                </div>
-              </div>
-              <div style={{ maxWidth: "50%" }}>
-                <label style={labelStyle}>Price per week (optional)</label>
-                <div style={{ position: "relative" }}>
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      fontSize: 14,
-                      color: "#555555",
-                    }}
-                  >
-                    K
-                  </span>
-                  <input
-                    type="number"
-                    value={form.priceWeek}
-                    onChange={update("priceWeek")}
-                    onFocus={() => setFocusedField("priceWeek")}
-                    onBlur={() => setFocusedField(null)}
-                    style={{ ...getFocusStyle("priceWeek"), paddingLeft: 28 }}
-                    min="0"
-                  />
-                </div>
-                <p style={{ fontSize: 12, color: "#555555", margin: "4px 0 0" }}>
-                  Leave blank if you only rent daily.
-                </p>
-              </div>
-            </div>
+            {formError && (
+              <p className="text-[13px] text-red mt-4">{formError}</p>
+            )}
 
-            {/* Section 3 — Location */}
-            <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Location</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={labelStyle}>Province / district</label>
-                <LocationSelect
-                  province={form.province}
-                  district={form.district}
-                  onProvinceChange={(v) => setForm((f) => ({ ...f, province: v }))}
-                  onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
-                  required
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Pickup location</label>
-                <input
-                  value={form.pickup}
-                  onChange={update("pickup")}
-                  onFocus={() => setFocusedField("pickup")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("pickup")}
-                  placeholder="e.g. Chilanga Road near Total filling station"
-                />
-                <p style={{ fontSize: 12, color: "#555555", margin: "4px 0 0" }}>
-                  Be specific so renters know where to collect.
-                </p>
-              </div>
-            </div>
-
-            {/* Section 4 — Availability */}
-            <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Availability</div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>Available from</label>
-                <input
-                  type="date"
-                  value={form.availFrom}
-                  min={today}
-                  onChange={update("availFrom")}
-                  onFocus={() => setFocusedField("availFrom")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("availFrom")}
-                />
-              </div>
-              <span style={{ fontSize: 14, color: "#555555", paddingBottom: 10 }}>to</span>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>Available until</label>
-                <input
-                  type="date"
-                  value={form.availUntil}
-                  min={form.availFrom || today}
-                  onChange={update("availUntil")}
-                  onFocus={() => setFocusedField("availUntil")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("availUntil")}
-                />
-              </div>
-            </div>
-            <p style={{ fontSize: 12, color: "#555555", margin: "4px 0 0" }}>
-              You can update availability at any time from your listings.
-            </p>
-
-            {/* Section 5 — Photos */}
-            <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Photos</div>
-            <PhotoUpload photos={photos} onChange={setPhotos} maxPhotos={10} />
-          </div>
-
-          {formError && (
-            <p style={{ fontSize: 13, color: "#DC2626", marginTop: 16, marginBottom: 0 }}>
-              {formError}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              display: "block",
-              width: "100%",
-              height: 52,
-              marginTop: 24,
-              backgroundColor: "#FF5C00",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              fontSize: 16,
-              fontWeight: 500,
-              cursor: submitting ? "default" : "pointer",
-              opacity: submitting ? 0.7 : 1,
-            }}
-            onMouseEnter={(e) => !submitting && (e.currentTarget.style.backgroundColor = "#CC4A00")}
-            onMouseLeave={(e) => !submitting && (e.currentTarget.style.backgroundColor = "#FF5C00")}
-          >
-            {submitting ? "Posting..." : "Post Listing"}
-          </button>
-        </form>
+            <button type="submit" disabled={submitting}
+              className={`w-full h-[52px] mt-6 rounded-lg border-none text-white text-base font-medium bg-orange ${
+                submitting ? "opacity-70 cursor-default" : "cursor-pointer hover:bg-orange-dark"
+              } transition-colors`}>
+              {submitting ? "Posting..." : "Post Listing"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
@@ -23,40 +22,45 @@ export default function Login() {
     }
   }
 
-  const inputStyle = { width: "100%", height: "44px", padding: "0 12px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none", boxSizing: "border-box" };
-
   return (
-    <div style={{ minHeight: "calc(100vh - 56px)", backgroundColor: "#F5F5F0", display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 16px" }}>
-      <div style={{ backgroundColor: "#FFFFFF", border: "0.5px solid #E0E8E3", borderRadius: "12px", padding: "40px", width: "100%", maxWidth: "420px" }}>
+    <div className="min-h-[calc(100vh-56px)] bg-page flex items-center justify-center px-4 py-12">
+      <div className="bg-white border border-border/50 rounded-xl p-10 sm:p-12 w-full max-w-[420px]">
 
-        <div style={{ textAlign: "center", marginBottom: "28px" }}>
-          <div style={{ fontSize: "18px", fontWeight: 500, color: "#1A5C2E" }}>AgroRent</div>
-          <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginTop: "4px" }}>Welcome back</h1>
-          <p style={{ fontSize: "14px", color: "#555555", marginTop: "4px" }}>Log in to your AgroRent account</p>
+        <div className="text-center mb-8">
+          <div className="text-lg font-medium text-green">AgroRent</div>
+          <h1 className="text-[22px] font-medium text-ink mt-1">Welcome back</h1>
+          <p className="text-sm text-ink-muted mt-1.5">Log in to your AgroRent account</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>Email address</label>
-            <input type="email" value={form.email} onChange={update("email")} required style={inputStyle} />
+            <label className="block text-[13px] font-medium text-ink mb-3">Email address</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={update("email")}
+              required
+              className="w-full h-11 px-3 text-[13px] border-[1.5px] border-border rounded-lg outline-none"
+            />
           </div>
+
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-              <label style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>Password</label>
-              <Link to="/forgot-password" style={{ fontSize: "12px", color: "#FF5C00", textDecoration: "none" }}>Forgot password?</Link>
+            <div className="flex justify-between mb-3">
+              <label className="text-[13px] font-medium text-ink">Password</label>
+              <Link to="/forgot-password" className="text-xs text-orange no-underline">Forgot password?</Link>
             </div>
-            <div style={{ position: "relative" }}>
+            <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={form.password}
                 onChange={update("password")}
                 required
-                style={{ ...inputStyle, paddingRight: 40 }}
+                className="w-full h-11 px-3 pr-10 text-[13px] border-[1.5px] border-border rounded-lg outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer p-0 flex"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={16} color="#555555" /> : <Eye size={16} color="#555555" />}
@@ -64,22 +68,25 @@ export default function Login() {
             </div>
           </div>
 
-          {error && <p style={{ fontSize: "13px", color: "#A02020", margin: 0 }}>{error}</p>}
+          {error && <p className="text-[13px] text-red m-0">{error}</p>}
 
-          <button type="submit" style={{ width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, border: "none", cursor: "pointer", marginTop: "8px" }}>
+          <button
+            type="submit"
+            className="w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium border-none cursor-pointer mt-3"
+          >
             Log In
           </button>
         </form>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "20px 0" }}>
-          <div style={{ flex: 1, height: "1px", backgroundColor: "#E0E8E3" }} />
-          <span style={{ fontSize: "12px", color: "#555555" }}>or</span>
-          <div style={{ flex: 1, height: "1px", backgroundColor: "#E0E8E3" }} />
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-ink-muted">or</span>
+          <div className="flex-1 h-px bg-border" />
         </div>
 
-        <p style={{ textAlign: "center", fontSize: "14px", color: "#555555" }}>
+        <p className="text-center text-sm text-ink-muted">
           Don't have an account?{" "}
-          <Link to="/signup" style={{ fontWeight: 500, color: "#FF5C00", textDecoration: "none" }}>Sign Up</Link>
+          <Link to="/signup" className="font-medium text-orange no-underline">Sign Up</Link>
         </p>
       </div>
     </div>

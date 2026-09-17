@@ -1,34 +1,5 @@
 import { useState, useEffect } from "react";
 
-// Generic searchable table, shared across AdminUsers.jsx (5A) and
-// AdminListings.jsx/AdminBookings.jsx (5B) with different columns/data.
-// Deliberately knows nothing about what it's displaying — all badge
-// coloring, icons, and action buttons live in the `render` function each
-// caller supplies per column, so this file never needs to change when a
-// new admin page reuses it.
-//
-// Built 100% inline-style (Pattern A / Sidebar-style sub-pattern), same as
-// AdminTopNav.jsx, Sidebar.jsx, StatCard.jsx, PhotoUpload.jsx — row hover is
-// handled via onMouseEnter/onMouseLeave + local state rather than Tailwind
-// hover: classes.
-//
-// Props:
-//   columns   — [{ key, label, render?(row) }]. If `render` is omitted, the
-//               column just displays row[key] as plain text.
-//   rows      — array of data objects. EACH ROW MUST HAVE A UNIQUE `id`
-//               field — used for the React key and for actions like toggling
-//               status without relying on array index.
-//   searchKeys      — string[] of row fields to match against the search box.
-//                     Omit or pass [] to hide the search box entirely.
-//   searchPlaceholder — placeholder text for the search box.
-//   filters   — [{ key, label, options: string[] }]. `options[0]` is treated
-//               as the "no filter" / "All ___" value. Omit or pass [] to hide
-//               filter dropdowns entirely.
-//   pageSize        — rows per page (default 5).
-//   showPagination  — set false to render every filtered row with no
-//                     pager (useful for short, one-off lists).
-//   emptyMessage    — shown when the filtered result set is empty.
-
 export default function AdminTable({
   columns,
   rows,
@@ -44,10 +15,7 @@ export default function AdminTable({
     () => Object.fromEntries(filters.map((f) => [f.key, f.options[0]]))
   );
   const [page, setPage] = useState(1);
-  const [hoveredRow, setHoveredRow] = useState(null);
 
-  // Reset back to page 1 whenever the search or filter criteria change,
-  // so the person isn't stuck on a now-empty page 3.
   useEffect(() => {
     setPage(1);
   }, [search, JSON.stringify(filterValues)]);
@@ -78,23 +46,14 @@ export default function AdminTable({
   return (
     <div>
       {showControls && (
-        <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
+        <div className="flex gap-3 mb-4 flex-wrap">
           {searchKeys.length > 0 && (
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={searchPlaceholder}
-              style={{
-                height: "36px",
-                padding: "0 12px",
-                fontSize: "13px",
-                border: "1px solid #E0E8E3",
-                borderRadius: "8px",
-                outline: "none",
-                width: "260px",
-                color: "#111111",
-              }}
+              className="h-9 px-3 text-[13px] border border-border rounded-lg outline-none w-[260px] text-ink"
             />
           )}
           {filters.map((f) => (
@@ -104,53 +63,25 @@ export default function AdminTable({
               onChange={(e) =>
                 setFilterValues((prev) => ({ ...prev, [f.key]: e.target.value }))
               }
-              style={{
-                height: "36px",
-                padding: "0 10px",
-                fontSize: "13px",
-                border: "1px solid #E0E8E3",
-                borderRadius: "8px",
-                outline: "none",
-                backgroundColor: "#FFFFFF",
-                color: "#111111",
-                width: "150px",
-                textTransform: "capitalize",
-              }}
+              className="h-9 px-2.5 text-[13px] border border-border rounded-lg outline-none bg-white text-ink w-[150px] capitalize"
             >
               {f.options.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
+                <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
           ))}
         </div>
       )}
 
-      <div
-        style={{
-          backgroundColor: "#FFFFFF",
-          borderRadius: "12px",
-          border: "0.5px solid #E0E8E3",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+      <div className="bg-white rounded-xl border border-border/50 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr style={{ backgroundColor: "#F5F5F0" }}>
+              <tr className="bg-page">
                 {columns.map((col) => (
                   <th
                     key={col.key}
-                    style={{
-                      textAlign: "left",
-                      padding: "12px 16px",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.03em",
-                      color: "#555555",
-                    }}
+                    className="text-left px-4 py-3 text-xs font-medium uppercase tracking-[0.03em] text-ink-muted"
                   >
                     {col.label}
                   </th>
@@ -162,12 +93,7 @@ export default function AdminTable({
                 <tr>
                   <td
                     colSpan={columns.length}
-                    style={{
-                      padding: "32px 16px",
-                      textAlign: "center",
-                      fontSize: "13px",
-                      color: "#555555",
-                    }}
+                    className="px-4 py-8 text-center text-[13px] text-ink-muted"
                   >
                     {emptyMessage}
                   </td>
@@ -176,20 +102,12 @@ export default function AdminTable({
                 pageRows.map((row) => (
                   <tr
                     key={row.id}
-                    onMouseEnter={() => setHoveredRow(row.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                    style={{
-                      borderTop: "1px solid #E0E8E3",
-                      backgroundColor: hoveredRow === row.id ? "#F5F5F0" : "#FFFFFF",
-                      transition: "background-color 0.1s",
-                    }}
+                    className="border-t border-border bg-white hover:bg-page transition-colors duration-100"
                   >
                     {columns.map((col) => (
-                      <td key={col.key} style={{ padding: "14px 16px", verticalAlign: "middle" }}>
+                      <td key={col.key} className="px-4 py-3.5 align-middle">
                         {col.render ? col.render(row) : (
-                          <span style={{ fontSize: "13px", color: "#555555" }}>
-                            {row[col.key]}
-                          </span>
+                          <span className="text-[13px] text-ink-muted">{row[col.key]}</span>
                         )}
                       </td>
                     ))}
@@ -201,50 +119,25 @@ export default function AdminTable({
         </div>
 
         {showPagination && filtered.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "8px",
-              padding: "16px",
-              borderTop: "1px solid #E0E8E3",
-            }}
-          >
+          <div className="flex justify-center items-center gap-2 p-4 border-t border-border">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              style={{
-                padding: "9px 18px",
-                fontSize: "13px",
-                fontWeight: 500,
-                border: "0.5px solid #CCCCCC",
-                borderRadius: "8px",
-                backgroundColor: "#FFFFFF",
-                color: "#555555",
-                cursor: currentPage === 1 ? "default" : "pointer",
-                opacity: currentPage === 1 ? 0.4 : 1,
-              }}
+              className={`px-4 py-2 text-[13px] font-medium border border-border-muted rounded-lg bg-white text-ink-muted ${
+                currentPage === 1 ? "opacity-40 cursor-default" : "cursor-pointer"
+              }`}
             >
               Previous
             </button>
-            <span style={{ fontSize: "13px", color: "#555555", padding: "0 4px" }}>
+            <span className="text-[13px] text-ink-muted px-1">
               Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              style={{
-                padding: "9px 18px",
-                fontSize: "13px",
-                fontWeight: 500,
-                border: "0.5px solid #CCCCCC",
-                borderRadius: "8px",
-                backgroundColor: "#FFFFFF",
-                color: "#555555",
-                cursor: currentPage === totalPages ? "default" : "pointer",
-                opacity: currentPage === totalPages ? 0.4 : 1,
-              }}
+              className={`px-4 py-2 text-[13px] font-medium border border-border-muted rounded-lg bg-white text-ink-muted ${
+                currentPage === totalPages ? "opacity-40 cursor-default" : "cursor-pointer"
+              }`}
             >
               Next
             </button>

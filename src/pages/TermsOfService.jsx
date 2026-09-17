@@ -31,24 +31,22 @@ const SECTIONS = [
 
 export default function TermsOfService() {
   return (
-    <div style={{ paddingTop: "56px", backgroundColor: "#FFFFFF", minHeight: "calc(100vh - 56px)" }}>
-      <section style={{ backgroundColor: "#0F3D1E", padding: "56px 24px", textAlign: "center" }}>
-        <h1 style={{ fontSize: "26px", fontWeight: 500, color: "#FFFFFF" }}>Terms of Service</h1>
-        <p style={{ fontSize: "13px", color: "#A8E6BE", marginTop: "8px" }}>Last updated August 2026</p>
+    <div className="pt-14 bg-white min-h-[calc(100vh-56px)]">
+      <section className="bg-green-dark px-6 py-14 text-center">
+        <h1 className="text-[26px] font-medium text-white">Terms of Service</h1>
+        <p className="text-[13px] text-green-tint-2 mt-2">Last updated August 2026</p>
       </section>
 
-      <section style={{ maxWidth: "720px", margin: "0 auto", padding: "48px 24px" }}>
-        <p style={{ fontSize: "14px", color: "#555555", lineHeight: 1.7, marginBottom: "32px" }}>
+      <section className="max-w-[720px] mx-auto px-4 sm:px-6 py-12">
+        <p className="text-sm text-ink-muted leading-[1.7] mb-8">
           These terms govern your use of AgroRent to list, browse, and rent farm equipment. By
           creating an account you agree to the terms below.
         </p>
 
         {SECTIONS.map((s) => (
-          <div key={s.title} style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "8px" }}>
-              {s.title}
-            </h2>
-            <p style={{ fontSize: "14px", color: "#555555", lineHeight: 1.7 }}>{s.body}</p>
+          <div key={s.title} className="mb-7">
+            <h2 className="text-base font-medium text-ink mb-2">{s.title}</h2>
+            <p className="text-sm text-ink-muted leading-[1.7]">{s.body}</p>
           </div>
         ))}
       </section>

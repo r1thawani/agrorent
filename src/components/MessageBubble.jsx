@@ -1,32 +1,19 @@
-// One chat bubble, extracted from Conversation.jsx's inline thread.map().
-// Kept intentionally tiny/presentational — Conversation.jsx still owns the
-// thread state and the send form.
 export default function MessageBubble({ message }) {
   const isMe = message.from === "me";
 
   return (
-    <div style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start" }}>
-      <div style={{ maxWidth: "65%" }}>
+    <div className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+      <div className="max-w-[65%]">
         <div
-          style={{
-            padding: "10px 14px",
-            borderRadius: isMe ? "12px 12px 4px 12px" : "12px 12px 12px 4px",
-            fontSize: "14px",
-            backgroundColor: isMe ? "#FF5C00" : "#FFFFFF",
-            color: isMe ? "#FFFFFF" : "#111111",
-            border: isMe ? "none" : "0.5px solid #E0E8E3",
-          }}
+          className={`px-3.5 py-2.5 text-sm ${
+            isMe
+              ? "rounded-xl rounded-br-[4px] bg-orange text-white"
+              : "rounded-xl rounded-bl-[4px] bg-white text-ink border border-border/50"
+          }`}
         >
           {message.text}
         </div>
-        <div
-          style={{
-            fontSize: "11px",
-            color: "#555555",
-            marginTop: "3px",
-            textAlign: isMe ? "right" : "left",
-          }}
-        >
+        <div className={`text-[11px] text-ink-muted mt-[3px] ${isMe ? "text-right" : "text-left"}`}>
           {message.time}
         </div>
       </div>

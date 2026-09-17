@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/MyListings.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PlusCircle } from "lucide-react";
@@ -15,7 +14,6 @@ export default function MyListings() {
 
   useEffect(() => {
     if (!user) return;
-
     Promise.all([
       equipmentService.getMine(user.id),
       bookingService.getRequestsForOwner(user.id),
@@ -27,7 +25,6 @@ export default function MyListings() {
             .filter((b) => b.status === "confirmed" || b.status === "completed")
             .reduce((sum, b) => sum + Number(b.total_price), 0);
           const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
-
           return {
             ...eq,
             image: photos[0]?.url || "",
@@ -56,114 +53,49 @@ export default function MyListings() {
 
   async function deleteListing(id) {
     setListings((prev) => prev.filter((eq) => eq.id !== id));
-    try {
-      await equipmentService.remove(id);
-    } catch {
-      // If deletion fails, the listing simply won't show back up until refresh —
-      // acceptable tradeoff for keeping this simple.
-    }
+    try { await equipmentService.remove(id); } catch { /* stale optimistic remove is acceptable */ }
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
-      <Sidebar role="owner" activeLink="/my-listings" />
+    <div className="min-h-screen bg-page pt-14">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6">
+        <Sidebar role="owner" activeLink="/my-listings" />
 
-      <div style={{ flex: 1, minWidth: 0, padding: "40px 32px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 24,
-          }}
-        >
-          <h1 style={{ fontSize: 22, fontWeight: 500, color: "#111111", margin: 0 }}>
-            My listings
-          </h1>
-          <Link
-            to="/post-listing"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "9px 16px",
-              fontSize: 13,
-              fontWeight: 500,
-              color: "#fff",
-              backgroundColor: "#1A5C2E",
-              borderRadius: 8,
-              textDecoration: "none",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#145226")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1A5C2E")}
-          >
-            <PlusCircle size={15} />
-            Post new listing
-          </Link>
-        </div>
-
-        {loading && (
-          <div style={{ textAlign: "center", padding: "80px 0", color: "#555555" }}>Loading…</div>
-        )}
-
-        {loadError && (
-          <div style={{ textAlign: "center", padding: "80px 0", color: "#A02020" }}>{loadError}</div>
-        )}
-
-        {!loading && !loadError && listings.length === 0 && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              paddingTop: 80,
-              paddingBottom: 80,
-              gap: 16,
-            }}
-          >
-            <div
-              style={{
-                width: 120,
-                height: 80,
-                border: "2px dashed #E0E8E3",
-                borderRadius: 12,
-              }}
-            />
-            <div style={{ fontSize: 18, fontWeight: 500, color: "#111111" }}>
-              No listings yet
-            </div>
-            <div style={{ fontSize: 14, color: "#555555" }}>
-              Post your first listing to start earning.
-            </div>
-            <Link
-              to="/post-listing"
-              style={{
-                padding: "9px 24px",
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#fff",
-                backgroundColor: "#FF5C00",
-                borderRadius: 8,
-                textDecoration: "none",
-              }}
-            >
-              Post a listing
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-[22px] font-medium text-ink">My listings</h1>
+            <Link to="/post-listing"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-white bg-green rounded-lg no-underline hover:bg-green-dark transition-colors">
+              <PlusCircle size={15} />
+              Post new listing
             </Link>
           </div>
-        )}
 
-        {!loading && !loadError && listings.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {listings.map((eq) => (
-              <ListingRow
-                key={eq.id}
-                eq={eq}
-                onToggle={() => toggleAvailability(eq.id)}
-                onDelete={() => deleteListing(eq.id)}
-              />
-            ))}
-          </div>
-        )}
+          {loading && <div className="text-center py-20 text-ink-muted">Loading…</div>}
+          {loadError && <div className="text-center py-20 text-red">{loadError}</div>}
+
+          {!loading && !loadError && listings.length === 0 && (
+            <div className="flex flex-col items-center py-20 gap-4">
+              <div className="w-[120px] h-20 border-2 border-dashed border-border rounded-xl" />
+              <div className="text-[18px] font-medium text-ink">No listings yet</div>
+              <div className="text-sm text-ink-muted">Post your first listing to start earning.</div>
+              <Link to="/post-listing"
+                className="px-6 py-2 text-[13px] font-medium text-white bg-orange rounded-lg no-underline">
+                Post a listing
+              </Link>
+            </div>
+          )}
+
+          {!loading && !loadError && listings.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              {listings.map((eq) => (
+                <ListingRow key={eq.id} eq={eq}
+                  onToggle={() => toggleAvailability(eq.id)}
+                  onDelete={() => deleteListing(eq.id)} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -171,193 +103,61 @@ export default function MyListings() {
 
 function ListingRow({ eq, onToggle, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [hoverEdit, setHoverEdit] = useState(false);
-  const [hoverToggle, setHoverToggle] = useState(false);
-  const [hoverDelete, setHoverDelete] = useState(false);
 
   return (
-    <div
-      style={{
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        padding: "14px 16px",
-        border: "0.5px solid #E0E8E3",
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-      }}
-    >
-      <img
-        src={eq.image}
-        alt={eq.name}
-        style={{
-          width: 80,
-          height: 64,
-          borderRadius: 8,
-          objectFit: "cover",
-          flexShrink: 0,
-          backgroundColor: "#F5F5F0",
-        }}
-      />
+    <div className="bg-white rounded-xl px-4 py-3.5 border border-border/50 flex items-center gap-3.5">
+      <img src={eq.image} alt={eq.name}
+        className="w-20 h-16 rounded-lg object-cover shrink-0 bg-page" />
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <span
-            style={{
-              fontSize: 15,
-              fontWeight: 500,
-              color: "#111111",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {eq.name}
-          </span>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 500,
-              padding: "2px 8px",
-              borderRadius: 20,
-              flexShrink: 0,
-              backgroundColor: eq.isAvailable ? "#D4EDDA" : "#F5F5F0",
-              color: eq.isAvailable ? "#0F3D1E" : "#555555",
-            }}
-          >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[15px] font-medium text-ink truncate">{eq.name}</span>
+          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
+            eq.isAvailable ? "bg-green-tint text-green-dark" : "bg-page text-ink-muted"
+          }`}>
             {eq.isAvailable ? "Available" : "Unavailable"}
           </span>
         </div>
-        <span
-          style={{
-            display: "inline-block",
-            fontSize: 11,
-            fontWeight: 500,
-            padding: "2px 8px",
-            borderRadius: 20,
-            backgroundColor: "#D4EDDA",
-            color: "#0F3D1E",
-            marginBottom: 4,
-          }}
-        >
+        <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-tint text-green-dark mb-1">
           {eq.category}
         </span>
-        <div style={{ fontSize: 12, color: "#555555" }}>Posted {eq.listed}</div>
+        <div className="text-xs text-ink-muted">Posted {eq.listed}</div>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: 28,
-          flexShrink: 0,
-          marginRight: 8,
-        }}
-      >
+      <div className="flex gap-7 shrink-0 mr-2">
         <div>
-          <div style={{ fontSize: 12, color: "#555555" }}>Bookings</div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "#111111" }}>
-            {eq.bookingsCount}
-          </div>
+          <div className="text-xs text-ink-muted">Bookings</div>
+          <div className="text-sm font-medium text-ink">{eq.bookingsCount}</div>
         </div>
         <div>
-          <div style={{ fontSize: 12, color: "#555555" }}>Earnings</div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "#111111" }}>
-            K{eq.earnings.toLocaleString()}
-          </div>
+          <div className="text-xs text-ink-muted">Earnings</div>
+          <div className="text-sm font-medium text-ink">K{eq.earnings.toLocaleString()}</div>
         </div>
       </div>
 
       {confirmDelete ? (
-        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button
-            onClick={onDelete}
-            style={{
-              padding: "6px 12px",
-              fontSize: 12,
-              fontWeight: 500,
-              color: "#fff",
-              backgroundColor: "#DC2626",
-              border: "none",
-              borderRadius: 8,
-              cursor: "pointer",
-            }}
-          >
+        <div className="flex gap-1.5 shrink-0">
+          <button onClick={onDelete}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-red rounded-lg border-none cursor-pointer">
             Confirm
           </button>
-          <button
-            onClick={() => setConfirmDelete(false)}
-            style={{
-              padding: "6px 12px",
-              fontSize: 12,
-              color: "#555555",
-              backgroundColor: "#fff",
-              border: "1px solid #E0E8E3",
-              borderRadius: 8,
-              cursor: "pointer",
-            }}
-          >
+          <button onClick={() => setConfirmDelete(false)}
+            className="px-3 py-1.5 text-xs text-ink-muted bg-white border border-border rounded-lg cursor-pointer">
             Cancel
           </button>
         </div>
       ) : (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-            flexShrink: 0,
-          }}
-        >
-          <Link
-            to={`/listings/${eq.id}/edit`}
-            style={{
-              display: "block",
-              padding: "6px 12px",
-              fontSize: 13,
-              fontWeight: 500,
-              color: hoverEdit ? "#fff" : "#FF5C00",
-              backgroundColor: hoverEdit ? "#FF5C00" : "transparent",
-              border: "1.5px solid #FF5C00",
-              borderRadius: 8,
-              textDecoration: "none",
-              textAlign: "center",
-              transition: "background-color 0.12s, color 0.12s",
-            }}
-            onMouseEnter={() => setHoverEdit(true)}
-            onMouseLeave={() => setHoverEdit(false)}
-          >
+        <div className="flex flex-col gap-1.5 shrink-0">
+          <Link to={`/listings/${eq.id}/edit`}
+            className="block px-3 py-1.5 text-[13px] font-medium text-orange border border-orange rounded-lg no-underline text-center hover:bg-orange hover:text-white transition-colors">
             Edit
           </Link>
-          <button
-            onClick={onToggle}
-            style={{
-              padding: "6px 12px",
-              fontSize: 13,
-              color: "#555555",
-              backgroundColor: hoverToggle ? "#F5F5F0" : "#fff",
-              border: "1px solid #E0E8E3",
-              borderRadius: 8,
-              cursor: "pointer",
-            }}
-            onMouseEnter={() => setHoverToggle(true)}
-            onMouseLeave={() => setHoverToggle(false)}
-          >
+          <button onClick={onToggle}
+            className="px-3 py-1.5 text-[13px] text-ink-muted bg-white border border-border rounded-lg cursor-pointer hover:bg-page transition-colors">
             {eq.isAvailable ? "Mark unavailable" : "Mark available"}
           </button>
-          <button
-            onClick={() => setConfirmDelete(true)}
-            style={{
-              padding: "6px 12px",
-              fontSize: 13,
-              color: "#DC2626",
-              backgroundColor: hoverDelete ? "#FDECEA" : "#fff",
-              border: "1px solid #E0E8E3",
-              borderRadius: 8,
-              cursor: "pointer",
-            }}
-            onMouseEnter={() => setHoverDelete(true)}
-            onMouseLeave={() => setHoverDelete(false)}
-          >
+          <button onClick={() => setConfirmDelete(true)}
+            className="px-3 py-1.5 text-[13px] text-red bg-white border border-border rounded-lg cursor-pointer hover:bg-red-tint transition-colors">
             Delete
           </button>
         </div>

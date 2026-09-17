@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/OwnerDashboard.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
@@ -10,7 +9,6 @@ import { messageService } from "../services/messageService";
 import { useAuth } from "../hooks/useAuth";
 
 export default function OwnerDashboard() {
-  const [activeLink] = useState("/dashboard/owner");
   const { user } = useAuth();
   const firstName = (user?.name || "there").split(" ")[0];
 
@@ -36,20 +34,14 @@ export default function OwnerDashboard() {
 
   async function accept(id) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "confirmed" } : b)));
-    try {
-      await bookingService.accept(id);
-    } catch {
-      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b)));
-    }
+    try { await bookingService.accept(id); }
+    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b))); }
   }
 
   async function decline(id) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "declined" } : b)));
-    try {
-      await bookingService.decline(id);
-    } catch {
-      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b)));
-    }
+    try { await bookingService.decline(id); }
+    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b))); }
   }
 
   const pendingRequests = bookings.filter((b) => b.status === "pending");
@@ -64,165 +56,54 @@ export default function OwnerDashboard() {
     .reduce((sum, b) => sum + Number(b.total_price), 0);
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#F5F5F0",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          padding: "32px 24px",
-          paddingTop: "88px",
-          display: "flex",
-          gap: "24px",
-          alignItems: "flex-start",
-        }}
-      >
-        <Sidebar role="owner" activeLink={activeLink} />
+    <div className="min-h-screen bg-page pt-14">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 items-start">
+        <Sidebar role="owner" activeLink="/dashboard/owner" />
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111" }}>
-            Welcome back, {firstName}
-          </h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[22px] font-medium text-ink">Welcome back, {firstName}</h1>
 
-          {/* Stat Cards */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: "16px",
-              marginTop: "20px",
-            }}
-          >
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
             <StatCard label="Active listings" value={listings.length} />
             <StatCard label="Pending requests" value={pendingRequests.length} valueColor="#FF5C00" />
             <StatCard label="Confirmed bookings" value={confirmedBookings.length} />
             <StatCard label="Earnings this month" value={`K${earningsThisMonth.toLocaleString()}`} valueColor="#FF5C00" />
           </div>
 
-          {/* Pending Booking Requests */}
-          <div style={{ marginTop: "28px" }}>
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: 500,
-                color: "#111111",
-                marginBottom: "12px",
-              }}
-            >
-              Pending booking requests
-            </h2>
+          <div className="mt-7">
+            <h2 className="text-base font-medium text-ink mb-3">Pending booking requests</h2>
             {loading ? (
-              <div style={{ textAlign: "center", padding: "24px", color: "#555555" }}>Loading…</div>
+              <div className="text-center py-6 text-ink-muted">Loading…</div>
             ) : pendingRequests.length === 0 ? (
-              <div
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: "12px",
-                  padding: "24px",
-                  textAlign: "center",
-                  fontSize: "14px",
-                  color: "#555555",
-                  border: "0.5px solid #E0E8E3",
-                }}
-              >
+              <div className="bg-white rounded-xl p-6 text-center text-sm text-ink-muted border border-border/50">
                 No pending requests
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div className="flex flex-col gap-2.5">
                 {pendingRequests.map((r) => (
-                  <div
-                    key={r.id}
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: "12px",
-                      padding: "16px",
-                      border: "0.5px solid #E0E8E3",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                      <img
-                        src={r.renter?.photo_url}
-                        alt={r.renter?.name}
-                        style={{
-                          width: "44px",
-                          height: "44px",
-                          borderRadius: "50%",
-                          objectFit: "cover",
-                          flexShrink: 0,
-                          backgroundColor: "#F5F5F0",
-                        }}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>
-                          {r.renter?.name}
-                        </div>
-                        <div style={{ fontSize: "13px", color: "#555555" }}>{r.equipment?.name}</div>
-                        <div style={{ fontSize: "13px", color: "#555555" }}>
-                          {r.start_date} – {r.end_date}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#FF5C00",
-                            marginTop: "4px",
-                          }}
-                        >
+                  <div key={r.id} className="bg-white rounded-xl p-4 border border-border/50">
+                    <div className="flex items-start gap-3">
+                      <img src={r.renter?.photo_url} alt={r.renter?.name}
+                        className="w-11 h-11 rounded-full object-cover shrink-0 bg-page" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-ink">{r.renter?.name}</div>
+                        <div className="text-[13px] text-ink-muted">{r.equipment?.name}</div>
+                        <div className="text-[13px] text-ink-muted">{r.start_date} – {r.end_date}</div>
+                        <div className="text-sm font-medium text-orange mt-1">
                           K{Number(r.total_price).toLocaleString()} total
                         </div>
                       </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <button
-                          onClick={() => accept(r.id)}
-                          style={{
-                            padding: "9px 18px",
-                            fontSize: "13px",
-                            fontWeight: 500,
-                            color: "#FFFFFF",
-                            backgroundColor: "#1A5C2E",
-                            borderRadius: "8px",
-                            border: "none",
-                            cursor: "pointer",
-                          }}
-                        >
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <button onClick={() => accept(r.id)}
+                          className="px-[18px] py-2 text-[13px] font-medium text-white bg-green rounded-lg border-none cursor-pointer">
                           Accept
                         </button>
-                        <button
-                          onClick={() => decline(r.id)}
-                          style={{
-                            padding: "9px 18px",
-                            fontSize: "13px",
-                            fontWeight: 500,
-                            color: "#555555",
-                            backgroundColor: "transparent",
-                            borderRadius: "8px",
-                            border: "0.5px solid #CCCCCC",
-                            cursor: "pointer",
-                          }}
-                        >
+                        <button onClick={() => decline(r.id)}
+                          className="px-[18px] py-2 text-[13px] font-medium text-ink-muted bg-transparent border border-border-muted rounded-lg cursor-pointer">
                           Decline
                         </button>
-                        <Link
-                          to="/messages"
-                          style={{
-                            fontSize: "12px",
-                            color: "#1A5C2E",
-                            textAlign: "center",
-                            textDecoration: "none",
-                          }}
-                        >
+                        <Link to="/messages"
+                          className="text-xs text-center text-green no-underline">
                           Message renter
                         </Link>
                       </div>
@@ -233,36 +114,16 @@ export default function OwnerDashboard() {
             )}
           </div>
 
-          {/* Upcoming Confirmed Bookings */}
-          <div style={{ marginTop: "28px" }}>
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: 500,
-                color: "#111111",
-                marginBottom: "12px",
-              }}
-            >
-              Upcoming confirmed bookings
-            </h2>
+          <div className="mt-7">
+            <h2 className="text-base font-medium text-ink mb-3">Upcoming confirmed bookings</h2>
             {loading ? (
-              <div style={{ textAlign: "center", padding: "24px", color: "#555555" }}>Loading…</div>
+              <div className="text-center py-6 text-ink-muted">Loading…</div>
             ) : confirmedBookings.length === 0 ? (
-              <div
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: "12px",
-                  padding: "24px",
-                  textAlign: "center",
-                  fontSize: "14px",
-                  color: "#555555",
-                  border: "0.5px solid #E0E8E3",
-                }}
-              >
+              <div className="bg-white rounded-xl p-6 text-center text-sm text-ink-muted border border-border/50">
                 No confirmed bookings yet
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div className="flex flex-col gap-2.5">
                 {confirmedBookings.map((b) => (
                   <BookingCard key={b.id} booking={b} linkTo="/booking-requests" />
                 ))}
@@ -270,82 +131,26 @@ export default function OwnerDashboard() {
             )}
           </div>
 
-          {/* Recent Messages */}
-          <div style={{ marginTop: "28px" }}>
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: 500,
-                color: "#111111",
-                marginBottom: "12px",
-              }}
-            >
-              Recent messages
-            </h2>
+          <div className="mt-7">
+            <h2 className="text-base font-medium text-ink mb-3">Recent messages</h2>
             {loading ? (
-              <div style={{ textAlign: "center", padding: "24px", color: "#555555" }}>Loading…</div>
+              <div className="text-center py-6 text-ink-muted">Loading…</div>
             ) : conversations.length === 0 ? (
-              <div
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: "12px",
-                  padding: "24px",
-                  textAlign: "center",
-                  fontSize: "14px",
-                  color: "#555555",
-                  border: "0.5px solid #E0E8E3",
-                }}
-              >
+              <div className="bg-white rounded-xl p-6 text-center text-sm text-ink-muted border border-border/50">
                 No messages yet
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div className="flex flex-col gap-2.5">
                 {conversations.slice(0, 2).map((m) => (
-                  <Link
-                    key={m.id}
-                    to="/messages"
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: "12px",
-                      padding: "14px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      border: "0.5px solid #E0E8E3",
-                      textDecoration: "none",
-                    }}
-                  >
-                    <img
-                      src={m.photo}
-                      alt={m.person}
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                        flexShrink: 0,
-                        backgroundColor: "#F5F5F0",
-                      }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>
-                        {m.person}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          color: "#555555",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {m.lastMessage}
-                      </div>
+                  <Link key={m.id} to="/messages"
+                    className="bg-white rounded-xl p-3.5 flex items-center gap-3 border border-border/50 no-underline">
+                    <img src={m.photo} alt={m.person}
+                      className="w-9 h-9 rounded-full object-cover shrink-0 bg-page" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-ink">{m.person}</div>
+                      <div className="text-[13px] text-ink-muted truncate">{m.lastMessage}</div>
                     </div>
-                    <span style={{ fontSize: "12px", color: "#555555", flexShrink: 0 }}>
-                      {m.time}
-                    </span>
+                    <span className="text-xs text-ink-muted shrink-0">{m.time}</span>
                   </Link>
                 ))}
               </div>

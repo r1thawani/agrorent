@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/BookingRequests.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
@@ -6,132 +5,53 @@ import { bookingService } from "../services/bookingService";
 import { useAuth } from "../hooks/useAuth";
 
 const TABS = ["Pending", "Accepted", "Declined"];
+const TAB_TO_STATUS = { Pending: "pending", Accepted: "confirmed", Declined: "declined" };
 
-// Maps the tab label to the real database status value.
-const TAB_TO_STATUS = {
-  Pending: "pending",
-  Accepted: "confirmed",
-  Declined: "declined",
+const STATUS_CLASSES = {
+  pending:   "bg-orange-tint text-orange-dark",
+  confirmed: "bg-green-tint text-green-dark",
+  declined:  "bg-red-tint text-red",
 };
-
-const STATUS_STYLES = {
-  pending: { bg: "#FFE8D6", text: "#CC4A00", label: "Pending" },
-  confirmed: { bg: "#D4EDDA", text: "#0F3D1E", label: "Accepted" },
-  declined: { bg: "#FDECEA", text: "#A02020", label: "Declined" },
-};
+const STATUS_LABELS = { pending: "Pending", confirmed: "Accepted", declined: "Declined" };
 
 function StatusBadge({ status }) {
-  const s = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
   return (
-    <span
-      style={{
-        display: "inline-block",
-        fontSize: "11px",
-        fontWeight: 500,
-        padding: "3px 10px",
-        borderRadius: "20px",
-        backgroundColor: s.bg,
-        color: s.text,
-      }}
-    >
-      {s.label}
+    <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full ${STATUS_CLASSES[status] || STATUS_CLASSES.pending}`}>
+      {STATUS_LABELS[status] || "Pending"}
     </span>
   );
 }
 
 function RequestRow({ request, onAccept, onDecline }) {
-  const dateRange = `${request.start_date} → ${request.end_date}`;
   return (
-    <div
-      style={{
-        backgroundColor: "#FFFFFF",
-        borderRadius: "12px",
-        padding: "16px",
-        border: "0.5px solid #E0E8E3",
-        display: "flex",
-        alignItems: "flex-start",
-        gap: "12px",
-      }}
-    >
-      <img
-        src={request.renter?.photo_url}
-        alt={request.renter?.name}
-        style={{
-          width: "44px",
-          height: "44px",
-          borderRadius: "50%",
-          objectFit: "cover",
-          flexShrink: 0,
-          backgroundColor: "#F5F5F0",
-        }}
-      />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111" }}>
-          {request.renter?.name}
-        </div>
-        <div style={{ fontSize: "13px", color: "#555555", marginTop: "2px" }}>
+    <div className="bg-white rounded-xl p-4 border border-border/50 flex items-start gap-3">
+      <img src={request.renter?.photo_url} alt={request.renter?.name}
+        className="w-11 h-11 rounded-full object-cover shrink-0 bg-page" />
+      <div className="flex-1 min-w-0">
+        <div className="text-[15px] font-medium text-ink">{request.renter?.name}</div>
+        <div className="text-[13px] text-ink-muted mt-0.5">
           wants to rent{" "}
-          <Link
-            to={`/listings/${request.equipment_id}`}
-            style={{ fontWeight: 500, color: "#1A5C2E", textDecoration: "none" }}
-          >
+          <Link to={`/listings/${request.equipment_id}`} className="font-medium text-green no-underline">
             {request.equipment?.name}
           </Link>
         </div>
-        <div style={{ fontSize: "13px", color: "#555555" }}>{dateRange}</div>
-        <div
-          style={{
-            fontSize: "15px",
-            fontWeight: 500,
-            color: "#FF5C00",
-            marginTop: "4px",
-          }}
-        >
+        <div className="text-[13px] text-ink-muted">{request.start_date} → {request.end_date}</div>
+        <div className="text-[15px] font-medium text-orange mt-1">
           K{Number(request.total_price).toLocaleString()} total
         </div>
       </div>
-      <div style={{ flexShrink: 0 }}>
+      <div className="shrink-0">
         {request.status === "pending" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <button
-              onClick={() => onAccept(request.id)}
-              style={{
-                backgroundColor: "#1A5C2E",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "8px",
-                padding: "9px 18px",
-                fontSize: "13px",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
+          <div className="flex flex-col gap-2">
+            <button onClick={() => onAccept(request.id)}
+              className="bg-green text-white border-none rounded-lg px-4 py-2 text-[13px] font-medium cursor-pointer">
               Accept
             </button>
-            <button
-              onClick={() => onDecline(request.id)}
-              style={{
-                backgroundColor: "transparent",
-                color: "#555555",
-                border: "0.5px solid #CCCCCC",
-                borderRadius: "8px",
-                padding: "9px 18px",
-                fontSize: "13px",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={() => onDecline(request.id)}
+              className="bg-transparent text-ink-muted border border-border-muted rounded-lg px-4 py-2 text-[13px] font-medium cursor-pointer">
               Decline
             </button>
-            <Link
-              to="/messages"
-              style={{
-                fontSize: "12px",
-                textAlign: "center",
-                color: "#1A5C2E",
-                textDecoration: "none",
-              }}
-            >
+            <Link to="/messages" className="text-xs text-center text-green no-underline">
               Message renter
             </Link>
           </div>
@@ -152,8 +72,7 @@ export default function BookingRequests() {
 
   useEffect(() => {
     if (!user) return;
-    bookingService
-      .getRequestsForOwner(user.id)
+    bookingService.getRequestsForOwner(user.id)
       .then(setRequests)
       .catch(() => setLoadError("Could not load booking requests."))
       .finally(() => setLoading(false));
@@ -163,104 +82,57 @@ export default function BookingRequests() {
 
   async function accept(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "confirmed" } : r)));
-    try {
-      await bookingService.accept(id);
-    } catch {
-      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r)));
-    }
+    try { await bookingService.accept(id); }
+    catch { setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r))); }
   }
 
   async function decline(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "declined" } : r)));
-    try {
-      await bookingService.decline(id);
-    } catch {
-      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r)));
-    }
+    try { await bookingService.decline(id); }
+    catch { setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r))); }
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
-      <Sidebar role="owner" activeLink="/booking-requests" />
-      <div style={{ flex: 1, padding: "32px 40px" }}>
-        <h1
-          style={{
-            fontSize: "22px",
-            fontWeight: 500,
-            color: "#111111",
-            marginBottom: "16px",
-          }}
-        >
-          Booking requests
-        </h1>
+    <div className="min-h-screen bg-page pt-14">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 items-start">
+        <Sidebar activeLink="/booking-requests" />
 
-        <div
-          style={{
-            display: "flex",
-            gap: "24px",
-            borderBottom: "1px solid #E0E8E3",
-            marginBottom: "20px",
-          }}
-        >
-          {TABS.map((tab) => {
-            const active = activeTab === tab;
-            return (
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[22px] font-medium text-ink mb-4">Booking requests</h1>
+
+          <div className="flex gap-6 border-b border-border mb-5">
+            {TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  paddingBottom: "12px",
-                  borderBottom: active ? "2px solid #FF5C00" : "2px solid transparent",
-                  color: active ? "#FF5C00" : "#555555",
-                  fontWeight: active ? 500 : 400,
-                }}
+                className={`text-sm pb-3 bg-transparent border-none cursor-pointer border-b-2 ${
+                  activeTab === tab
+                    ? "border-orange text-orange font-medium"
+                    : "border-transparent text-ink-muted font-normal"
+                }`}
               >
                 {tab}
               </button>
-            );
-          })}
-        </div>
-
-        {loading && (
-          <div style={{ textAlign: "center", padding: "40px", color: "#555555" }}>Loading…</div>
-        )}
-
-        {loadError && (
-          <div style={{ textAlign: "center", padding: "40px", color: "#A02020" }}>{loadError}</div>
-        )}
-
-        {!loading && !loadError && filtered.length === 0 && (
-          <div
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: "12px",
-              padding: "40px",
-              textAlign: "center",
-              fontSize: "14px",
-              color: "#555555",
-              border: "0.5px solid #E0E8E3",
-            }}
-          >
-            No {activeTab.toLowerCase()} requests
-          </div>
-        )}
-
-        {!loading && !loadError && filtered.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {filtered.map((r) => (
-              <RequestRow
-                key={r.id}
-                request={r}
-                onAccept={accept}
-                onDecline={decline}
-              />
             ))}
           </div>
-        )}
+
+          {loading && <div className="text-center py-10 text-ink-muted">Loading…</div>}
+          {loadError && <div className="text-center py-10 text-red">{loadError}</div>}
+
+          {!loading && !loadError && filtered.length === 0 && (
+            <div className="bg-white rounded-xl p-10 text-center text-sm text-ink-muted border border-border/50">
+              No {activeTab.toLowerCase()} requests
+            </div>
+          )}
+
+          {!loading && !loadError && filtered.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {filtered.map((r) => (
+                <RequestRow key={r.id} request={r} onAccept={accept} onDecline={decline} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

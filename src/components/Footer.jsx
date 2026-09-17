@@ -2,42 +2,38 @@ import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
-    <footer style={{ backgroundColor: "#0F3D1E", padding: "40px 0 24px 0" }}>
-      <div style={{ width: "90%", maxWidth: "1100px", margin: "0 auto" }}>
+    <footer className="bg-green-dark pt-10 pb-6">
+      <div className="w-[90%] max-w-[1100px] mx-auto">
 
-        <div style={{ display: "flex", gap: "80px", marginBottom: "32px" }}>
+        <div className="flex flex-col sm:flex-row gap-8 sm:gap-20 mb-8">
 
-          {/* Column 1 - left */}
-          <div style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-            <p style={{ color: "#FFFFFF", fontWeight: "600", fontSize: "16px", marginBottom: "8px" }}>AgroRent</p>
-            <p style={{ color: "#A8E6BE", fontSize: "14px", lineHeight: "1.6" }}>Rent the equipment.<br />Grow the harvest.</p>
+          <div className="flex-1 flex flex-col items-start">
+            <p className="text-white font-semibold text-base mb-2">AgroRent</p>
+            <p className="text-green-tint-2 text-sm leading-relaxed">Rent the equipment.<br />Grow the harvest.</p>
           </div>
 
-          {/* Column 2 - center */}
-          <div style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <p style={{ color: "#FFFFFF", fontWeight: "600", fontSize: "16px", marginBottom: "8px" }}>Links</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0px", alignItems: "center" }}>
-              <Link to="/listings" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>Browse Equipment</Link>
-              <Link to="/#how-it-works" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>How It Works</Link>
-              <Link to="/post-listing" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>List Your Equipment</Link>
+          <div className="flex-1 flex flex-col items-start sm:items-center">
+            <p className="text-white font-semibold text-base mb-2">Links</p>
+            <div className="flex flex-col">
+              <Link to="/listings" className="text-green-tint-2 text-sm no-underline leading-relaxed">Browse Equipment</Link>
+              <Link to="/#how-it-works" className="text-green-tint-2 text-sm no-underline leading-relaxed">How It Works</Link>
+              <Link to="/post-listing" className="text-green-tint-2 text-sm no-underline leading-relaxed">List Your Equipment</Link>
             </div>
           </div>
 
-          {/* Column 3 - right */}
-          <div style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            <p style={{ color: "#FFFFFF", fontWeight: "600", fontSize: "16px", marginBottom: "8px" }}>Support</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0px", alignItems: "flex-end" }}>
-              <Link to="/contact" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>Contact</Link>
-              <Link to="/privacy" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>Privacy Policy</Link>
-              <Link to="/terms" style={{ color: "#A8E6BE", fontSize: "14px", textDecoration: "none", lineHeight: "1.6" }}>Terms of Service</Link>
+          <div className="flex-1 flex flex-col items-start sm:items-end">
+            <p className="text-white font-semibold text-base mb-2">Support</p>
+            <div className="flex flex-col items-start sm:items-end">
+              <Link to="/contact" className="text-green-tint-2 text-sm no-underline leading-relaxed">Contact</Link>
+              <Link to="/privacy" className="text-green-tint-2 text-sm no-underline leading-relaxed">Privacy Policy</Link>
+              <Link to="/terms" className="text-green-tint-2 text-sm no-underline leading-relaxed">Terms of Service</Link>
             </div>
           </div>
 
         </div>
 
-        {/* Divider */}
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: "20px" }}>
-          <p style={{ color: "#A8E6BE", fontSize: "13px", textAlign: "center" }}>
+        <div className="border-t border-white/15 pt-5">
+          <p className="text-green-tint-2 text-[13px] text-center">
             © 2025 AgroRent. All rights reserved.
           </p>
         </div>

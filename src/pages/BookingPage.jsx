@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/BookingPage.jsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Lock, ChevronLeft } from "lucide-react";
@@ -14,19 +13,6 @@ const PAY_OPTIONS = [
   { id: "mtn", label: "MTN Mobile Money", desc: "Pay with your MTN Mobile Money number" },
   { id: "card", label: "Bank card", desc: "Visa or Mastercard" },
 ];
-
-function getFocusStyle(field, focusedField) {
-  return {
-    width: "100%",
-    height: "44px",
-    padding: "0 12px",
-    fontSize: "14px",
-    borderRadius: "8px",
-    outline: "none",
-    boxSizing: "border-box",
-    border: focusedField === field ? "1.5px solid #FF5C00" : "1px solid #E0E8E3",
-  };
-}
 
 export default function BookingPage() {
   const { id } = useParams();
@@ -52,8 +38,7 @@ export default function BookingPage() {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    equipmentService
-      .getById(id)
+    equipmentService.getById(id)
       .then((data) => {
         setEq(data);
         const defaultFrom = data.available_from && data.available_from > today ? data.available_from : today;
@@ -61,15 +46,14 @@ export default function BookingPage() {
         setEndDate(data.available_until ?? "");
       })
       .catch(() => setLoadError("Could not load this listing."));
-
     bookingService.getForEquipment(id).then(setBookedRanges).catch(() => setBookedRanges([]));
   }, [id]);
 
   if (loadError) {
-    return <div style={{ padding: "88px 16px", textAlign: "center" }}>{loadError}</div>;
+    return <div className="pt-[88px] px-4 text-center text-ink-muted">{loadError}</div>;
   }
   if (!eq) {
-    return <div style={{ padding: "88px 16px", textAlign: "center" }}>Loading…</div>;
+    return <div className="pt-[88px] px-4 text-center text-ink-muted">Loading…</div>;
   }
 
   const isOwnEquipment = user && eq.owner_id === user.id;
@@ -79,21 +63,17 @@ export default function BookingPage() {
   const { subtotal, fee, total, downPayment, balance } = calculateBooking(eq.price_day, days);
   const minStartDate = eq.available_from && eq.available_from > today ? eq.available_from : today;
 
+  function inputCls(field) {
+    return `w-full h-11 px-3 text-sm text-ink rounded-lg outline-none box-border ${
+      focusedField === field ? "border border-orange" : "border border-border/50"
+    }`;
+  }
+
   async function handleConfirm(e) {
     e.preventDefault();
-
-    if (isOwnEquipment) {
-      setError("You can't book your own equipment.");
-      return;
-    }
-    if (!startDate || !endDate || rawDays < 1) {
-      setError("Please choose a valid date range.");
-      return;
-    }
-    if (startDate < today) {
-      setError("Start date can't be in the past.");
-      return;
-    }
+    if (isOwnEquipment) { setError("You can't book your own equipment."); return; }
+    if (!startDate || !endDate || rawDays < 1) { setError("Please choose a valid date range."); return; }
+    if (startDate < today) { setError("Start date can't be in the past."); return; }
     const hasOverlap = bookedRanges.some((b) => startDate <= b.end_date && b.start_date <= endDate);
     if (hasOverlap) {
       setError("This equipment is already booked for part of your selected dates. Please choose different dates.");
@@ -103,13 +83,9 @@ export default function BookingPage() {
       setError("Please enter your mobile money number.");
       return;
     }
-    if (!agreed) {
-      setError("Please agree to the Terms of Service to continue.");
-      return;
-    }
+    if (!agreed) { setError("Please agree to the Terms of Service to continue."); return; }
     setError("");
     setSubmitting(true);
-
     try {
       const booking = await bookingService.create({
         equipmentId: eq.id,
@@ -120,13 +96,11 @@ export default function BookingPage() {
         endDate,
         totalDays: days,
       });
-
       await paymentService.chargeDownPayment({
         bookingId: booking.id,
         amount: downPayment,
         method: payMethod === "card" ? "card" : "mobile-money",
       });
-
       navigate(`/booking/${booking.id}/confirmation`, {
         state: {
           bookingRef: booking.id,
@@ -144,7 +118,6 @@ export default function BookingPage() {
         },
       });
     } catch (err) {
-      console.error(err);
       setError(err.message || "Something went wrong confirming your booking. Please try again.");
     } finally {
       setSubmitting(false);
@@ -152,317 +125,175 @@ export default function BookingPage() {
   }
 
   return (
-    <div
-      style={{
-        backgroundColor: "#F5F5F0",
-        minHeight: "100vh",
-        paddingTop: "88px",
-        paddingBottom: "48px",
-        paddingLeft: "16px",
-        paddingRight: "16px",
-      }}
-    >
-      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <Link
-          to={`/listings/${eq.id}`}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            fontSize: "13px",
-            color: "#555555",
-            textDecoration: "none",
-            marginBottom: "16px",
-          }}
-        >
+    <div className="min-h-screen bg-page pt-[88px] pb-12 px-4">
+      <div className="max-w-[900px] mx-auto">
+        <Link to={`/listings/${eq.id}`}
+          className="inline-flex items-center gap-1 text-[13px] text-ink-muted no-underline mb-4">
           <ChevronLeft size={14} /> Back to listing
         </Link>
 
-        <h1 style={{ fontSize: "26px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
-          Complete your booking
-        </h1>
+        <h1 className="text-[26px] font-medium text-ink mb-4">Complete your booking</h1>
 
         {isOwnEquipment && (
-          <div style={{ backgroundColor: "#FDECEA", border: "1px solid #DC2626", borderRadius: "8px", padding: "16px", marginBottom: "20px", color: "#A02020", fontSize: "14px" }}>
+          <div className="bg-red-tint border border-red rounded-lg px-4 py-4 mb-5 text-sm text-red">
             This is your own listing — you can't book it as a renter.
           </div>
         )}
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "24px" }}>
+        <div className="flex flex-wrap gap-6">
           {/* Summary */}
-          <div style={{ flex: "1 1 340px" }}>
-            <div
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: "12px",
-                padding: "20px",
-                border: "0.5px solid #E0E8E3",
-              }}
-            >
-              <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
-                Booking summary
-              </h2>
-              <img
-                src={photoUrl}
-                alt={eq.name}
-                style={{ width: "100%", height: "160px", borderRadius: "8px", objectFit: "cover", marginBottom: "12px" }}
-              />
-              <div style={{ fontSize: "16px", fontWeight: 500, color: "#111111" }}>{eq.name}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-                <img
-                  src={eq.owner?.photo_url}
-                  alt=""
-                  style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover" }}
-                />
-                <span style={{ fontSize: "13px", color: "#555555" }}>by {eq.owner?.name}</span>
+          <div className="flex-[1_1_340px]">
+            <div className="bg-white rounded-xl p-5 border border-border/50">
+              <h2 className="text-base font-medium text-ink mb-4">Booking summary</h2>
+              <img src={photoUrl} alt={eq.name}
+                className="w-full h-40 rounded-lg object-cover mb-3" />
+              <div className="text-base font-medium text-ink">{eq.name}</div>
+              <div className="flex items-center gap-2 mt-1">
+                <img src={eq.owner?.photo_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                <span className="text-[13px] text-ink-muted">by {eq.owner?.name}</span>
               </div>
 
-              <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />
+              <div className="border-t border-border my-4" />
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div className="flex flex-col gap-2.5">
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", color: "#555555", marginBottom: "4px" }}>
-                    Start date
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    min={minStartDate}
-                    max={eq.available_until}
+                  <label className="block text-xs text-ink-muted mb-1">Start date</label>
+                  <input type="date" value={startDate} min={minStartDate} max={eq.available_until}
                     onChange={(e) => setStartDate(e.target.value)}
-                    onFocus={() => setFocusedField("start")}
-                    onBlur={() => setFocusedField(null)}
-                    style={getFocusStyle("start", focusedField)}
-                  />
+                    onFocus={() => setFocusedField("start")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("start")} />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", color: "#555555", marginBottom: "4px" }}>
-                    End date
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate || minStartDate}
-                    max={eq.available_until}
+                  <label className="block text-xs text-ink-muted mb-1">End date</label>
+                  <input type="date" value={endDate} min={startDate || minStartDate} max={eq.available_until}
                     onChange={(e) => setEndDate(e.target.value)}
-                    onFocus={() => setFocusedField("end")}
-                    onBlur={() => setFocusedField(null)}
-                    style={getFocusStyle("end", focusedField)}
-                  />
+                    onFocus={() => setFocusedField("end")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("end")} />
                 </div>
-                <div style={{ fontSize: "14px", color: "#111111" }}>
-                  {days} day{days === 1 ? "" : "s"}
-                </div>
+                <div className="text-sm text-ink">{days} day{days === 1 ? "" : "s"}</div>
               </div>
 
-              <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />
+              <div className="border-t border-border my-4" />
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#111111" }}>
-                    {days} days × K{eq.price_day.toLocaleString()}
-                  </span>
+              <div className="flex flex-col gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-ink">{days} days × K{eq.price_day.toLocaleString()}</span>
                   <span>K{subtotal.toLocaleString()}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#555555" }}>Service fee (5%)</span>
-                  <span style={{ color: "#555555" }}>K{fee.toLocaleString()}</span>
+                <div className="flex justify-between">
+                  <span className="text-ink-muted">Service fee (5%)</span>
+                  <span className="text-ink-muted">K{fee.toLocaleString()}</span>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontWeight: 500,
-                    fontSize: "16px",
-                    paddingTop: "8px",
-                    borderTop: "1px solid #E0E8E3",
-                  }}
-                >
+                <div className="flex justify-between text-base font-medium pt-2 border-t border-border">
                   <span>Total</span>
-                  <span style={{ color: "#FF5C00" }}>K{total.toLocaleString()}</span>
+                  <span className="text-orange">K{total.toLocaleString()}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                  <span style={{ color: "#555555" }}>Down payment due now (25%)</span>
-                  <span style={{ fontWeight: 500, color: "#111111" }}>K{downPayment.toLocaleString()}</span>
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-ink-muted">Down payment due now (25%)</span>
+                  <span className="font-medium text-ink">K{downPayment.toLocaleString()}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-                  <span style={{ color: "#555555" }}>Balance due at pickup</span>
-                  <span style={{ color: "#555555" }}>K{balance.toLocaleString()}</span>
+                <div className="flex justify-between text-xs">
+                  <span className="text-ink-muted">Balance due at pickup</span>
+                  <span className="text-ink-muted">K{balance.toLocaleString()}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Payment */}
-          <div style={{ flex: "1 1 380px" }}>
+          <div className="flex-[1_1_380px]">
             <form onSubmit={handleConfirm}>
-              <div
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  border: "0.5px solid #E0E8E3",
-                  opacity: isOwnEquipment ? 0.5 : 1,
-                  pointerEvents: isOwnEquipment ? "none" : "auto",
-                }}
-              >
-                <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
-                  Payment method
-                </h2>
+              <div className={`bg-white rounded-xl p-5 border border-border/50 ${
+                isOwnEquipment ? "opacity-50 pointer-events-none" : ""
+              }`}>
+                <h2 className="text-base font-medium text-ink mb-4">Payment method</h2>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div className="flex flex-col gap-3">
                   {PAY_OPTIONS.map((opt) => (
-                    <label
-                      key={opt.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "14px",
-                        borderRadius: "10px",
-                        cursor: "pointer",
-                        border: payMethod === opt.id ? "1.5px solid #FF5C00" : "1.5px solid #E0E8E3",
-                        backgroundColor: payMethod === opt.id ? "#FFF8F5" : "#FFFFFF",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "16px",
-                          height: "16px",
-                          borderRadius: "50%",
-                          flexShrink: 0,
-                          border: `2px solid ${payMethod === opt.id ? "#FF5C00" : "#E0E8E3"}`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
+                    <label key={opt.id}
+                      className={`flex items-center gap-3 p-3.5 rounded-xl cursor-pointer border-[1.5px] ${
+                        payMethod === opt.id
+                          ? "border-orange bg-page-warm"
+                          : "border-border bg-white"
+                      }`}>
+                      <div className={`w-4 h-4 rounded-full shrink-0 border-2 flex items-center justify-center ${
+                        payMethod === opt.id ? "border-orange" : "border-border"
+                      }`}>
                         {payMethod === opt.id && (
-                          <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#FF5C00" }} />
+                          <div className="w-2 h-2 rounded-full bg-orange" />
                         )}
                       </div>
-                      <input
-                        type="radio"
-                        value={opt.id}
-                        checked={payMethod === opt.id}
-                        onChange={() => setPayMethod(opt.id)}
-                        style={{ display: "none" }}
-                      />
+                      <input type="radio" value={opt.id} checked={payMethod === opt.id}
+                        onChange={() => setPayMethod(opt.id)} className="hidden" />
                       <div>
-                        <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{opt.label}</div>
-                        <div style={{ fontSize: "12px", color: "#555555" }}>{opt.desc}</div>
+                        <div className="text-sm font-medium text-ink">{opt.label}</div>
+                        <div className="text-xs text-ink-muted">{opt.desc}</div>
                       </div>
                     </label>
                   ))}
                 </div>
 
                 {(payMethod === "airtel" || payMethod === "mtn") && (
-                  <div style={{ marginTop: "12px" }}>
-                    <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                      Your mobile money number
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      placeholder="+260…"
+                  <div className="mt-3">
+                    <label className="block text-[13px] font-medium text-ink mb-2">Your mobile money number</label>
+                    <input type="tel" value={phone} placeholder="+260…"
                       onChange={(e) => setPhone(e.target.value)}
-                      onFocus={() => setFocusedField("phone")}
-                      onBlur={() => setFocusedField(null)}
-                      style={getFocusStyle("phone", focusedField)}
-                    />
+                      onFocus={() => setFocusedField("phone")} onBlur={() => setFocusedField(null)}
+                      className={inputCls("phone")} />
                   </div>
                 )}
 
                 {payMethod === "card" && (
-                  <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div className="mt-3 flex flex-col gap-3">
                     <div>
-                      <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                        Card number
-                      </label>
-                      <input
-                        type="text"
-                        value={cardNumber}
-                        placeholder="1234 5678 9012 3456"
+                      <label className="block text-[13px] font-medium text-ink mb-2">Card number</label>
+                      <input type="text" value={cardNumber} placeholder="1234 5678 9012 3456"
                         onChange={(e) => setCardNumber(e.target.value)}
-                        onFocus={() => setFocusedField("cardNumber")}
-                        onBlur={() => setFocusedField(null)}
-                        style={getFocusStyle("cardNumber", focusedField)}
-                      />
+                        onFocus={() => setFocusedField("cardNumber")} onBlur={() => setFocusedField(null)}
+                        className={inputCls("cardNumber")} />
                     </div>
-                    <div style={{ display: "flex", gap: "12px" }}>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                          Expiry
-                        </label>
-                        <input
-                          type="text"
-                          value={expiry}
-                          placeholder="MM/YY"
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <label className="block text-[13px] font-medium text-ink mb-2">Expiry</label>
+                        <input type="text" value={expiry} placeholder="MM/YY"
                           onChange={(e) => setExpiry(e.target.value)}
-                          onFocus={() => setFocusedField("expiry")}
-                          onBlur={() => setFocusedField(null)}
-                          style={getFocusStyle("expiry", focusedField)}
-                        />
+                          onFocus={() => setFocusedField("expiry")} onBlur={() => setFocusedField(null)}
+                          className={inputCls("expiry")} />
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                          CVV
-                        </label>
-                        <input
-                          type="text"
-                          value={cvv}
-                          placeholder="123"
+                      <div className="flex-1">
+                        <label className="block text-[13px] font-medium text-ink mb-2">CVV</label>
+                        <input type="text" value={cvv} placeholder="123"
                           onChange={(e) => setCvv(e.target.value)}
-                          onFocus={() => setFocusedField("cvv")}
-                          onBlur={() => setFocusedField(null)}
-                          style={getFocusStyle("cvv", focusedField)}
-                        />
+                          onFocus={() => setFocusedField("cvv")} onBlur={() => setFocusedField(null)}
+                          className={inputCls("cvv")} />
                       </div>
                     </div>
                   </div>
                 )}
 
-                <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginTop: "20px", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={agreed}
-                    onChange={(e) => setAgreed(e.target.checked)}
-                    style={{ marginTop: "2px" }}
-                  />
-                  <span style={{ fontSize: "13px", color: "#111111" }}>
+                <label className="flex items-start gap-2 mt-5 cursor-pointer">
+                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
+                    className="mt-0.5" />
+                  <span className="text-[13px] text-ink">
                     I agree to AgroRent's{" "}
-                    <Link to="/terms" target="_blank" rel="noopener noreferrer" style={{ color: "#1A5C2E", textDecoration: "underline" }}>
-                      Terms of Service
-                    </Link>{" "}
+                    <Link to="/terms" target="_blank" rel="noopener noreferrer"
+                      className="text-green underline">Terms of Service</Link>{" "}
                     and rental agreement
                   </span>
                 </label>
 
-                {error && <div style={{ marginTop: "12px", fontSize: "13px", color: "#A02020" }}>{error}</div>}
+                {error && <div className="mt-3 text-[13px] text-red">{error}</div>}
 
-                <button
-                  type="submit"
-                  disabled={submitting || isOwnEquipment}
-                  style={{
-                    width: "100%",
-                    height: "52px",
-                    borderRadius: "8px",
-                    border: "none",
-                    backgroundColor: "#FF5C00",
-                    color: "#FFFFFF",
-                    fontSize: "15px",
-                    fontWeight: 500,
-                    marginTop: "20px",
-                    cursor: submitting || isOwnEquipment ? "default" : "pointer",
-                    opacity: submitting || isOwnEquipment ? 0.7 : 1,
-                  }}
-                >
+                <button type="submit" disabled={submitting || isOwnEquipment}
+                  className={`w-full h-[52px] rounded-lg border-none bg-orange text-white text-[15px] font-medium mt-5 ${
+                    submitting || isOwnEquipment ? "opacity-70 cursor-default" : "cursor-pointer"
+                  }`}>
                   {submitting ? "Confirming..." : `Confirm Booking & Pay K${downPayment.toLocaleString()}`}
                 </button>
 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginTop: "12px" }}>
-                  <Lock size={13} color="#555555" />
-                  <span style={{ fontSize: "12px", color: "#555555" }}>Your payment is secure and encrypted</span>
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  <Lock size={13} className="text-ink-muted" />
+                  <span className="text-xs text-ink-muted">Your payment is secure and encrypted</span>
                 </div>
               </div>
             </form>

@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { Mail, MapPin, MessageCircle } from "lucide-react";
 
-// Public page — intentionally doesn't touch NotificationContext (that's
-// in-app notifications for logged-in users; a visitor filling this out may
-// not be logged in at all). Local "sent" state is enough to confirm submission.
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [sent, setSent] = useState(false);
@@ -19,100 +16,61 @@ export default function Contact() {
   }
 
   return (
-    <div style={{ paddingTop: "56px", backgroundColor: "#F5F5F0", minHeight: "calc(100vh - 56px)" }}>
-      <section style={{ backgroundColor: "#0F3D1E", padding: "56px 24px", textAlign: "center" }}>
-        <h1 style={{ fontSize: "26px", fontWeight: 500, color: "#FFFFFF" }}>Contact us</h1>
-        <p style={{ fontSize: "14px", color: "#A8E6BE", marginTop: "8px" }}>
+    <div className="pt-14 bg-page min-h-[calc(100vh-56px)]">
+      <section className="bg-green-dark px-6 py-14 text-center">
+        <h1 className="text-[26px] font-medium text-white">Contact us</h1>
+        <p className="text-sm text-green-tint-2 mt-2">
           Questions about renting, listing, or a booking? We're happy to help.
         </p>
       </section>
 
-      <section style={{ maxWidth: "900px", margin: "0 auto", padding: "48px 24px", display: "flex", gap: "40px", flexWrap: "wrap" }}>
-        {/* Contact details */}
-        <div style={{ flex: "1", minWidth: "220px", display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-            <Mail size={18} style={{ color: "#1A5C2E", marginTop: "2px" }} />
+      <section className="max-w-[900px] mx-auto px-4 sm:px-6 py-12 flex flex-col sm:flex-row gap-10 flex-wrap">
+        <div className="flex-1 min-w-[220px] flex flex-col gap-5">
+          <div className="flex gap-3 items-start">
+            <Mail size={18} className="text-green mt-0.5" />
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>Email</div>
-              <div style={{ fontSize: "13px", color: "#555555", marginTop: "2px" }}>support@agrorent.co.zm</div>
+              <div className="text-sm font-medium text-ink">Email</div>
+              <div className="text-[13px] text-ink-muted mt-0.5">support@agrorent.co.zm</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-            <MessageCircle size={18} style={{ color: "#1A5C2E", marginTop: "2px" }} />
+          <div className="flex gap-3 items-start">
+            <MessageCircle size={18} className="text-green mt-0.5" />
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>Response time</div>
-              <div style={{ fontSize: "13px", color: "#555555", marginTop: "2px" }}>Usually within one business day</div>
+              <div className="text-sm font-medium text-ink">Response time</div>
+              <div className="text-[13px] text-ink-muted mt-0.5">Usually within one business day</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-            <MapPin size={18} style={{ color: "#1A5C2E", marginTop: "2px" }} />
+          <div className="flex gap-3 items-start">
+            <MapPin size={18} className="text-green mt-0.5" />
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>Based in</div>
-              <div style={{ fontSize: "13px", color: "#555555", marginTop: "2px" }}>Lusaka, Zambia</div>
+              <div className="text-sm font-medium text-ink">Based in</div>
+              <div className="text-[13px] text-ink-muted mt-0.5">Lusaka, Zambia</div>
             </div>
           </div>
         </div>
 
-        {/* Form */}
-        <div
-          style={{
-            flex: "2",
-            minWidth: "280px",
-            backgroundColor: "#FFFFFF",
-            borderRadius: "12px",
-            border: "0.5px solid #E0E8E3",
-            padding: "32px",
-          }}
-        >
+        <div className="flex-[2] min-w-[280px] bg-white rounded-xl border border-border/50 p-8">
           {sent ? (
-            <p style={{ fontSize: "14px", color: "#1A5C2E" }}>
-              Thanks — your message has been sent. We'll reply by email shortly.
-            </p>
+            <p className="text-sm text-green">Thanks — your message has been sent. We'll reply by email shortly.</p>
           ) : (
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                  Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  required
-                  style={{ width: "100%", height: "44px", padding: "0 12px", fontSize: "14px", border: "1px solid #E0E8E3", borderRadius: "8px", outline: "none" }}
-                />
+                <label className="block text-[13px] font-medium text-ink mb-2">Name</label>
+                <input type="text" name="name" value={form.name} onChange={handleChange} required
+                  className="w-full h-11 px-3 text-sm border border-border rounded-lg outline-none" />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                  Email address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                  style={{ width: "100%", height: "44px", padding: "0 12px", fontSize: "14px", border: "1px solid #E0E8E3", borderRadius: "8px", outline: "none" }}
-                />
+                <label className="block text-[13px] font-medium text-ink mb-2">Email address</label>
+                <input type="email" name="email" value={form.email} onChange={handleChange} required
+                  className="w-full h-11 px-3 text-sm border border-border rounded-lg outline-none" />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                  Message
-                </label>
-                <textarea
-                  name="message"
-                  value={form.message}
-                  onChange={handleChange}
-                  required
-                  rows={5}
-                  style={{ width: "100%", padding: "12px", fontSize: "14px", border: "1px solid #E0E8E3", borderRadius: "8px", outline: "none", resize: "vertical", fontFamily: "inherit" }}
-                />
+                <label className="block text-[13px] font-medium text-ink mb-2">Message</label>
+                <textarea name="message" value={form.message} onChange={handleChange} required rows={5}
+                  className="w-full p-3 text-sm border border-border rounded-lg outline-none resize-y font-[inherit]" />
               </div>
-              <button
-                type="submit"
-                style={{ width: "100%", height: "48px", borderRadius: "8px", border: "none", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, backgroundColor: "#FF5C00", cursor: "pointer" }}
-              >
+              <button type="submit"
+                className="w-full h-12 rounded-lg border-none text-white text-[15px] font-medium bg-orange cursor-pointer">
                 Send message
               </button>
             </form>

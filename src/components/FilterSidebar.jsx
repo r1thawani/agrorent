@@ -2,9 +2,6 @@ import SearchBar from "./SearchBar";
 import LocationSelect from "./LocationSelect";
 import { CATEGORIES } from "../data/mockData";
 
-// The filters panel from Listings.jsx, extracted into its own component so
-// it's testable/reusable on its own (e.g. a future "browse by category" page)
-// instead of living as a local JSX variable inside the page.
 export default function FilterSidebar({
   search,
   onSearchChange,
@@ -21,32 +18,32 @@ export default function FilterSidebar({
   onClear,
 }) {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", border: "0.5px solid #E0E8E3", padding: "20px" }}>
-      <div style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>Filters</div>
+    <div className="bg-white rounded-xl border border-border/50 p-5">
+      <div className="text-base font-medium text-ink mb-4">Filters</div>
 
       <SearchBar value={search} onChange={onSearchChange} />
 
-      <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
+      <div className="text-xs font-medium text-ink-muted uppercase tracking-[0.05em] mb-2.5">
         Category
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "20px" }}>
+      <div className="flex flex-col gap-2 mb-5">
         {CATEGORIES.map((cat) => (
-          <label key={cat} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+          <label key={cat} className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={selectedCategories.includes(cat)}
               onChange={() => onToggleCategory(cat)}
-              style={{ width: "16px", height: "16px", accentColor: "#FF5C00", cursor: "pointer" }}
+              className="w-4 h-4 accent-orange cursor-pointer"
             />
-            <span style={{ fontSize: "13px", color: "#111111" }}>{cat}</span>
+            <span className="text-[13px] text-ink">{cat}</span>
           </label>
         ))}
       </div>
 
-      <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
+      <div className="text-xs font-medium text-ink-muted uppercase tracking-[0.05em] mb-2.5">
         Location
       </div>
-      <div style={{ marginBottom: "20px" }}>
+      <div className="mb-5">
         <LocationSelect
           province={province}
           district={district}
@@ -57,30 +54,30 @@ export default function FilterSidebar({
         />
       </div>
 
-      <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>
+      <div className="text-xs font-medium text-ink-muted uppercase tracking-[0.05em] mb-2.5">
         Price per day
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "24px" }}>
+      <div className="flex items-center gap-2 mb-6">
         <input
           type="number"
           placeholder="Min (K)"
           value={minPrice}
           onChange={(e) => onMinPriceChange(e.target.value)}
-          style={{ width: "50%", height: "40px", padding: "0 10px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }}
+          className="w-1/2 h-10 px-2.5 text-[13px] border-[1.5px] border-border rounded-lg outline-none"
         />
-        <span style={{ color: "#555555" }}>–</span>
+        <span className="text-ink-muted">–</span>
         <input
           type="number"
           placeholder="Max (K)"
           value={maxPrice}
           onChange={(e) => onMaxPriceChange(e.target.value)}
-          style={{ width: "50%", height: "40px", padding: "0 10px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }}
+          className="w-1/2 h-10 px-2.5 text-[13px] border-[1.5px] border-border rounded-lg outline-none"
         />
       </div>
 
       <button
         onClick={onClear}
-        style={{ width: "100%", textAlign: "center", fontSize: "13px", color: "#555555", background: "none", border: "1px solid #E0E8E3", borderRadius: "8px", padding: "10px 0", cursor: "pointer" }}
+        className="w-full text-center text-[13px] text-ink-muted bg-transparent border border-border rounded-lg py-2.5 cursor-pointer"
       >
         Clear all filters
       </button>

@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/ListingDetail.jsx
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { MapPin, ChevronLeft, Heart } from "lucide-react";
@@ -24,32 +23,39 @@ function AvailabilityCalendar({ bookedRanges }) {
   const monthName = today.toLocaleString("default", { month: "long" });
 
   return (
-    <div style={{ marginTop: "12px" }}>
-      <div style={{ fontSize: "13px", fontWeight: 500, color: "#555555", marginBottom: "12px", textAlign: "center" }}>{monthName} {year}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", textAlign: "center", marginBottom: "6px" }}>
-        {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
-          <div key={d} style={{ fontSize: "12px", color: "#555555", fontWeight: 500 }}>{d}</div>
+    <div className="mt-3">
+      <div className="text-[13px] font-medium text-ink-muted mb-3 text-center">{monthName} {year}</div>
+      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d) => (
+          <div key={d} className="text-xs text-ink-muted font-medium">{d}</div>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", textAlign: "center" }}>
+      <div className="grid grid-cols-7 gap-1 text-center">
         {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
-        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
+        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => {
           const dateObj = new Date(year, month, d);
           const isBooked = isDateBooked(dateObj, bookedRanges);
           const isToday = d === today.getDate();
           return (
-            <div key={d} style={{ width: "28px", height: "28px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", fontSize: "12px", backgroundColor: isBooked ? "#E5E5E5" : "transparent", color: isBooked ? "#999999" : "#111111", textDecoration: isBooked ? "line-through" : "none", border: isToday ? "2px solid #FF5C00" : "none" }}>
+            <div key={d}
+              className={`w-7 h-7 mx-auto flex items-center justify-center rounded-full text-xs ${
+                isBooked
+                  ? "bg-divider text-ink-faint line-through"
+                  : isToday
+                  ? "border-2 border-orange text-ink"
+                  : "text-ink"
+              }`}>
               {d}
             </div>
           );
         })}
       </div>
-      <div style={{ display: "flex", gap: "16px", marginTop: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#555555" }}>
-          <div style={{ width: "12px", height: "12px", borderRadius: "3px", backgroundColor: "#FFFFFF", border: "1px solid #E0E8E3" }} /> Available
+      <div className="flex gap-4 mt-3">
+        <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+          <div className="w-3 h-3 rounded-[3px] bg-white border border-border" /> Available
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#555555" }}>
-          <div style={{ width: "12px", height: "12px", borderRadius: "3px", backgroundColor: "#E5E5E5" }} /> Booked
+        <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+          <div className="w-3 h-3 rounded-[3px] bg-divider" /> Booked
         </div>
       </div>
     </div>
@@ -73,20 +79,16 @@ export default function ListingDetail() {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    equipmentService
-      .getById(id)
-      .then(setEq)
-      .catch(() => setLoadError("Could not load this listing."));
-
+    equipmentService.getById(id).then(setEq).catch(() => setLoadError("Could not load this listing."));
     reviewService.getForEquipment(id).then(setReviews).catch(() => setReviews([]));
     bookingService.getForEquipment(id).then(setBookedRanges).catch(() => setBookedRanges([]));
   }, [id]);
 
   if (loadError) {
-    return <div style={{ padding: "88px 24px", textAlign: "center" }}>{loadError}</div>;
+    return <div className="pt-[88px] px-6 text-center text-ink-muted">{loadError}</div>;
   }
   if (!eq) {
-    return <div style={{ padding: "88px 24px", textAlign: "center" }}>Loading…</div>;
+    return <div className="pt-[88px] px-6 text-center text-ink-muted">Loading…</div>;
   }
 
   const saved = isWishlisted(eq.id);
@@ -110,85 +112,73 @@ export default function ListingDetail() {
     : "";
 
   return (
-    <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "80px 24px 32px" }}>
-      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-
-        <button onClick={() => navigate(-1)} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "14px", color: "#555555", background: "none", border: "none", cursor: "pointer", marginBottom: "20px" }}>
+    <div className="min-h-screen bg-page pt-20 pb-8 px-4 sm:px-6">
+      <div className="max-w-[1100px] mx-auto">
+        <button onClick={() => navigate(-1)}
+          className="flex items-center gap-1 text-sm text-ink-muted bg-transparent border-none cursor-pointer mb-5">
           <ChevronLeft size={16} /> Back to listings
         </button>
 
-        <div style={{ display: "flex", gap: "32px", alignItems: "flex-start" }}>
-
-          {/* LEFT COLUMN */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-
-            {/* Gallery */}
-            <div style={{ borderRadius: "12px", overflow: "hidden", height: "380px", backgroundColor: "#FFF0E6" }}>
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          <div className="flex-1 min-w-0">
+            <div className="rounded-xl overflow-hidden h-[320px] sm:h-[380px] bg-peach">
               {photoUrls[mainPhoto] && (
-                <img src={photoUrls[mainPhoto]} alt={eq.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={photoUrls[mainPhoto]} alt={eq.name} className="w-full h-full object-cover" />
               )}
             </div>
-            <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-              {photoUrls.map((t, i) => (
-                <button key={i} onClick={() => setMainPhoto(i)} style={{ width: "80px", height: "60px", borderRadius: "8px", overflow: "hidden", border: i === mainPhoto ? "2px solid #FF5C00" : "2px solid transparent", flexShrink: 0, padding: 0, cursor: "pointer" }}>
-                  <img src={t} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </button>
-              ))}
-            </div>
+            {photoUrls.length > 1 && (
+              <div className="flex gap-2 mt-2">
+                {photoUrls.map((t, i) => (
+                  <button key={i} onClick={() => setMainPhoto(i)}
+                    className={`w-20 h-[60px] rounded-lg overflow-hidden shrink-0 p-0 cursor-pointer border-2 ${
+                      i === mainPhoto ? "border-orange" : "border-transparent"
+                    }`}>
+                    <img src={t} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {/* Info */}
-            <div style={{ marginTop: "20px" }}>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <span style={{ fontSize: "11px", fontWeight: 500, padding: "3px 10px", borderRadius: "20px", backgroundColor: "#D4EDDA", color: "#0F3D1E" }}>{eq.category}</span>
-                <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "20px", backgroundColor: "#F5F5F0", color: "#555555" }}>{eq.condition} condition</span>
+            <div className="mt-5">
+              <div className="flex gap-2">
+                <span className="text-[11px] font-medium px-2.5 py-[3px] rounded-full bg-green-tint text-green-dark">
+                  {eq.category}
+                </span>
+                <span className="text-[11px] px-2.5 py-[3px] rounded-full bg-page text-ink-muted">
+                  {eq.condition} condition
+                </span>
                 {activeBooking && (
-                  <span style={{ fontSize: "11px", fontWeight: 500, padding: "3px 10px", borderRadius: "20px", backgroundColor: "#FDECEA", color: "#A02020" }}>
+                  <span className="text-[11px] font-medium px-2.5 py-[3px] rounded-full bg-red-tint text-red">
                     Unavailable
                   </span>
                 )}
               </div>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
-                <h1 style={{ fontSize: "24px", fontWeight: 500, color: "#111111", marginTop: "12px" }}>{eq.name}</h1>
-                <button
-                  onClick={() => toggleWishlist(eq.id)}
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-[24px] font-medium text-ink mt-3">{eq.name}</h1>
+                <button onClick={() => toggleWishlist(eq.id)}
                   aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
                   aria-pressed={saved}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    marginTop: "12px",
-                    padding: "8px 14px",
-                    borderRadius: "8px",
-                    border: "0.5px solid #E0E8E3",
-                    backgroundColor: "#FFFFFF",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: saved ? "#EF4444" : "#555555",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                  }}
-                >
+                  className={`flex items-center gap-1.5 mt-3 px-3.5 py-2 rounded-lg border bg-white text-[13px] font-medium shrink-0 cursor-pointer ${
+                    saved ? "text-red border-border/50" : "text-ink-muted border-border/50"
+                  }`}>
                   <Heart size={16} fill={saved ? "#EF4444" : "none"} stroke={saved ? "#EF4444" : "#555555"} />
                   {saved ? "Saved" : "Save"}
                 </button>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "8px" }}>
-                <MapPin size={14} style={{ color: "#555555" }} />
-                <span style={{ fontSize: "14px", color: "#555555" }}>{eq.location}</span>
+              <div className="flex items-center gap-1.5 mt-2">
+                <MapPin size={14} className="text-ink-muted" />
+                <span className="text-sm text-ink-muted">{eq.location}</span>
               </div>
             </div>
 
-            {/* Description */}
-            <div style={{ marginTop: "24px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "8px" }}>About this equipment</h3>
-              <p style={{ fontSize: "14px", color: "#111111", lineHeight: 1.6 }}>{eq.description}</p>
+            <div className="mt-6">
+              <h3 className="text-base font-medium text-ink mb-2">About this equipment</h3>
+              <p className="text-sm text-ink leading-relaxed">{eq.description}</p>
             </div>
 
-            {/* Details grid */}
-            <div style={{ marginTop: "24px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "12px" }}>Details</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div className="mt-6">
+              <h3 className="text-base font-medium text-ink mb-3">Details</h3>
+              <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Price per day", value: `K${eq.price_day.toLocaleString()}` },
                   { label: "Price per week", value: eq.price_week ? `K${eq.price_week.toLocaleString()}` : "—" },
@@ -198,114 +188,115 @@ export default function ListingDetail() {
                   { label: "Listed since", value: listedDate },
                 ].map(({ label, value }) => (
                   <div key={label}>
-                    <div style={{ fontSize: "12px", fontWeight: 500, color: "#555555", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
-                    <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111", marginTop: "2px" }}>{value}</div>
+                    <div className="text-xs font-medium text-ink-muted uppercase tracking-[0.05em]">{label}</div>
+                    <div className="text-sm font-medium text-ink mt-0.5">{value}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Availability */}
-            <div style={{ marginTop: "24px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "8px" }}>Availability</h3>
+            <div className="mt-6">
+              <h3 className="text-base font-medium text-ink mb-2">Availability</h3>
               <AvailabilityCalendar bookedRanges={bookedRanges} />
             </div>
 
-            {/* Reviews */}
-            <div style={{ marginTop: "24px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 500, color: "#111111" }}>Reviews</h3>
+            <div className="mt-6">
+              <div className="flex items-center gap-3 mb-4">
+                <h3 className="text-base font-medium text-ink">Reviews</h3>
                 <StarRating rating={eq.rating} />
-                <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{eq.rating}</span>
-                <span style={{ fontSize: "13px", color: "#555555" }}>({eq.review_count} reviews)</span>
+                <span className="text-sm font-medium text-ink">{eq.rating}</span>
+                <span className="text-[13px] text-ink-muted">({eq.review_count} reviews)</span>
               </div>
               {reviews.length === 0 ? (
-                <p style={{ fontSize: "14px", color: "#555555" }}>No reviews yet.</p>
+                <p className="text-sm text-ink-muted">No reviews yet.</p>
               ) : (
-                reviews.map(r => (
-                  <ReviewCard
-                    key={r.id}
-                    review={{
-                      id: r.id,
-                      name: r.reviewer?.name,
-                      photo: r.reviewer?.photo_url,
-                      date: new Date(r.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }),
-                      rating: r.rating,
-                      text: r.text,
-                      reply: r.owner_reply,
-                    }}
-                  />
+                reviews.map((r) => (
+                  <ReviewCard key={r.id} review={{
+                    id: r.id,
+                    name: r.reviewer?.name,
+                    photo: r.reviewer?.photo_url,
+                    date: new Date(r.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+                    rating: r.rating,
+                    text: r.text,
+                    reply: r.owner_reply,
+                  }} />
                 ))
               )}
             </div>
           </div>
 
-          {/* RIGHT COLUMN — Booking card */}
-          <div style={{ width: "340px", flexShrink: 0, position: "sticky", top: "80px" }}>
-            <div style={{ backgroundColor: "#FFFFFF", border: "0.5px solid #E0E8E3", borderRadius: "12px", padding: "20px" }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-                <span style={{ fontSize: "24px", fontWeight: 500, color: "#FF5C00" }}>K{eq.price_day.toLocaleString()}</span>
-                <span style={{ fontSize: "14px", color: "#555555" }}>/ day</span>
+          <div className="w-full lg:w-[340px] shrink-0 lg:sticky lg:top-20">
+            <div className="bg-white border border-border/50 rounded-xl p-5">
+              <div className="flex items-baseline gap-1">
+                <span className="text-[24px] font-medium text-orange">K{eq.price_day.toLocaleString()}</span>
+                <span className="text-sm text-ink-muted">/ day</span>
               </div>
               {eq.price_week && (
-                <div style={{ fontSize: "13px", color: "#555555", marginTop: "4px" }}>K{eq.price_week.toLocaleString()} / week</div>
+                <div className="text-[13px] text-ink-muted mt-1">K{eq.price_week.toLocaleString()} / week</div>
               )}
 
               {isOwnEquipment && (
-                <div style={{ marginTop: "12px", backgroundColor: "#FDECEA", borderRadius: "8px", padding: "10px 12px", fontSize: "12px", color: "#A02020" }}>
+                <div className="mt-3 bg-red-tint rounded-lg px-3 py-2.5 text-xs text-red">
                   This is your own listing.
                 </div>
               )}
 
-              <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />
+              <div className="border-t border-border my-4" />
 
-              <label style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>Select dates</label>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
-                <input type="date" value={startDate} min={today} onChange={e => setStartDate(e.target.value)} style={{ flex: 1, height: "40px", padding: "0 8px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }} />
-                <span style={{ color: "#555555" }}>→</span>
-                <input type="date" value={endDate} min={startDate || today} onChange={e => setEndDate(e.target.value)} style={{ flex: 1, height: "40px", padding: "0 8px", fontSize: "13px", border: "1.5px solid #E0E8E3", borderRadius: "8px", outline: "none" }} />
+              <label className="text-[13px] font-medium text-ink">Select dates</label>
+              <div className="flex items-center gap-2 mt-2">
+                <input type="date" value={startDate} min={today}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="flex-1 h-10 px-2 text-[13px] border border-border/50 rounded-lg outline-none" />
+                <span className="text-ink-muted">→</span>
+                <input type="date" value={endDate} min={startDate || today}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="flex-1 h-10 px-2 text-[13px] border border-border/50 rounded-lg outline-none" />
               </div>
 
               {days > 0 && (
-                <div style={{ marginTop: "12px", backgroundColor: "#F5F5F0", borderRadius: "8px", padding: "12px", fontSize: "13px", color: "#111111", display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div className="mt-3 bg-page rounded-lg p-3 text-[13px] text-ink flex flex-col gap-1">
                   <div>{days} days × K{eq.price_day.toLocaleString()} = K{subtotal.toLocaleString()}</div>
                   <div>Down payment due now: <strong>K{downpayment.toLocaleString()}</strong></div>
-                  <div style={{ fontSize: "12px", color: "#555555" }}>Remaining balance at pickup: K{remaining.toLocaleString()}</div>
+                  <div className="text-xs text-ink-muted">Remaining balance at pickup: K{remaining.toLocaleString()}</div>
                 </div>
               )}
 
               {!isOwnEquipment && !activeBooking && (
-                <Link to={`/listings/${eq.id}/book`} style={{ display: "block", width: "100%", height: "48px", borderRadius: "8px", backgroundColor: "#FF5C00", color: "#FFFFFF", fontSize: "15px", fontWeight: 500, textAlign: "center", lineHeight: "48px", textDecoration: "none", marginTop: "16px" }}>
+                <Link to={`/listings/${eq.id}/book`}
+                  className="block w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium text-center leading-[48px] no-underline mt-4">
                   Book Now
                 </Link>
               )}
               {activeBooking && (
-                <div style={{ marginTop: "16px", backgroundColor: "#FDECEA", borderRadius: "8px", padding: "12px", fontSize: "13px", color: "#A02020", textAlign: "center" }}>
+                <div className="mt-4 bg-red-tint rounded-lg px-3 py-3 text-[13px] text-red text-center">
                   Currently unavailable — booked until {new Date(activeBooking.end_date).toLocaleDateString()}
                 </div>
               )}
-              <p style={{ textAlign: "center", fontSize: "12px", color: "#555555", marginTop: "8px" }}>You won't be charged yet</p>
+              <p className="text-center text-xs text-ink-muted mt-2">You won't be charged yet</p>
 
-              <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />
+              <div className="border-t border-border my-4" />
 
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                <img src={eq.owner?.photo_url} alt={eq.owner?.name} style={{ width: "44px", height: "44px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+              <div className="flex items-start gap-3">
+                <img src={eq.owner?.photo_url} alt={eq.owner?.name}
+                  className="w-11 h-11 rounded-full object-cover shrink-0" />
                 <div>
-                  <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{eq.owner?.name}</div>
+                  <div className="text-sm font-medium text-ink">{eq.owner?.name}</div>
                 </div>
               </div>
 
-              <Link to="/messages" style={{ display: "block", width: "100%", height: "40px", borderRadius: "8px", border: "1.5px solid #FF5C00", color: "#FF5C00", fontSize: "14px", fontWeight: 500, textAlign: "center", lineHeight: "40px", textDecoration: "none", marginTop: "12px" }}>
+              <Link to="/messages"
+                className="block w-full h-10 rounded-lg border border-orange text-orange text-sm font-medium text-center leading-[40px] no-underline mt-3">
                 Message Owner
               </Link>
               {eq.owner?.id && (
-                <Link to={`/profile/${eq.owner.id}`} style={{ display: "block", textAlign: "center", fontSize: "13px", color: "#1A5C2E", textDecoration: "none", marginTop: "8px" }}>
+                <Link to={`/profile/${eq.owner.id}`}
+                  className="block text-center text-[13px] text-green no-underline mt-2">
                   View Owner Profile
                 </Link>
               )}
             </div>
           </div>
-
         </div>
       </div>
     </div>

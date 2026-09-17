@@ -7,59 +7,28 @@ export default function Notifications() {
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
 
   return (
-    <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", paddingTop: "56px" }}>
-      <div
-        style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          padding: "32px 24px",
-          display: "flex",
-          gap: "24px",
-        }}
-      >
-        <Sidebar role="renter" />
+    <div className="bg-page min-h-screen pt-14">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6">
+        <Sidebar />
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "20px",
-            }}
-          >
-            <h1 style={{ fontSize: "26px", fontWeight: 500, color: "#111111" }}>Notifications</h1>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-5">
+            <h1 className="text-[26px] font-medium text-ink">Notifications</h1>
             <button
               onClick={markAllAsRead}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "#FF5C00",
-                cursor: "pointer",
-                padding: 0,
-              }}
+              className="bg-transparent border-none text-[13px] font-medium text-orange cursor-pointer p-0"
             >
               Mark all as read
             </button>
           </div>
 
           {notifications.length === 0 ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: "64px 0",
-                gap: "12px",
-              }}
-            >
+            <div className="flex flex-col items-center py-16 gap-3">
               <Bell size={32} color="#E0E8E3" />
-              <div style={{ fontSize: "14px", color: "#555555" }}>No notifications yet</div>
+              <div className="text-sm text-ink-muted">No notifications yet</div>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div className="flex flex-col gap-2">
               {notifications.map((n) => (
                 <NotificationItem key={n.id} notification={n} onClick={() => markAsRead(n.id)} />
               ))}

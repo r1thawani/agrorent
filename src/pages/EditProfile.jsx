@@ -1,22 +1,9 @@
-// FILE: agrorent/src/pages/EditProfile.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
-
-function getFocusStyle(field, focusedField) {
-  return {
-    width: "100%",
-    height: "44px",
-    padding: "0 12px",
-    fontSize: "14px",
-    borderRadius: "8px",
-    outline: "none",
-    border: focusedField === field ? "1px solid #FF5C00" : "0.5px solid #E0E8E3",
-  };
-}
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -40,10 +27,12 @@ export default function EditProfile() {
 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // NOTE: bio and phone aren't stored anywhere yet — the profiles table
-  // only has name/email/photo_url/role/status. Only name is actually
-  // persisted here; province/district and bio are UI-only for now until
-  // those columns exist.
+  function inputCls(field) {
+    return `w-full h-11 px-3 text-sm text-ink rounded-lg outline-none ${
+      focusedField === field ? "border border-orange" : "border border-border/50"
+    }`;
+  }
+
   async function handleSave(e) {
     e.preventDefault();
     setSaveError("");
@@ -88,78 +77,43 @@ export default function EditProfile() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "32px 24px", display: "flex", gap: "24px" }}>
+    <div className="min-h-screen bg-page pt-14">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6">
         <Sidebar role={user?.role || "renter"} activeLink="/profile/edit" />
 
-        <div style={{ flex: 1, minWidth: 0, maxWidth: "560px" }}>
-          <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginBottom: "24px" }}>
-            Edit profile
-          </h1>
+        <div className="flex-1 min-w-0 max-w-[560px]">
+          <h1 className="text-[22px] font-medium text-ink mb-6">Edit profile</h1>
 
-          {/* Photo */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "28px" }}>
+          <div className="flex flex-col items-center mb-7">
             <img
               src={user?.photo_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=192&h=192&fit=crop"}
               alt="Profile"
-              style={{
-                width: "96px",
-                height: "96px",
-                borderRadius: "9999px",
-                objectFit: "cover",
-                border: "4px solid #FFFFFF",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              }}
+              className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-sm"
             />
-            <label style={{ marginTop: "8px", fontSize: "13px", color: "#FF5C00", cursor: "pointer" }}>
-              <input type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
+            <label className="mt-2 text-[13px] text-orange cursor-pointer">
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
               Change photo
             </label>
           </div>
 
-          {/* Profile info */}
-          <form
-            onSubmit={handleSave}
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: "12px",
-              padding: "24px",
-              marginBottom: "24px",
-              border: "0.5px solid #E0E8E3",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <form onSubmit={handleSave}
+            className="bg-white rounded-xl p-6 mb-6 border border-border/50">
+            <div className="flex flex-col gap-6">
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                  Full Name
-                </label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  onFocus={() => setFocusedField("name")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("name", focusedField)}
-                />
+                <label className="block text-[13px] font-medium text-ink mb-2">Full Name</label>
+                <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)}
+                  className={inputCls("name")} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                  Phone Number
-                </label>
-                <input
-                  value={form.phone}
-                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  onFocus={() => setFocusedField("phone")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("phone", focusedField)}
-                />
-                <p style={{ fontSize: "11px", color: "#999999", marginTop: "4px" }}>
-                  Not saved yet — coming soon.
-                </p>
+                <label className="block text-[13px] font-medium text-ink mb-2">Phone Number</label>
+                <input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  onFocus={() => setFocusedField("phone")} onBlur={() => setFocusedField(null)}
+                  className={inputCls("phone")} />
+                <p className="text-[11px] text-ink-faint mt-1">Not saved yet — coming soon.</p>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                  Location
-                </label>
+                <label className="block text-[13px] font-medium text-ink mb-2">Location</label>
                 <LocationSelect
                   province={form.province}
                   district={form.district}
@@ -167,14 +121,10 @@ export default function EditProfile() {
                   onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
                   required
                 />
-                <p style={{ fontSize: "11px", color: "#999999", marginTop: "4px" }}>
-                  Not saved yet — coming soon.
-                </p>
+                <p className="text-[11px] text-ink-faint mt-1">Not saved yet — coming soon.</p>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                  Short bio
-                </label>
+                <label className="block text-[13px] font-medium text-ink mb-2">Short bio</label>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value.slice(0, 200))}
@@ -182,182 +132,82 @@ export default function EditProfile() {
                   onBlur={() => setFocusedField(null)}
                   rows={4}
                   placeholder="Tell renters and owners a bit about yourself…"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    fontSize: "14px",
-                    borderRadius: "8px",
-                    outline: "none",
-                    resize: "none",
-                    border: focusedField === "bio" ? "1px solid #FF5C00" : "0.5px solid #E0E8E3",
-                  }}
+                  className={`w-full px-3 py-2.5 text-sm text-ink rounded-lg outline-none resize-none ${
+                    focusedField === "bio" ? "border border-orange" : "border border-border/50"
+                  }`}
                 />
-                <div style={{ textAlign: "right", fontSize: "11px", color: "#555555", marginTop: "4px" }}>
-                  {bio.length} / 200
-                </div>
+                <div className="text-right text-[11px] text-ink-muted mt-1">{bio.length} / 200</div>
               </div>
 
-              {saveError && <div style={{ fontSize: "13px", color: "#A02020" }}>{saveError}</div>}
-
+              {saveError && <div className="text-[13px] text-red">{saveError}</div>}
               {saved && (
-                <div style={{ fontSize: "13px", color: "#0F3D1E", backgroundColor: "#D4EDDA", borderRadius: "8px", padding: "8px 12px" }}>
+                <div className="text-[13px] text-green-dark bg-green-tint rounded-lg px-3 py-2">
                   Profile changes saved.
                 </div>
               )}
 
-              <button
-                type="submit"
-                style={{
-                  width: "100%",
-                  height: "48px",
-                  borderRadius: "8px",
-                  border: "none",
-                  color: "#FFFFFF",
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  backgroundColor: "#FF5C00",
-                  cursor: "pointer",
-                }}
-              >
+              <button type="submit"
+                className="w-full h-12 rounded-lg border-none text-white text-[15px] font-medium bg-orange cursor-pointer">
                 Save changes
               </button>
             </div>
           </form>
 
-          {/* Change password */}
-          <form
-            onSubmit={handlePasswordUpdate}
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: "12px",
-              padding: "24px",
-              marginBottom: "24px",
-              border: "0.5px solid #E0E8E3",
-            }}
-          >
-            <h2 style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>
-              Change password
-            </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <form onSubmit={handlePasswordUpdate}
+            className="bg-white rounded-xl p-6 mb-6 border border-border/50">
+            <h2 className="text-[15px] font-medium text-ink mb-5">Change password</h2>
+            <div className="flex flex-col gap-6">
               {[
                 { label: "Current Password", field: "current" },
                 { label: "New Password", field: "next" },
                 { label: "Confirm New Password", field: "confirm" },
               ].map(({ label, field }) => (
                 <div key={field}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#111111", marginBottom: "6px" }}>
-                    {label}
-                  </label>
+                  <label className="block text-[13px] font-medium text-ink mb-2">{label}</label>
                   <input
                     type="password"
                     value={pwForm[field]}
                     onChange={(e) => setPwForm((f) => ({ ...f, [field]: e.target.value }))}
                     onFocus={() => setFocusedField(field)}
                     onBlur={() => setFocusedField(null)}
-                    style={getFocusStyle(field, focusedField)}
+                    className={inputCls(field)}
                   />
                 </div>
               ))}
 
-              {pwError && <div style={{ fontSize: "13px", color: "#A02020" }}>{pwError}</div>}
+              {pwError && <div className="text-[13px] text-red">{pwError}</div>}
               {pwSaved && (
-                <div style={{ fontSize: "13px", color: "#0F3D1E", backgroundColor: "#D4EDDA", borderRadius: "8px", padding: "8px 12px" }}>
+                <div className="text-[13px] text-green-dark bg-green-tint rounded-lg px-3 py-2">
                   Password updated.
                 </div>
               )}
 
-              <button
-                type="submit"
-                style={{
-                  width: "100%",
-                  height: "44px",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  backgroundColor: "transparent",
-                  border: "1.5px solid #FF5C00",
-                  color: "#FF5C00",
-                  cursor: "pointer",
-                }}
-              >
+              <button type="submit"
+                className="w-full h-11 rounded-lg text-sm font-medium bg-transparent border border-orange text-orange cursor-pointer">
                 Update password
               </button>
             </div>
           </form>
 
-          {/* Danger zone */}
-          <div
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: "12px",
-              padding: "24px",
-              border: "0.5px solid #E0E8E3",
-              borderLeft: "3px solid #DC2626",
-            }}
-          >
-            <h2 style={{ fontSize: "15px", fontWeight: 500, color: "#DC2626", marginBottom: "8px" }}>
-              Delete account
-            </h2>
-            <p style={{ fontSize: "13px", color: "#555555", marginBottom: "16px" }}>
+          <div className="bg-white rounded-xl p-6 border border-border/50 border-l-[3px] border-l-red">
+            <h2 className="text-[15px] font-medium text-red mb-2">Delete account</h2>
+            <p className="text-[13px] text-ink-muted mb-4">
               Deleting your account is permanent. All your listings, bookings, and data will be removed.
             </p>
 
             {!confirmDelete ? (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                style={{
-                  width: "100%",
-                  height: "44px",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  backgroundColor: "transparent",
-                  border: "1.5px solid #DC2626",
-                  color: "#DC2626",
-                  cursor: "pointer",
-                }}
-              >
+              <button onClick={() => setConfirmDelete(true)}
+                className="w-full h-11 rounded-lg text-sm font-medium bg-transparent border border-red text-red cursor-pointer">
                 Delete my account
               </button>
             ) : (
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  style={{
-                    flex: 1,
-                    height: "44px",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    backgroundColor: "transparent",
-                    border: "0.5px solid #CCCCCC",
-                    color: "#555555",
-                    cursor: "pointer",
-                  }}
-                >
+              <div className="flex gap-2.5">
+                <button onClick={() => setConfirmDelete(false)}
+                  className="flex-1 h-11 rounded-lg text-sm font-medium bg-transparent border border-border-muted text-ink-muted cursor-pointer">
                   Cancel
                 </button>
-                <button
-                  onClick={() => {
-                    // Actually deleting the auth account requires Supabase's
-                    // admin API (a service-role key), which must never be
-                    // exposed in frontend code — so this can only end the
-                    // session for now, not delete the underlying account.
-                    logout();
-                    navigate("/");
-                  }}
-                  style={{
-                    flex: 1,
-                    height: "44px",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    backgroundColor: "#DC2626",
-                    border: "none",
-                    color: "#FFFFFF",
-                    cursor: "pointer",
-                  }}
-                >
+                <button onClick={() => { logout(); navigate("/"); }}
+                  className="flex-1 h-11 rounded-lg text-sm font-medium text-white bg-red border-none cursor-pointer">
                   Confirm delete
                 </button>
               </div>

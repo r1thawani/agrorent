@@ -6,42 +6,17 @@ export default function BookingConfirmation() {
   const location = useLocation();
   const booking = location.state;
 
-  // No backend yet, so booking details are passed via navigate(..., { state }) from
-  // BookingPage.jsx rather than fetched. If this page is reloaded directly (state
-  // lost), fall back to a simple pointer toward My Bookings instead of crashing.
   if (!booking) {
     return (
-      <div
-        style={{
-          backgroundColor: "#F5F5F0",
-          minHeight: "100vh",
-          paddingTop: "88px",
-          paddingBottom: "48px",
-          paddingLeft: "16px",
-          paddingRight: "16px",
-        }}
-      >
-        <div style={{ maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
-          <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginBottom: "8px" }}>
-            Booking reference {id}
-          </h1>
-          <p style={{ fontSize: "14px", color: "#555555", marginBottom: "20px" }}>
-            We couldn't find the details for this confirmation — this can happen if the
-            page was reloaded. You can check the status of this booking from My Bookings.
+      <div className="min-h-screen bg-page pt-[88px] pb-12 px-4">
+        <div className="max-w-[600px] mx-auto text-center">
+          <h1 className="text-[22px] font-medium text-ink mb-2">Booking reference {id}</h1>
+          <p className="text-sm text-ink-muted mb-5">
+            We couldn't find the details for this confirmation — this can happen if the page was
+            reloaded. You can check the status of this booking from My Bookings.
           </p>
-          <Link
-            to="/my-bookings"
-            style={{
-              display: "inline-block",
-              padding: "10px 20px",
-              borderRadius: "8px",
-              backgroundColor: "#FF5C00",
-              color: "#FFFFFF",
-              fontSize: "14px",
-              fontWeight: 500,
-              textDecoration: "none",
-            }}
-          >
+          <Link to="/my-bookings"
+            className="inline-block px-5 py-2.5 rounded-lg bg-orange text-white text-sm font-medium no-underline">
             View my bookings
           </Link>
         </div>
@@ -64,107 +39,49 @@ export default function BookingConfirmation() {
   ];
 
   return (
-    <div
-      style={{
-        backgroundColor: "#F5F5F0",
-        minHeight: "100vh",
-        paddingTop: "88px",
-        paddingBottom: "48px",
-        paddingLeft: "16px",
-        paddingRight: "16px",
-      }}
-    >
-      <div style={{ maxWidth: "600px", margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: "28px" }}>
-          <div
-            style={{
-              width: "64px",
-              height: "64px",
-              borderRadius: "50%",
-              backgroundColor: "#D4EDDA",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto",
-            }}
-          >
+    <div className="min-h-screen bg-page pt-[88px] pb-12 px-4">
+      <div className="max-w-[600px] mx-auto">
+        <div className="text-center mb-7">
+          <div className="w-16 h-16 rounded-full bg-green-tint flex items-center justify-center mx-auto">
             <Check size={32} color="#0F3D1E" />
           </div>
-          <h1 style={{ fontSize: "24px", fontWeight: 500, color: "#111111", marginTop: "16px" }}>
-            Booking confirmed!
-          </h1>
-          <p style={{ fontSize: "14px", color: "#555555", marginTop: "8px" }}>Your booking reference is</p>
-          <div
-            style={{
-              display: "inline-block",
-              marginTop: "8px",
-              padding: "6px 16px",
-              backgroundColor: "#E5E5E5",
-              borderRadius: "20px",
-              fontSize: "16px",
-              fontWeight: 500,
-              color: "#111111",
-            }}
-          >
+          <h1 className="text-[24px] font-medium text-ink mt-4">Booking confirmed!</h1>
+          <p className="text-sm text-ink-muted mt-2">Your booking reference is</p>
+          <div className="inline-block mt-2 px-4 py-1.5 bg-divider rounded-full text-base font-medium text-ink">
             #{booking.bookingRef}
           </div>
         </div>
 
-        <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "24px", border: "0.5px solid #E0E8E3" }}>
-          <h2 style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>Booking details</h2>
-          <img
-            src={booking.equipmentImage}
-            alt={booking.equipment}
-            style={{ width: "100%", height: "160px", borderRadius: "8px", objectFit: "cover", marginBottom: "16px" }}
-          />
+        <div className="bg-white rounded-xl p-6 border border-border/50">
+          <h2 className="text-[15px] font-medium text-ink mb-4">Booking details</h2>
+          <img src={booking.equipmentImage} alt={booking.equipment}
+            className="w-full h-40 rounded-lg object-cover mb-4" />
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div className="flex flex-col gap-2.5">
             {rows.map(({ label, value }) => (
-              <div key={label} style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "13px", color: "#555555" }}>{label}</span>
-                <span style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>{value}</span>
+              <div key={label} className="flex justify-between">
+                <span className="text-[13px] text-ink-muted">{label}</span>
+                <span className="text-[13px] font-medium text-ink">{value}</span>
               </div>
             ))}
           </div>
 
-          <div style={{ borderTop: "1px solid #E0E8E3", margin: "16px 0" }} />
+          <div className="border-t border-border my-4" />
 
-          <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111", marginBottom: "8px" }}>
-            What happens next?
-          </div>
-          <p style={{ fontSize: "13px", color: "#555555", lineHeight: 1.6 }}>
-            The owner has received your booking request. They will confirm within 24
-            hours. You'll get a notification when they accept.
+          <div className="text-sm font-medium text-ink mb-2">What happens next?</div>
+          <p className="text-[13px] text-ink-muted leading-relaxed">
+            The owner has received your booking request. They will confirm within 24 hours.
+            You'll get a notification when they accept.
           </p>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "24px" }}>
-          <Link
-            to="/messages"
-            style={{
-              padding: "10px 20px",
-              fontSize: "14px",
-              borderRadius: "8px",
-              fontWeight: 500,
-              border: "1.5px solid #FF5C00",
-              color: "#FF5C00",
-              textDecoration: "none",
-            }}
-          >
+        <div className="flex justify-center gap-3 mt-6">
+          <Link to="/messages"
+            className="px-5 py-2.5 text-sm font-medium rounded-lg border border-orange text-orange no-underline">
             Chat with owner
           </Link>
-          <Link
-            to="/my-bookings"
-            style={{
-              padding: "10px 20px",
-              fontSize: "14px",
-              borderRadius: "8px",
-              fontWeight: 500,
-              backgroundColor: "#FF5C00",
-              color: "#FFFFFF",
-              textDecoration: "none",
-            }}
-          >
+          <Link to="/my-bookings"
+            className="px-5 py-2.5 text-sm font-medium rounded-lg bg-orange text-white no-underline">
             View my bookings
           </Link>
         </div>

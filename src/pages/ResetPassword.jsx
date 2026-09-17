@@ -13,167 +13,53 @@ export default function ResetPassword() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "calc(100vh - 56px)",
-        backgroundColor: "#F5F5F0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "48px 16px",
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "#FFFFFF",
-          borderRadius: "12px",
-          border: "0.5px solid #E0E8E3",
-          padding: "40px",
-          width: "100%",
-          maxWidth: "400px",
-        }}
-      >
+    <div className="min-h-[calc(100vh-56px)] bg-page flex items-center justify-center px-4 py-12">
+      <div className="bg-white rounded-xl border border-border/50 p-10 w-full max-w-[400px]">
         {done ? (
-          <div style={{ textAlign: "center" }}>
-            <CheckCircle size={40} style={{ color: "#1A5C2E", margin: "0 auto" }} />
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: 500,
-                color: "#111111",
-                marginTop: "16px",
-              }}
-            >
-              Password updated!
-            </h2>
-            <p style={{ fontSize: "14px", color: "#555555", marginTop: "8px" }}>
-              You can now log in with your new password.
-            </p>
+          <div className="text-center">
+            <CheckCircle size={40} className="text-green mx-auto" />
+            <h2 className="text-xl font-medium text-ink mt-4">Password updated!</h2>
+            <p className="text-sm text-ink-muted mt-2">You can now log in with your new password.</p>
             <Link
               to="/login"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginTop: "24px",
-                width: "100%",
-                height: "48px",
-                borderRadius: "8px",
-                color: "#FFFFFF",
-                fontSize: "15px",
-                fontWeight: 500,
-                backgroundColor: "#FF5C00",
-                textDecoration: "none",
-                transition: "opacity 0.15s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              className="flex items-center justify-center mt-6 w-full h-12 rounded-lg text-white text-[15px] font-medium bg-orange no-underline"
             >
               Go to Login
             </Link>
           </div>
         ) : (
           <>
-            <div style={{ textAlign: "center", marginBottom: "28px" }}>
-              <div style={{ fontSize: "18px", fontWeight: 500, color: "#1A5C2E" }}>
-                AgroRent
-              </div>
-              <h1
-                style={{
-                  fontSize: "22px",
-                  fontWeight: 500,
-                  color: "#111111",
-                  marginTop: "4px",
-                }}
-              >
-                Set a new password
-              </h1>
+            <div className="text-center mb-7">
+              <div className="text-lg font-medium text-green">AgroRent</div>
+              <h1 className="text-[22px] font-medium text-ink mt-1">Set a new password</h1>
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-            >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "#111111",
-                    marginBottom: "6px",
-                  }}
-                >
-                  New password
-                </label>
+                <label className="block text-[13px] font-medium text-ink mb-2">New password</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  style={{
-                    width: "100%",
-                    height: "44px",
-                    padding: "0 12px",
-                    fontSize: "14px",
-                    border: "1px solid #E0E8E3",
-                    borderRadius: "8px",
-                    outline: "none",
-                    transition: "border-color 0.15s ease",
-                  }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF5C00")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "#E0E8E3")}
+                  className="w-full h-11 px-3 text-sm border border-border rounded-lg outline-none"
                 />
               </div>
 
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "#111111",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Confirm new password
-                </label>
+                <label className="block text-[13px] font-medium text-ink mb-2">Confirm new password</label>
                 <input
                   type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   required
-                  style={{
-                    width: "100%",
-                    height: "44px",
-                    padding: "0 12px",
-                    fontSize: "14px",
-                    border: "1px solid #E0E8E3",
-                    borderRadius: "8px",
-                    outline: "none",
-                    transition: "border-color 0.15s ease",
-                  }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#FF5C00")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "#E0E8E3")}
+                  className="w-full h-11 px-3 text-sm border border-border rounded-lg outline-none"
                 />
               </div>
 
               <button
                 type="submit"
-                style={{
-                  width: "100%",
-                  height: "48px",
-                  borderRadius: "8px",
-                  border: "none",
-                  color: "#FFFFFF",
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  backgroundColor: "#FF5C00",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                className="w-full h-12 rounded-lg border-none text-white text-[15px] font-medium bg-orange cursor-pointer"
               >
                 Reset Password
               </button>

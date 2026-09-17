@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/LeaveReview.jsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Star } from "lucide-react";
@@ -22,18 +21,14 @@ export default function LeaveReview() {
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
-    bookingService
-      .getById(bookingId)
+    bookingService.getById(bookingId)
       .then(setBooking)
       .catch(() => setLoadError("We couldn't find that booking."));
   }, [bookingId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!rating) {
-      setSubmitError("Please select a star rating.");
-      return;
-    }
+    if (!rating) { setSubmitError("Please select a star rating."); return; }
     setSubmitError("");
     setSubmitting(true);
     try {
@@ -54,25 +49,10 @@ export default function LeaveReview() {
 
   if (loadError) {
     return (
-      <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "48px 16px" }}>
-        <div
-          style={{
-            maxWidth: "560px",
-            margin: "0 auto",
-            backgroundColor: "#FFFFFF",
-            borderRadius: "12px",
-            padding: "40px",
-            textAlign: "center",
-            border: "0.5px solid #E0E8E3",
-          }}
-        >
-          <p style={{ fontSize: "14px", color: "#555555", marginBottom: "16px" }}>
-            {loadError}
-          </p>
-          <Link
-            to="/my-bookings"
-            style={{ fontSize: "14px", fontWeight: 500, color: "#FF5C00", textDecoration: "none" }}
-          >
+      <div className="min-h-screen bg-page pt-12 px-4">
+        <div className="max-w-[560px] mx-auto bg-white rounded-xl p-10 text-center border border-border/50">
+          <p className="text-sm text-ink-muted mb-4">{loadError}</p>
+          <Link to="/my-bookings" className="text-sm font-medium text-orange no-underline">
             Back to My Bookings
           </Link>
         </div>
@@ -82,154 +62,72 @@ export default function LeaveReview() {
 
   if (!booking) {
     return (
-      <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "88px 16px", textAlign: "center", color: "#555555" }}>
-        Loading…
-      </div>
+      <div className="min-h-screen bg-page pt-[88px] text-center text-ink-muted">Loading…</div>
     );
   }
 
   const photoUrl = booking.equipment?.equipment_photos?.[0]?.url || "";
 
   return (
-    <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", padding: "48px 16px" }}>
-      <div style={{ maxWidth: "560px", margin: "0 auto" }}>
-        <div
-          style={{
-            backgroundColor: "#FFFFFF",
-            borderRadius: "12px",
-            padding: "32px",
-            border: "0.5px solid #E0E8E3",
-          }}
-        >
+    <div className="min-h-screen bg-page px-4 py-12">
+      <div className="max-w-[560px] mx-auto">
+        <div className="bg-white rounded-xl p-8 border border-border/50">
           {photoUrl && (
-            <img
-              src={photoUrl}
-              alt={booking.equipment?.name}
-              style={{
-                width: "100%",
-                height: "160px",
-                borderRadius: "8px",
-                objectFit: "cover",
-                marginBottom: "16px",
-              }}
-            />
+            <img src={photoUrl} alt={booking.equipment?.name}
+              className="w-full h-40 rounded-lg object-cover mb-4" />
           )}
-          <h2 style={{ fontSize: "18px", fontWeight: 500, color: "#111111" }}>
-            {booking.equipment?.name}
-          </h2>
-          <p style={{ fontSize: "13px", color: "#555555", marginTop: "2px" }}>
+          <h2 className="text-[18px] font-medium text-ink">{booking.equipment?.name}</h2>
+          <p className="text-[13px] text-ink-muted mt-0.5">
             Rented {booking.start_date} – {booking.end_date}
           </p>
 
-          <div style={{ margin: "20px 0", borderTop: "1px solid #E0E8E3" }} />
+          <div className="my-5 border-t border-border" />
 
           <form onSubmit={handleSubmit}>
-            <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "12px" }}>
-              How would you rate this equipment?
-            </div>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+            <div className="text-[15px] font-medium text-ink mb-3">How would you rate this equipment?</div>
+            <div className="flex gap-2 mb-2">
               {[1, 2, 3, 4, 5].map((s) => (
-                <button
-                  key={s}
-                  type="button"
+                <button key={s} type="button"
                   onClick={() => setRating(s)}
                   onMouseEnter={() => setHover(s)}
                   onMouseLeave={() => setHover(0)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                  }}
-                >
-                  <Star
-                    size={36}
+                  className="bg-transparent border-none cursor-pointer p-0">
+                  <Star size={36}
                     fill={s <= (hover || rating) ? "#FF5C00" : "none"}
-                    stroke={s <= (hover || rating) ? "#FF5C00" : "#E0E8E3"}
-                  />
+                    stroke={s <= (hover || rating) ? "#FF5C00" : "#E0E8E3"} />
                 </button>
               ))}
             </div>
             {(hover || rating) > 0 && (
-              <p style={{ fontSize: "13px", color: "#555555", marginBottom: "16px" }}>
-                {LABELS[hover || rating]}
-              </p>
+              <p className="text-[13px] text-ink-muted mb-4">{LABELS[hover || rating]}</p>
             )}
 
-            <div style={{ marginTop: "24px" }}>
-              <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111", marginBottom: "8px" }}>
-                Write your review
-              </div>
-              <div style={{ position: "relative" }}>
+            <div className="mt-6">
+              <div className="text-[15px] font-medium text-ink mb-2">Write your review</div>
+              <div className="relative">
                 <textarea
                   value={text}
                   onChange={(e) => setText(e.target.value.slice(0, 500))}
                   rows={6}
                   placeholder="Describe your experience — was the equipment in good condition? Was the owner helpful? Would you recommend this to others?"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    fontSize: "14px",
-                    border: "0.5px solid #E0E8E3",
-                    borderRadius: "8px",
-                    outline: "none",
-                    resize: "none",
-                    minHeight: "140px",
-                    fontFamily: "inherit",
-                    boxSizing: "border-box",
-                  }}
+                  className="w-full px-3 py-2.5 text-sm text-ink border border-border/50 rounded-lg outline-none resize-none min-h-[140px] font-inherit box-border"
                 />
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#555555",
-                    position: "absolute",
-                    bottom: "8px",
-                    right: "8px",
-                  }}
-                >
+                <span className="absolute bottom-2 right-2 text-[11px] text-ink-muted">
                   {text.length} / 500
                 </span>
               </div>
             </div>
 
-            {submitError && (
-              <p style={{ fontSize: "13px", color: "#A02020", marginTop: "16px" }}>{submitError}</p>
-            )}
+            {submitError && <p className="text-[13px] text-red mt-4">{submitError}</p>}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{
-                width: "100%",
-                height: "48px",
-                borderRadius: "8px",
-                border: "none",
-                backgroundColor: "#FF5C00",
-                color: "#FFFFFF",
-                fontSize: "15px",
-                fontWeight: 500,
-                marginTop: "32px",
-                cursor: submitting ? "default" : "pointer",
-                opacity: submitting ? 0.7 : 1,
-              }}
-            >
+            <button type="submit" disabled={submitting}
+              className={`w-full h-12 rounded-lg border-none bg-orange text-white text-[15px] font-medium mt-8 ${
+                submitting ? "opacity-70 cursor-default" : "cursor-pointer"
+              }`}>
               {submitting ? "Submitting…" : "Submit review"}
             </button>
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              style={{
-                width: "100%",
-                textAlign: "center",
-                background: "none",
-                border: "none",
-                fontSize: "13px",
-                color: "#555555",
-                marginTop: "10px",
-                cursor: "pointer",
-              }}
-            >
+            <button type="button" onClick={() => navigate(-1)}
+              className="w-full text-center bg-transparent border-none text-[13px] text-ink-muted mt-2.5 cursor-pointer">
               Skip for now
             </button>
           </form>

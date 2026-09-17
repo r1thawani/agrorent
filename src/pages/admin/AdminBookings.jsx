@@ -1,44 +1,36 @@
-// FILE: agrorent/src/pages/admin/AdminBookings.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AdminTopNav from "../../components/AdminTopNav";
 import AdminTable from "../../components/AdminTable";
 import { adminService } from "../../services/adminService";
 
-const STATUS_BADGE = {
-  confirmed: { bg: "#D4EDDA", color: "#0F3D1E", label: "Confirmed" },
-  pending: { bg: "#FFE8D6", color: "#CC4A00", label: "Pending" },
-  completed: { bg: "#F5F5F0", color: "#555555", label: "Completed" },
-  cancelled: { bg: "#FDECEA", color: "#A02020", label: "Cancelled" },
-  declined: { bg: "#FDECEA", color: "#A02020", label: "Declined" },
+const STATUS_CLS = {
+  confirmed: "bg-green-tint text-green-dark",
+  pending: "bg-peach text-orange-dark",
+  completed: "bg-page text-ink-muted",
+  cancelled: "bg-red-tint text-red",
+  declined: "bg-red-tint text-red",
+};
+const STATUS_LABELS = {
+  confirmed: "Confirmed",
+  pending: "Pending",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  declined: "Declined",
 };
 
 function StatusBadge({ status }) {
-  const s = STATUS_BADGE[status] || STATUS_BADGE.pending;
   return (
-    <span
-      style={{
-        display: "inline-block",
-        fontSize: "11px",
-        fontWeight: 500,
-        padding: "3px 10px",
-        borderRadius: "20px",
-        backgroundColor: s.bg,
-        color: s.color,
-      }}
-    >
-      {s.label}
+    <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full capitalize ${STATUS_CLS[status] || STATUS_CLS.pending}`}>
+      {STATUS_LABELS[status] || status}
     </span>
   );
 }
 
 function formatDateRange(startDate, endDate) {
-  const opts = { day: "numeric", month: "short", year: "numeric" };
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const startStr = start.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  const endStr = end.toLocaleDateString("en-GB", opts);
-  return `${startStr} – ${endStr}`;
+  const start = new Date(startDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const end = new Date(endDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return `${start} – ${end}`;
 }
 
 export default function AdminBookings() {
@@ -46,10 +38,7 @@ export default function AdminBookings() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    adminService
-      .getAllBookings()
-      .then(setBookings)
-      .finally(() => setLoading(false));
+    adminService.getAllBookings().then(setBookings).finally(() => setLoading(false));
   }, []);
 
   const rows = bookings.map((b) => ({
@@ -63,52 +52,32 @@ export default function AdminBookings() {
     {
       key: "id",
       label: "Booking ID",
-      render: (row) => (
-        <span style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>
-          #{row.id.slice(0, 8)}
-        </span>
-      ),
+      render: (row) => <span className="text-[13px] font-medium text-ink">#{row.id.slice(0, 8)}</span>,
     },
     {
       key: "renterName",
       label: "Renter",
-      render: (row) => (
-        <span style={{ fontSize: "13px", color: "#111111" }}>
-          {row.renterName}
-        </span>
-      ),
+      render: (row) => <span className="text-[13px] text-ink">{row.renterName}</span>,
     },
     {
       key: "ownerName",
       label: "Owner",
-      render: (row) => (
-        <span style={{ fontSize: "13px", color: "#555555" }}>{row.ownerName}</span>
-      ),
+      render: (row) => <span className="text-[13px] text-ink-muted">{row.ownerName}</span>,
     },
     {
       key: "equipmentName",
       label: "Equipment",
-      render: (row) => (
-        <span style={{ fontSize: "13px", color: "#111111" }}>{row.equipmentName}</span>
-      ),
+      render: (row) => <span className="text-[13px] text-ink">{row.equipmentName}</span>,
     },
     {
       key: "dates",
       label: "Dates",
-      render: (row) => (
-        <span style={{ fontSize: "13px", color: "#555555" }}>
-          {formatDateRange(row.start_date, row.end_date)}
-        </span>
-      ),
+      render: (row) => <span className="text-[13px] text-ink-muted">{formatDateRange(row.start_date, row.end_date)}</span>,
     },
     {
       key: "total_price",
       label: "Amount",
-      render: (row) => (
-        <span style={{ fontSize: "13px", fontWeight: 500, color: "#111111" }}>
-          K{Number(row.total_price).toLocaleString()}
-        </span>
-      ),
+      render: (row) => <span className="text-[13px] font-medium text-ink">K{Number(row.total_price).toLocaleString()}</span>,
     },
     {
       key: "status",
@@ -119,40 +88,29 @@ export default function AdminBookings() {
       key: "actions",
       label: "Actions",
       render: (row) => (
-        <Link
-          to={`/listings/${row.equipment_id}`}
-          style={{ fontSize: "13px", color: "#1A5C2E", textDecoration: "none" }}
-        >
+        <Link to={`/listings/${row.equipment_id}`} className="text-[13px] text-green no-underline">
           View details
         </Link>
       ),
     },
   ];
 
-  const filters = [
-    {
-      key: "status",
-      label: "Status",
-      options: ["All status", "pending", "confirmed", "completed", "cancelled", "declined"],
-    },
-  ];
-
   return (
     <div>
       <AdminTopNav />
-      <div style={{ padding: "32px", backgroundColor: "#F5F5F0", minHeight: "calc(100vh - 56px)" }}>
-        <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>
-          All bookings
-        </h1>
+      <div className="min-h-[calc(100vh-56px)] bg-page px-4 sm:px-8 py-8">
+        <h1 className="text-[22px] font-medium text-ink mb-5">All bookings</h1>
         {loading ? (
-          <div style={{ textAlign: "center", padding: "80px 0", color: "#555555" }}>Loading…</div>
+          <div className="text-center py-20 text-ink-muted">Loading…</div>
         ) : (
           <AdminTable
             columns={columns}
             rows={rows}
             searchKeys={["renterName", "equipmentName"]}
             searchPlaceholder="Search bookings…"
-            filters={filters}
+            filters={[
+              { key: "status", label: "Status", options: ["All status", "pending", "confirmed", "completed", "cancelled", "declined"] },
+            ]}
             emptyMessage="No bookings match your filters"
           />
         )}

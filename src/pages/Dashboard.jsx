@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/Dashboard.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
@@ -45,63 +44,52 @@ export default function Dashboard() {
 
   async function acceptRequest(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "confirmed" } : r)));
-    try {
-      await bookingService.accept(id);
-    } catch {
-      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r)));
-    }
+    try { await bookingService.accept(id); }
+    catch { setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r))); }
   }
 
   async function declineRequest(id) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "declined" } : r)));
-    try {
-      await bookingService.decline(id);
-    } catch {
-      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r)));
-    }
+    try { await bookingService.decline(id); }
+    catch { setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r))); }
   }
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F0", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "32px 24px", paddingTop: "88px", display: "flex", gap: "24px", alignItems: "flex-start" }}>
+    <div className="min-h-screen bg-page">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-[88px] pb-8 flex flex-col lg:flex-row gap-6 items-start">
         <Sidebar activeLink="/dashboard" />
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111" }}>
-            Welcome back, {firstName}
-          </h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[22px] font-medium text-ink">Welcome back, {firstName}</h1>
 
-          {/* Stat Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginTop: "20px" }}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
             <StatCard label="Your listings" value={listings.length} />
             <StatCard label="Pending requests" value={pendingRequests.length} valueColor="#FF5C00" />
             <StatCard label="Upcoming bookings" value={upcomingBookings.length} />
             <StatCard label="Total rentals completed" value={completedCount} />
           </div>
 
-          {/* Pending requests on your listings */}
           {pendingRequests.length > 0 && (
-            <div style={{ marginTop: "28px" }}>
-              <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "12px" }}>
-                Pending requests on your listings
-              </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className="mt-7">
+              <h2 className="text-base font-medium text-ink mb-3">Pending requests on your listings</h2>
+              <div className="flex flex-col gap-2.5">
                 {pendingRequests.map((r) => (
-                  <div key={r.id} style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "16px", border: "0.5px solid #E0E8E3", display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                    <img src={r.renter?.photo_url} alt={r.renter?.name} style={{ width: "44px", height: "44px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, backgroundColor: "#F5F5F0" }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{r.renter?.name}</div>
-                      <div style={{ fontSize: "13px", color: "#555555" }}>{r.equipment?.name}</div>
-                      <div style={{ fontSize: "13px", color: "#555555" }}>{r.start_date} – {r.end_date}</div>
-                      <div style={{ fontSize: "14px", fontWeight: 500, color: "#FF5C00", marginTop: "4px" }}>
-                        K{Number(r.total_price).toLocaleString()} total
-                      </div>
+                  <div key={r.id} className="bg-white rounded-xl p-4 border border-border/50 flex items-start gap-3">
+                    <img src={r.renter?.photo_url} alt={r.renter?.name}
+                      className="w-11 h-11 rounded-full object-cover shrink-0 bg-page" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-ink">{r.renter?.name}</div>
+                      <div className="text-[13px] text-ink-muted">{r.equipment?.name}</div>
+                      <div className="text-[13px] text-ink-muted">{r.start_date} – {r.end_date}</div>
+                      <div className="text-sm font-medium text-orange mt-1">K{Number(r.total_price).toLocaleString()} total</div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", flexShrink: 0 }}>
-                      <button onClick={() => acceptRequest(r.id)} style={{ padding: "9px 18px", fontSize: "13px", fontWeight: 500, color: "#FFFFFF", backgroundColor: "#1A5C2E", borderRadius: "8px", border: "none", cursor: "pointer" }}>
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <button onClick={() => acceptRequest(r.id)}
+                        className="px-4 py-2 text-[13px] font-medium text-white bg-green rounded-lg border-none cursor-pointer">
                         Accept
                       </button>
-                      <button onClick={() => declineRequest(r.id)} style={{ padding: "9px 18px", fontSize: "13px", fontWeight: 500, color: "#555555", backgroundColor: "transparent", borderRadius: "8px", border: "0.5px solid #CCCCCC", cursor: "pointer" }}>
+                      <button onClick={() => declineRequest(r.id)}
+                        className="px-4 py-2 text-[13px] font-medium text-ink-muted bg-transparent rounded-lg border border-border-muted cursor-pointer">
                         Decline
                       </button>
                     </div>
@@ -111,19 +99,16 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Your upcoming bookings */}
-          <div style={{ marginTop: "28px" }}>
-            <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "12px" }}>
-              Your upcoming bookings
-            </h2>
+          <div className="mt-7">
+            <h2 className="text-base font-medium text-ink mb-3">Your upcoming bookings</h2>
             {loading ? (
-              <div style={{ textAlign: "center", padding: "24px", color: "#555555" }}>Loading…</div>
+              <div className="text-center py-6 text-ink-muted">Loading…</div>
             ) : upcomingBookings.length === 0 ? (
-              <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "24px", textAlign: "center", fontSize: "14px", color: "#555555", border: "0.5px solid #E0E8E3" }}>
+              <div className="bg-white rounded-xl p-6 text-center text-sm text-ink-muted border border-border/50">
                 No upcoming bookings
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div className="flex flex-col gap-2.5">
                 {upcomingBookings.map((b) => (
                   <BookingCard key={b.id} booking={b} linkTo="/my-bookings" />
                 ))}
@@ -131,41 +116,37 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Recent Messages */}
-          <div style={{ marginTop: "28px" }}>
-            <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "12px" }}>
-              Recent messages
-            </h2>
+          <div className="mt-7">
+            <h2 className="text-base font-medium text-ink mb-3">Recent messages</h2>
             {loading ? (
-              <div style={{ textAlign: "center", padding: "24px", color: "#555555" }}>Loading…</div>
+              <div className="text-center py-6 text-ink-muted">Loading…</div>
             ) : conversations.length === 0 ? (
-              <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "24px", textAlign: "center", fontSize: "14px", color: "#555555", border: "0.5px solid #E0E8E3" }}>
+              <div className="bg-white rounded-xl p-6 text-center text-sm text-ink-muted border border-border/50">
                 No messages yet
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div className="flex flex-col gap-2.5">
                 {conversations.slice(0, 2).map((m) => (
-                  <Link key={m.id} to="/messages" style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "14px", display: "flex", alignItems: "center", gap: "12px", border: "0.5px solid #E0E8E3", textDecoration: "none" }}>
-                    <img src={m.photo} alt={m.person} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, backgroundColor: "#F5F5F0" }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{m.person}</div>
-                      <div style={{ fontSize: "13px", color: "#555555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.lastMessage}</div>
+                  <Link key={m.id} to="/messages"
+                    className="bg-white rounded-xl p-3.5 flex items-center gap-3 border border-border/50 no-underline">
+                    <img src={m.photo} alt={m.person}
+                      className="w-9 h-9 rounded-full object-cover shrink-0 bg-page" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-ink">{m.person}</div>
+                      <div className="text-[13px] text-ink-muted truncate">{m.lastMessage}</div>
                     </div>
-                    <span style={{ fontSize: "12px", color: "#555555", flexShrink: 0 }}>{m.time}</span>
+                    <span className="text-xs text-ink-muted shrink-0">{m.time}</span>
                   </Link>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Recent Notifications */}
-          <div style={{ marginTop: "28px" }}>
-            <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginBottom: "12px" }}>
-              Recent notifications
-            </h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div className="mt-7">
+            <h2 className="text-base font-medium text-ink mb-3">Recent notifications</h2>
+            <div className="flex flex-col gap-2">
               {notifications.length === 0 ? (
-                <div style={{ fontSize: "14px", color: "#555555" }}>No notifications yet</div>
+                <div className="text-sm text-ink-muted">No notifications yet</div>
               ) : (
                 notifications.slice(0, 3).map((n) => (
                   <Notification key={n.id} notification={n} onClick={() => markAsRead(n.id)} />

@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/MyBookings.jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
@@ -13,29 +12,23 @@ const TABS = [
   { key: "cancelled", label: "Cancelled" },
 ];
 
-const STATUS_STYLES = {
-  confirmed: { bg: "#D4EDDA", color: "#0F3D1E", label: "Confirmed" },
-  pending: { bg: "#FFE8D6", color: "#CC4A00", label: "Pending" },
-  completed: { bg: "#F5F5F0", color: "#555555", label: "Completed" },
-  cancelled: { bg: "#FDECEA", color: "#A02020", label: "Cancelled" },
-  declined: { bg: "#FDECEA", color: "#A02020", label: "Declined" },
+const STATUS_CLASSES = {
+  confirmed: "bg-green-tint text-green-dark",
+  pending:   "bg-orange-tint text-orange-dark",
+  completed: "bg-page text-ink-muted",
+  cancelled: "bg-red-tint text-red",
+  declined:  "bg-red-tint text-red",
+};
+
+const STATUS_LABELS = {
+  confirmed: "Confirmed", pending: "Pending", completed: "Completed",
+  cancelled: "Cancelled", declined: "Declined",
 };
 
 function StatusBadge({ status }) {
-  const s = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
   return (
-    <span
-      style={{
-        display: "inline-block",
-        fontSize: "11px",
-        fontWeight: 500,
-        padding: "3px 10px",
-        borderRadius: "20px",
-        backgroundColor: s.bg,
-        color: s.color,
-      }}
-    >
-      {s.label}
+    <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full ${STATUS_CLASSES[status] || STATUS_CLASSES.pending}`}>
+      {STATUS_LABELS[status] || "Pending"}
     </span>
   );
 }
@@ -43,41 +36,29 @@ function StatusBadge({ status }) {
 function BookingRow({ booking, onCancel }) {
   const photos = (booking.equipment?.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
   const image = photos[0]?.url || "";
-  const dateRange = `${booking.start_date} → ${booking.end_date}`;
 
   return (
-    <div
-      style={{
-        backgroundColor: "#FFFFFF",
-        borderRadius: "12px",
-        padding: "16px",
-        display: "flex",
-        alignItems: "center",
-        gap: "16px",
-        border: "0.5px solid #E0E8E3",
-      }}
-    >
-      <img
-        src={image}
-        alt={booking.equipment?.name}
-        style={{ width: "72px", height: "60px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }}
-      />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111" }}>{booking.equipment?.name}</div>
-        <div style={{ fontSize: "13px", color: "#555555", margin: "2px 0 6px" }}>{dateRange}</div>
+    <div className="bg-white rounded-xl p-4 flex items-center gap-4 border border-border/50">
+      <img src={image} alt={booking.equipment?.name}
+        className="w-[72px] h-[60px] rounded-lg object-cover shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="text-[15px] font-medium text-ink">{booking.equipment?.name}</div>
+        <div className="text-[13px] text-ink-muted my-0.5 mb-2">
+          {booking.start_date} → {booking.end_date}
+        </div>
         <StatusBadge status={booking.status} />
       </div>
-      <div style={{ fontSize: "15px", fontWeight: 500, color: "#FF5C00", flexShrink: 0 }}>
+      <div className="text-[15px] font-medium text-orange shrink-0">
         K{Number(booking.total_price).toLocaleString()}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", flexShrink: 0 }}>
-        <Link to={`/listings/${booking.equipment_id}`} style={{ fontSize: "13px", color: "#1A5C2E", textDecoration: "none" }}>
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <Link to={`/listings/${booking.equipment_id}`} className="text-[13px] text-green no-underline">
           View details
         </Link>
         {(booking.status === "pending" || booking.status === "confirmed") && (
           <button
             onClick={() => onCancel(booking.id)}
-            style={{ fontSize: "13px", color: "#A02020", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+            className="text-[13px] text-red bg-transparent border-none p-0 cursor-pointer"
           >
             Cancel booking
           </button>
@@ -85,15 +66,7 @@ function BookingRow({ booking, onCancel }) {
         {booking.status === "completed" && (
           <Link
             to={`/review/${booking.id}`}
-            style={{
-              fontSize: "12px",
-              padding: "5px 12px",
-              borderRadius: "8px",
-              border: "1.5px solid #FF5C00",
-              color: "#FF5C00",
-              fontWeight: 500,
-              textDecoration: "none",
-            }}
+            className="text-xs px-3 py-[5px] rounded-lg border-[1.5px] border-orange text-orange font-medium no-underline"
           >
             Leave a review
           </Link>
@@ -112,8 +85,7 @@ export default function MyBookings() {
 
   useEffect(() => {
     if (!user) return;
-    bookingService
-      .getMyBookings(user.id)
+    bookingService.getMyBookings(user.id)
       .then(setBookings)
       .catch(() => setLoadError("Could not load your bookings."))
       .finally(() => setLoading(false));
@@ -121,72 +93,56 @@ export default function MyBookings() {
 
   async function handleCancel(id) {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
-    try {
-      await bookingService.cancel(id);
-    } catch {
-      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b)));
-    }
+    try { await bookingService.cancel(id); }
+    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b))); }
   }
 
   const filtered = activeTab === "all" ? bookings : bookings.filter((b) => b.status === activeTab);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
-      <Sidebar role="renter" activeLink="/my-bookings" />
-      <div style={{ flex: 1, padding: "32px", paddingTop: "88px" }}>
-        <h1 style={{ fontSize: "26px", fontWeight: 500, color: "#111111", marginBottom: "20px" }}>My bookings</h1>
+    <div className="min-h-screen bg-page pt-14">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 items-start">
+        <Sidebar activeLink="/my-bookings" />
 
-        <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid #E0E8E3", marginBottom: "20px" }}>
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                fontSize: "14px",
-                paddingBottom: "12px",
-                background: "none",
-                cursor: "pointer",
-                border: "none",
-                borderBottom: activeTab === tab.key ? "2px solid #FF5C00" : "2px solid transparent",
-                color: activeTab === tab.key ? "#FF5C00" : "#555555",
-                fontWeight: activeTab === tab.key ? 500 : 400,
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[26px] font-medium text-ink mb-5">My bookings</h1>
 
-        {loading && <div style={{ textAlign: "center", padding: "40px", color: "#555555" }}>Loading…</div>}
-
-        {loadError && (
-          <div style={{ textAlign: "center", padding: "40px", color: "#A02020" }}>{loadError}</div>
-        )}
-
-        {!loading && !loadError && filtered.length === 0 && (
-          <div
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: "12px",
-              padding: "40px",
-              textAlign: "center",
-              border: "0.5px solid #E0E8E3",
-            }}
-          >
-            <div style={{ fontSize: "32px", marginBottom: "8px" }}>📋</div>
-            <div style={{ fontSize: "14px", color: "#555555" }}>
-              No {activeTab === "all" ? "" : STATUS_STYLES[activeTab]?.label.toLowerCase() + " "}bookings
-            </div>
-          </div>
-        )}
-
-        {!loading && !loadError && filtered.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {filtered.map((b) => (
-              <BookingRow key={b.id} booking={b} onCancel={handleCancel} />
+          <div className="flex gap-6 border-b border-border mb-5 overflow-x-auto">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`text-sm pb-3 bg-transparent cursor-pointer border-none border-b-2 whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? "border-orange text-orange font-medium"
+                    : "border-transparent text-ink-muted font-normal"
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
-        )}
+
+          {loading && <div className="text-center py-10 text-ink-muted">Loading…</div>}
+          {loadError && <div className="text-center py-10 text-red">{loadError}</div>}
+
+          {!loading && !loadError && filtered.length === 0 && (
+            <div className="bg-white rounded-xl p-10 text-center border border-border/50">
+              <div className="text-[32px] mb-2">📋</div>
+              <div className="text-sm text-ink-muted">
+                No {activeTab === "all" ? "" : STATUS_LABELS[activeTab]?.toLowerCase() + " "}bookings
+              </div>
+            </div>
+          )}
+
+          {!loading && !loadError && filtered.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              {filtered.map((b) => (
+                <BookingRow key={b.id} booking={b} onCancel={handleCancel} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

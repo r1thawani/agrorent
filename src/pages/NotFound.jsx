@@ -3,66 +3,28 @@ import { Tractor } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div
-      style={{
-        paddingTop: "56px",
-        minHeight: "100vh",
-        backgroundColor: "#F5F5F0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
-        padding: "56px 24px",
-      }}
-    >
+    <div className="pt-14 min-h-screen bg-page flex items-center justify-center text-center px-6 py-14">
       <div>
-        <div
-          style={{
-            width: "64px",
-            height: "64px",
-            borderRadius: "50%",
-            backgroundColor: "#FFE8D6",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 20px",
-          }}
-        >
-          <Tractor size={28} style={{ color: "#FF5C00" }} />
+        <div className="w-16 h-16 rounded-full bg-orange-tint flex items-center justify-center mx-auto mb-5">
+          <Tractor size={28} className="text-orange" />
         </div>
-        <h1 style={{ fontSize: "48px", fontWeight: 600, color: "#0F3D1E", lineHeight: 1 }}>404</h1>
-        <p style={{ fontSize: "16px", fontWeight: 500, color: "#111111", marginTop: "12px" }}>
+        <h1 className="text-[48px] font-semibold text-green-dark leading-none">404</h1>
+        <p className="text-base font-medium text-ink mt-3">
           This page took a wrong turn in the field.
         </p>
-        <p style={{ fontSize: "14px", color: "#555555", marginTop: "6px" }}>
+        <p className="text-sm text-ink-muted mt-1.5">
           The page you're looking for doesn't exist or may have moved.
         </p>
-        <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginTop: "28px" }}>
+        <div className="flex gap-3 justify-center mt-7">
           <Link
             to="/"
-            style={{
-              padding: "12px 28px",
-              borderRadius: "8px",
-              backgroundColor: "#FF5C00",
-              color: "#FFFFFF",
-              fontSize: "13px",
-              fontWeight: 500,
-              textDecoration: "none",
-            }}
+            className="px-7 py-3 rounded-lg bg-orange text-white text-[13px] font-medium no-underline"
           >
             Back to home
           </Link>
           <Link
             to="/listings"
-            style={{
-              padding: "12px 28px",
-              borderRadius: "8px",
-              border: "1.5px solid #FF5C00",
-              color: "#FF5C00",
-              fontSize: "13px",
-              fontWeight: 500,
-              textDecoration: "none",
-            }}
+            className="px-7 py-3 rounded-lg border-[1.5px] border-orange text-orange text-[13px] font-medium no-underline"
           >
             Browse equipment
           </Link>

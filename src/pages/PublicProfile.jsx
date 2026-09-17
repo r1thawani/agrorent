@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/PublicProfile.jsx
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { MapPin, Star } from "lucide-react";
@@ -49,44 +48,18 @@ export default function PublicProfile() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "88px", textAlign: "center", color: "#555555" }}>
-        Loading…
-      </div>
+      <div className="min-h-screen bg-page pt-[88px] text-center text-ink-muted">Loading…</div>
     );
   }
 
   if (notFound || !owner) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#F5F5F0",
-          paddingTop: "56px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "18px", fontWeight: 500, color: "#111111", marginBottom: "8px" }}>
-            Profile not found
-          </div>
-          <p style={{ fontSize: "14px", color: "#555555", marginBottom: "16px" }}>
-            We couldn't find an owner matching this profile.
-          </p>
-          <Link
-            to="/listings"
-            style={{
-              display: "inline-block",
-              padding: "10px 24px",
-              borderRadius: "8px",
-              backgroundColor: "#FF5C00",
-              color: "#FFFFFF",
-              fontSize: "14px",
-              fontWeight: 500,
-              textDecoration: "none",
-            }}
-          >
+      <div className="min-h-screen bg-page pt-14 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="text-[18px] font-medium text-ink mb-2">Profile not found</div>
+          <p className="text-sm text-ink-muted mb-4">We couldn't find an owner matching this profile.</p>
+          <Link to="/listings"
+            className="inline-block px-6 py-2.5 rounded-lg bg-orange text-white text-sm font-medium no-underline">
             Browse Equipment
           </Link>
         </div>
@@ -94,63 +67,41 @@ export default function PublicProfile() {
     );
   }
 
-  // Aggregate rating/review count across all of this owner's listings —
-  // profiles has no rating column of its own, only equipment does.
   const totalReviews = listings.reduce((sum, l) => sum + (l.review_count || 0), 0);
   const avgRating = listings.length
     ? listings.reduce((sum, l) => sum + (l.rating || 0), 0) / listings.length
     : 0;
-
   const memberSince = owner.created_at ? new Date(owner.created_at).getFullYear() : "";
   const primaryLocation = listings[0]?.location || "";
-
-  // Map real equipment rows into the flat shape EquipmentCard expects.
   const mappedListings = listings.map(toEquipmentCardProps);
 
   return (
-    <div style={{ backgroundColor: "#F5F5F0", minHeight: "100vh", paddingTop: "56px" }}>
-      <div style={{ maxWidth: "900px", margin: "0 auto", padding: "40px 16px" }}>
-        {/* Profile header */}
-        <div
-          style={{
-            backgroundColor: "#FFFFFF",
-            borderRadius: "12px",
-            padding: "28px",
-            marginBottom: "28px",
-            border: "0.5px solid #E0E8E3",
-          }}
-        >
-          <div style={{ display: "flex", gap: "24px" }}>
-            <img
-              src={owner.photo_url}
-              alt={owner.name}
-              style={{ width: "96px", height: "96px", borderRadius: "9999px", objectFit: "cover", flexShrink: 0, backgroundColor: "#F5F5F0" }}
-            />
+    <div className="min-h-screen bg-page pt-14">
+      <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-10">
+        <div className="bg-white rounded-xl p-7 mb-7 border border-border/50">
+          <div className="flex gap-6">
+            <img src={owner.photo_url} alt={owner.name}
+              className="w-24 h-24 rounded-full object-cover shrink-0 bg-page" />
             <div>
-              <h1 style={{ fontSize: "22px", fontWeight: 500, color: "#111111" }}>{owner.name}</h1>
+              <h1 className="text-[22px] font-medium text-ink">{owner.name}</h1>
               {memberSince && (
-                <div style={{ fontSize: "13px", color: "#555555", marginTop: "2px" }}>
-                  Member since {memberSince}
-                </div>
+                <div className="text-[13px] text-ink-muted mt-0.5">Member since {memberSince}</div>
               )}
               {primaryLocation && (
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", color: "#555555", marginTop: "2px" }}>
+                <div className="flex items-center gap-1 text-[13px] text-ink-muted mt-0.5">
                   <MapPin size={12} /> {primaryLocation}
                 </div>
               )}
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
+              <div className="flex items-center gap-1.5 mt-1.5">
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <Star
-                    key={s}
-                    size={14}
+                  <Star key={s} size={14}
                     fill={s <= Math.round(avgRating) ? "#FF5C00" : "none"}
-                    stroke={s <= Math.round(avgRating) ? "#FF5C00" : "#cccccc"}
-                  />
+                    stroke={s <= Math.round(avgRating) ? "#FF5C00" : "#cccccc"} />
                 ))}
-                <span style={{ fontSize: "15px", fontWeight: 500, color: "#111111" }}>{avgRating.toFixed(1)}</span>
-                <span style={{ fontSize: "13px", color: "#555555" }}>({totalReviews} reviews)</span>
+                <span className="text-[15px] font-medium text-ink">{avgRating.toFixed(1)}</span>
+                <span className="text-[13px] text-ink-muted">({totalReviews} reviews)</span>
               </div>
-              <p style={{ fontSize: "14px", color: "#111111", marginTop: "12px", lineHeight: 1.6, maxWidth: "480px" }}>
+              <p className="text-sm text-ink mt-3 leading-relaxed max-w-[480px]">
                 {owner.name} is an experienced equipment owner on AgroRent, listing{" "}
                 {listings.length} {listings.length === 1 ? "piece" : "pieces"} of equipment for
                 rent to farmers across Zambia.
@@ -159,67 +110,47 @@ export default function PublicProfile() {
           </div>
         </div>
 
-        {/* Listings */}
-        <h2 style={{ fontSize: "18px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
-          Equipment by {owner.name}
-        </h2>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-            gap: "20px",
-            marginBottom: "28px",
-          }}
-        >
+        <h2 className="text-[18px] font-medium text-ink mb-4">Equipment by {owner.name}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-7">
           {mappedListings.map((eq) => (
             <EquipmentCard key={eq.id} {...eq} />
           ))}
         </div>
 
-        {/* Reviews */}
-        <h2 style={{ fontSize: "18px", fontWeight: 500, color: "#111111", marginBottom: "16px" }}>
+        <h2 className="text-[18px] font-medium text-ink mb-4">
           Reviews{" "}
-          <span style={{ fontSize: "14px", fontWeight: 400, color: "#555555" }}>
+          <span className="text-sm font-normal text-ink-muted">
             — avg {avgRating.toFixed(1)} ({totalReviews})
           </span>
         </h2>
         {reviews.length === 0 ? (
-          <p style={{ fontSize: "14px", color: "#555555" }}>No reviews yet.</p>
+          <p className="text-sm text-ink-muted">No reviews yet.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="flex flex-col gap-3">
             {reviews.map((r) => (
-              <div
-                key={r.id}
-                style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "16px", border: "0.5px solid #E0E8E3" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <img
-                      src={r.reviewer?.photo_url}
-                      alt={r.reviewer?.name}
-                      style={{ width: "32px", height: "32px", borderRadius: "9999px", objectFit: "cover", backgroundColor: "#F5F5F0" }}
-                    />
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: "#111111" }}>{r.reviewer?.name}</span>
+              <div key={r.id} className="bg-white rounded-xl p-4 border border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <img src={r.reviewer?.photo_url} alt={r.reviewer?.name}
+                      className="w-8 h-8 rounded-full object-cover bg-page" />
+                    <span className="text-sm font-medium text-ink">{r.reviewer?.name}</span>
                   </div>
-                  <span style={{ fontSize: "12px", color: "#555555" }}>
+                  <span className="text-xs text-ink-muted">
                     {new Date(r.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })}
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: "2px", marginBottom: "8px" }}>
+                <div className="flex gap-0.5 mb-2">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star
-                      key={s}
-                      size={13}
+                    <Star key={s} size={13}
                       fill={s <= r.rating ? "#FF5C00" : "none"}
-                      stroke={s <= r.rating ? "#FF5C00" : "#cccccc"}
-                    />
+                      stroke={s <= r.rating ? "#FF5C00" : "#cccccc"} />
                   ))}
                 </div>
-                <p style={{ fontSize: "14px", color: "#111111", lineHeight: 1.6 }}>{r.text}</p>
+                <p className="text-sm text-ink leading-relaxed">{r.text}</p>
                 {r.owner_reply && (
-                  <div style={{ marginTop: "12px", paddingLeft: "12px", borderLeft: "3px solid #1A5C2E" }}>
-                    <div style={{ fontSize: "12px", fontWeight: 500, color: "#1A5C2E" }}>Owner reply:</div>
-                    <p style={{ fontSize: "14px", color: "#111111", marginTop: "2px" }}>{r.owner_reply}</p>
+                  <div className="mt-3 pl-3 border-l-[3px] border-l-green">
+                    <div className="text-xs font-medium text-green">Owner reply:</div>
+                    <p className="text-sm text-ink mt-0.5">{r.owner_reply}</p>
                   </div>
                 )}
               </div>

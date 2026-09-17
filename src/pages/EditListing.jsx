@@ -1,4 +1,3 @@
-// FILE: agrorent/src/pages/EditListing.jsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
@@ -8,40 +7,7 @@ import PhotoUpload from "../components/PhotoUpload";
 import LocationSelect from "../components/LocationSelect";
 import Sidebar from "../components/Sidebar";
 
-// Matches equipment_condition enum in the database exactly.
 const CONDITIONS = ["New", "Excellent", "Good", "Fair"];
-
-const inputStyle = {
-  width: "100%",
-  height: 44,
-  padding: "0 12px",
-  fontSize: 14,
-  border: "1px solid #E0E8E3",
-  borderRadius: 8,
-  outline: "none",
-  backgroundColor: "#fff",
-  color: "#111111",
-  boxSizing: "border-box",
-};
-
-const labelStyle = {
-  display: "block",
-  fontSize: 13,
-  fontWeight: 500,
-  color: "#111111",
-  marginBottom: 6,
-};
-
-const sectionHeaderStyle = {
-  fontSize: 12,
-  fontWeight: 500,
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-  color: "#555555",
-  paddingBottom: 8,
-  borderBottom: "1px solid #E0E8E3",
-  marginBottom: 20,
-};
 
 export default function EditListing() {
   const { id } = useParams();
@@ -57,8 +23,7 @@ export default function EditListing() {
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    equipmentService
-      .getById(id)
+    equipmentService.getById(id)
       .then((data) => {
         setEq(data);
         setForm({
@@ -75,8 +40,7 @@ export default function EditListing() {
           availUntil: data.available_until || "",
         });
         const existingPhotos = (data.equipment_photos || [])
-          .slice()
-          .sort((a, b) => a.sort_order - b.sort_order)
+          .slice().sort((a, b) => a.sort_order - b.sort_order)
           .map((p) => p.url);
         setPhotos(existingPhotos);
       })
@@ -85,6 +49,12 @@ export default function EditListing() {
 
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+  }
+
+  function inputCls(field) {
+    return `w-full h-11 px-3 text-sm text-ink rounded-lg outline-none bg-white ${
+      focusedField === field ? "border border-orange" : "border border-border/50"
+    }`;
   }
 
   async function handleSubmit(e) {
@@ -114,19 +84,14 @@ export default function EditListing() {
         available_from: form.availFrom || null,
         available_until: form.availUntil || null,
       });
-
-      // Only upload photos that are new (data-URL strings from PhotoUpload),
-      // not the ones already loaded from Supabase (real https:// URLs).
       const newPhotos = photos.filter((p) => p.startsWith("data:"));
       for (let i = 0; i < newPhotos.length; i++) {
         const res = await fetch(newPhotos[i]);
         const blob = await res.blob();
         await equipmentService.uploadPhoto(eq.id, blob, `photo-${Date.now()}-${i}.jpg`);
       }
-
       navigate("/my-listings");
-    } catch (err) {
-      console.error(err);
+    } catch {
       setFormError("Something went wrong saving your changes. Please try again.");
     } finally {
       setSubmitting(false);
@@ -138,360 +103,186 @@ export default function EditListing() {
     try {
       await equipmentService.remove(eq.id);
       navigate("/my-listings");
-    } catch (err) {
-      console.error(err);
+    } catch {
       setFormError("Something went wrong deleting this listing. Please try again.");
       setSubmitting(false);
     }
   }
 
-  function getFocusStyle(field) {
-    return focusedField === field
-      ? { ...inputStyle, borderColor: "#FF5C00" }
-      : inputStyle;
-  }
-
   if (loadError) {
     return (
-      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
+      <div className="min-h-screen bg-page pt-14 flex flex-col lg:flex-row">
         <Sidebar role="owner" activeLink="/my-listings" />
-        <div style={{ flex: 1, padding: "88px 32px", textAlign: "center", color: "#A02020" }}>
-          {loadError}
-        </div>
+        <div className="flex-1 pt-[88px] text-center text-red">{loadError}</div>
       </div>
     );
   }
 
   if (!eq || !form) {
     return (
-      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
+      <div className="min-h-screen bg-page pt-14 flex flex-col lg:flex-row">
         <Sidebar role="owner" activeLink="/my-listings" />
-        <div style={{ flex: 1, padding: "88px 32px", textAlign: "center", color: "#555555" }}>
-          Loading…
-        </div>
+        <div className="flex-1 pt-[88px] text-center text-ink-muted">Loading…</div>
       </div>
     );
   }
 
+  const sectionLabel = "text-[11px] font-medium uppercase tracking-[0.06em] text-ink-muted pb-2 border-b border-border mb-5";
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F5F5F0", paddingTop: "56px" }}>
-      <Sidebar role="owner" activeLink="/my-listings" />
+    <div className="min-h-screen bg-page pt-14">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6">
+        <Sidebar role="owner" activeLink="/my-listings" />
 
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          padding: "40px 32px",
-          maxWidth: 760,
-        }}
-      >
-        <h1 style={{ fontSize: 22, fontWeight: 500, color: "#111111", marginBottom: 28, marginTop: 0 }}>
-          Edit your listing
-        </h1>
+        <div className="flex-1 min-w-0 max-w-[760px]">
+          <h1 className="text-[22px] font-medium text-ink mb-7">Edit your listing</h1>
 
-        <form onSubmit={handleSubmit}>
-          <div
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: 12,
-              padding: 32,
-              border: "0.5px solid #E0E8E3",
-            }}
-          >
-            {/* Section 1 — Basic info */}
-            <div style={sectionHeaderStyle}>Basic information</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={labelStyle}>Equipment name</label>
-                <input
-                  value={form.name}
-                  onChange={update("name")}
-                  onFocus={() => setFocusedField("name")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("name")}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <form onSubmit={handleSubmit}>
+            <div className="bg-white rounded-xl p-8 border border-border/50">
+              <div className={sectionLabel}>Basic information</div>
+              <div className="flex flex-col gap-6">
                 <div>
-                  <label style={labelStyle}>Category</label>
-                  <select
-                    value={form.category}
-                    onChange={update("category")}
-                    onFocus={() => setFocusedField("category")}
-                    onBlur={() => setFocusedField(null)}
-                    style={getFocusStyle("category")}
-                  >
-                    {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  <label className="block text-[13px] font-medium text-ink mb-2">Equipment name</label>
+                  <input value={form.name} onChange={update("name")}
+                    onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("name")} />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-2">Category</label>
+                    <select value={form.category} onChange={update("category")}
+                      onFocus={() => setFocusedField("category")} onBlur={() => setFocusedField(null)}
+                      className={inputCls("category")}>
+                      {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-ink mb-2">Condition</label>
+                    <select value={form.condition} onChange={update("condition")}
+                      onFocus={() => setFocusedField("condition")} onBlur={() => setFocusedField(null)}
+                      className={inputCls("condition")}>
+                      {CONDITIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
-                  <label style={labelStyle}>Condition</label>
-                  <select
-                    value={form.condition}
-                    onChange={update("condition")}
-                    onFocus={() => setFocusedField("condition")}
-                    onBlur={() => setFocusedField(null)}
-                    style={getFocusStyle("condition")}
-                  >
-                    {CONDITIONS.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label style={labelStyle}>Description</label>
-                <div style={{ position: "relative" }}>
-                  <textarea
-                    value={form.description}
-                    onChange={update("description")}
-                    onFocus={() => setFocusedField("description")}
-                    onBlur={() => setFocusedField(null)}
-                    maxLength={1000}
-                    rows={5}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      fontSize: 14,
-                      border: `1px solid ${focusedField === "description" ? "#FF5C00" : "#E0E8E3"}`,
-                      borderRadius: 8,
-                      outline: "none",
-                      resize: "vertical",
-                      minHeight: 120,
-                      color: "#111111",
-                      boxSizing: "border-box",
-                      fontFamily: "inherit",
-                    }}
-                  />
-                  <span
-                    style={{
-                      position: "absolute",
-                      bottom: 8,
-                      right: 10,
-                      fontSize: 11,
-                      color: "#555555",
-                    }}
-                  >
-                    {form.description.length} / 1000
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 2 — Pricing */}
-            <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Pricing</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              {[
-                ["Price per day", "priceDay"],
-                ["Price per week", "priceWeek"],
-              ].map(([lbl, field]) => (
-                <div key={field}>
-                  <label style={labelStyle}>{lbl}</label>
-                  <div style={{ position: "relative" }}>
-                    <span
-                      style={{
-                        position: "absolute",
-                        left: 12,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        fontSize: 14,
-                        color: "#555555",
-                      }}
-                    >
-                      K
+                  <label className="block text-[13px] font-medium text-ink mb-2">Description</label>
+                  <div className="relative">
+                    <textarea value={form.description} onChange={update("description")}
+                      onFocus={() => setFocusedField("description")} onBlur={() => setFocusedField(null)}
+                      maxLength={1000} rows={5}
+                      className={`w-full px-3 py-2.5 text-sm text-ink rounded-lg outline-none resize-y min-h-[120px] ${
+                        focusedField === "description" ? "border border-orange" : "border border-border/50"
+                      }`} />
+                    <span className="absolute bottom-2 right-2.5 text-[11px] text-ink-muted">
+                      {form.description.length} / 1000
                     </span>
-                    <input
-                      type="number"
-                      value={form[field]}
-                      onChange={update(field)}
-                      onFocus={() => setFocusedField(field)}
-                      onBlur={() => setFocusedField(null)}
-                      style={{ ...getFocusStyle(field), paddingLeft: 28 }}
-                      min="0"
-                    />
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Section 3 — Location */}
-            <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Location</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={labelStyle}>Province / district</label>
-                <LocationSelect
-                  province={form.province}
-                  district={form.district}
-                  onProvinceChange={(v) => setForm((f) => ({ ...f, province: v }))}
-                  onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
-                  required
-                />
               </div>
-              <div>
-                <label style={labelStyle}>Pickup location</label>
-                <input
-                  value={form.pickup}
-                  onChange={update("pickup")}
-                  onFocus={() => setFocusedField("pickup")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("pickup")}
-                  placeholder="e.g. Chilanga Road near Total filling station"
-                />
-                <p style={{ fontSize: 12, color: "#555555", margin: "4px 0 0" }}>
-                  Be specific so renters know where to collect.
-                </p>
-              </div>
-            </div>
 
-            {/* Section 4 — Availability */}
-            <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Availability</div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>Available from</label>
-                <input
-                  type="date"
-                  value={form.availFrom}
-                  onChange={update("availFrom")}
-                  onFocus={() => setFocusedField("availFrom")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("availFrom")}
-                />
+              <div className={`${sectionLabel} mt-8`}>Pricing</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[["Price per day", "priceDay"], ["Price per week", "priceWeek"]].map(([lbl, field]) => (
+                  <div key={field}>
+                    <label className="block text-[13px] font-medium text-ink mb-2">{lbl}</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted">K</span>
+                      <input type="number" value={form[field]} onChange={update(field)}
+                        onFocus={() => setFocusedField(field)} onBlur={() => setFocusedField(null)}
+                        className={`${inputCls(field)} pl-7`} min="0" />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <span style={{ fontSize: 14, color: "#555555", paddingBottom: 10 }}>to</span>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>Available until</label>
-                <input
-                  type="date"
-                  value={form.availUntil}
-                  onChange={update("availUntil")}
-                  onFocus={() => setFocusedField("availUntil")}
-                  onBlur={() => setFocusedField(null)}
-                  style={getFocusStyle("availUntil")}
-                />
-              </div>
-            </div>
-            <p style={{ fontSize: 12, color: "#555555", margin: "4px 0 0" }}>
-              You can update availability at any time from your listings.
-            </p>
 
-            {/* Section 5 — Photos */}
-            <div style={{ ...sectionHeaderStyle, marginTop: 32 }}>Photos</div>
-            <PhotoUpload photos={photos} onChange={setPhotos} maxPhotos={10} />
-          </div>
-
-          {/* Delete confirmation panel */}
-          {showDelete && (
-            <div
-              style={{
-                marginTop: 24,
-                borderRadius: 12,
-                padding: 16,
-                border: "1.5px solid #DC2626",
-                backgroundColor: "#FDECEA",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 12 }}>
-                <AlertTriangle size={18} color="#A02020" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div className={`${sectionLabel} mt-8`}>Location</div>
+              <div className="flex flex-col gap-6">
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 500, color: "#A02020" }}>
-                    Are you sure?
-                  </div>
-                  <div style={{ fontSize: 13, color: "#A02020", marginTop: 2 }}>
-                    This will permanently delete this listing and cannot be undone.
-                  </div>
+                  <label className="block text-[13px] font-medium text-ink mb-2">Province / district</label>
+                  <LocationSelect
+                    province={form.province} district={form.district}
+                    onProvinceChange={(v) => setForm((f) => ({ ...f, province: v }))}
+                    onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-ink mb-2">Pickup location</label>
+                  <input value={form.pickup} onChange={update("pickup")}
+                    onFocus={() => setFocusedField("pickup")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("pickup")}
+                    placeholder="e.g. Chilanga Road near Total filling station" />
+                  <p className="text-xs text-ink-muted mt-1">Be specific so renters know where to collect.</p>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={submitting}
-                  style={{
-                    padding: "8px 16px",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#fff",
-                    backgroundColor: "#DC2626",
-                    border: "none",
-                    borderRadius: 8,
-                    cursor: submitting ? "default" : "pointer",
-                    opacity: submitting ? 0.7 : 1,
-                  }}
-                >
-                  {submitting ? "Deleting..." : "Yes, delete it"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDelete(false)}
-                  style={{
-                    padding: "8px 16px",
-                    fontSize: 13,
-                    color: "#555555",
-                    backgroundColor: "#fff",
-                    border: "1px solid #E0E8E3",
-                    borderRadius: 8,
-                    cursor: "pointer",
-                  }}
-                >
-                  Cancel
-                </button>
+
+              <div className={`${sectionLabel} mt-8`}>Availability</div>
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className="block text-[13px] font-medium text-ink mb-2">Available from</label>
+                  <input type="date" value={form.availFrom} onChange={update("availFrom")}
+                    onFocus={() => setFocusedField("availFrom")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("availFrom")} />
+                </div>
+                <span className="text-sm text-ink-muted pb-3">to</span>
+                <div className="flex-1">
+                  <label className="block text-[13px] font-medium text-ink mb-2">Available until</label>
+                  <input type="date" value={form.availUntil} onChange={update("availUntil")}
+                    onFocus={() => setFocusedField("availUntil")} onBlur={() => setFocusedField(null)}
+                    className={inputCls("availUntil")} />
+                </div>
               </div>
+              <p className="text-xs text-ink-muted mt-1">You can update availability at any time from your listings.</p>
+
+              <div className={`${sectionLabel} mt-8`}>Photos</div>
+              <PhotoUpload photos={photos} onChange={setPhotos} maxPhotos={10} />
             </div>
-          )}
 
-          {formError && (
-            <p style={{ fontSize: 13, color: "#DC2626", marginTop: 16, marginBottom: 0 }}>
-              {formError}
-            </p>
-          )}
+            {showDelete && (
+              <div className="mt-6 rounded-xl p-4 border border-red bg-red-tint">
+                <div className="flex items-start gap-2 mb-3">
+                  <AlertTriangle size={18} color="#A02020" className="shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-[15px] font-medium text-red">Are you sure?</div>
+                    <div className="text-[13px] text-red mt-0.5">
+                      This will permanently delete this listing and cannot be undone.
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2.5">
+                  <button type="button" onClick={handleDelete} disabled={submitting}
+                    className={`px-4 py-2 text-[13px] font-medium text-white bg-red rounded-lg border-none ${
+                      submitting ? "opacity-70 cursor-default" : "cursor-pointer"
+                    }`}>
+                    {submitting ? "Deleting..." : "Yes, delete it"}
+                  </button>
+                  <button type="button" onClick={() => setShowDelete(false)}
+                    className="px-4 py-2 text-[13px] text-ink-muted bg-white border border-border rounded-lg cursor-pointer">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
 
-          {/* Action buttons */}
-          <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{
-                flex: "0 0 70%",
-                height: 52,
-                backgroundColor: "#FF5C00",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                fontSize: 16,
-                fontWeight: 500,
-                cursor: submitting ? "default" : "pointer",
-                opacity: submitting ? 0.7 : 1,
-              }}
-              onMouseEnter={(e) => !submitting && (e.currentTarget.style.backgroundColor = "#CC4A00")}
-              onMouseLeave={(e) => !submitting && (e.currentTarget.style.backgroundColor = "#FF5C00")}
-            >
-              {submitting ? "Saving..." : "Save changes"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowDelete(true)}
-              style={{
-                flex: "0 0 28%",
-                height: 52,
-                backgroundColor: "#DC2626",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#B91C1C")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#DC2626")}
-            >
-              Delete listing
-            </button>
-          </div>
-        </form>
+            {formError && <p className="text-[13px] text-red mt-4">{formError}</p>}
+
+            <div className="flex gap-3 mt-6">
+              <button type="submit" disabled={submitting}
+                className={`flex-[0_0_70%] h-[52px] rounded-lg border-none text-white text-base font-medium bg-orange ${
+                  submitting ? "opacity-70 cursor-default" : "cursor-pointer hover:bg-orange-dark"
+                } transition-colors`}>
+                {submitting ? "Saving..." : "Save changes"}
+              </button>
+              <button type="button" onClick={() => setShowDelete(true)}
+                className="flex-[0_0_28%] h-[52px] rounded-lg border-none text-white text-sm font-medium bg-red cursor-pointer hover:bg-red/90 transition-colors">
+                Delete listing
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

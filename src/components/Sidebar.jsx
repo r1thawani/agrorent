@@ -1,4 +1,3 @@
-// FILE: agrorent/src/components/Sidebar.jsx
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -38,62 +37,31 @@ export default function Sidebar({ activeLink, userName, userPhoto }) {
     "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop";
 
   return (
-    <aside
-      style={{
-        width: "240px",
-        flexShrink: 0,
-        backgroundColor: "#FFFFFF",
-        borderRadius: "12px",
-        border: "0.5px solid #E0E8E3",
-        padding: "20px",
-        position: "sticky",
-        top: "80px",
-        alignSelf: "flex-start",
-        height: "fit-content",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+    <aside className="w-[240px] shrink-0 bg-white rounded-xl border border-border/50 p-5 sticky top-20 self-start h-fit">
+      <div className="flex items-center gap-3 mb-4">
         <img
           src={displayPhoto}
           alt="Profile"
-          style={{ width: "48px", height: "48px", borderRadius: "50%", objectFit: "cover" }}
+          className="w-12 h-12 rounded-full object-cover"
         />
-        <div style={{ fontSize: "15px", fontWeight: 500, color: "#111111" }}>
-          {displayName}
-        </div>
+        <div className="text-[15px] font-medium text-ink">{displayName}</div>
       </div>
 
-      <div style={{ borderTop: "0.5px solid #E0E8E3", marginBottom: "16px" }} />
+      <div className="border-t border-border/50 mb-4" />
 
-      <nav style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <nav className="flex flex-col gap-1">
         {LINKS.map((link) => {
           const Icon = link.icon;
           const active = currentPath === link.path;
-
           return (
             <Link
               key={link.path}
               to={link.path}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "0 12px",
-                height: "40px",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: active ? 500 : 400,
-                color: active ? "#FF5C00" : "#555555",
-                backgroundColor: active ? "#FFE8D6" : "transparent",
-                textDecoration: "none",
-                transition: "background-color 0.15s ease, color 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                if (!active) e.currentTarget.style.backgroundColor = "#F5F5F0";
-              }}
-              onMouseLeave={(e) => {
-                if (!active) e.currentTarget.style.backgroundColor = "transparent";
-              }}
+              className={`flex items-center gap-3 px-3 h-10 rounded-lg text-sm no-underline transition-colors duration-150 ${
+                active
+                  ? "font-medium text-orange bg-orange-tint"
+                  : "font-normal text-ink-muted hover:bg-page"
+              }`}
             >
               <Icon size={16} />
               {link.label}
@@ -102,23 +70,10 @@ export default function Sidebar({ activeLink, userName, userPhoto }) {
         })}
       </nav>
 
-      <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "0.5px solid #E0E8E3" }}>
+      <div className="mt-6 pt-4 border-t border-border/50">
         <Link
           to="/post-listing"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            width: "100%",
-            padding: "10px 0",
-            borderRadius: "8px",
-            fontSize: "13px",
-            fontWeight: 500,
-            color: "#FFFFFF",
-            backgroundColor: "#1A5C2E",
-            textDecoration: "none",
-          }}
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-[13px] font-medium text-white bg-green no-underline"
         >
           <PlusCircle size={15} />
           Post New Listing

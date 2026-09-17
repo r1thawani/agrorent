@@ -8,23 +8,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
-// Admin console's own top bar — the ONE nav shown on every /admin/* page.
-//
-// Previously this sat *below* the public site's dark-green Navbar (which
-// kept rendering "Browse" / "How it works" / a link to the renter
-// dashboard — none of which make sense once you're managing the
-// platform), on a plain white bar with no AgroRent branding at all. That's
-// what made the admin section feel disconnected and "just grey": two
-// stacked navs, only one of which looked like AgroRent.
-//
-// Fix: App.jsx now hides the public Navbar and Footer for any /admin/*
-// route, and this bar takes over as the sole chrome — same dark green
-// (#0F3D1E) and orange (#FF5C00) as the rest of the site, with the
-// AgroRent wordmark, an "Admin" pill so it's unmistakable which mode
-// you're in, icons on each nav item (matching the Sidebar convention on
-// the renter/owner dashboards), and the admin's own identity + logout on
-// the right — so this never again has to borrow the public Navbar's
-// logout button.
 const ADMIN_LINKS = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
   { label: "Users", path: "/admin/users", icon: Users },
@@ -44,73 +27,17 @@ export default function AdminTopNav() {
   }
 
   return (
-    <nav
-      style={{
-        backgroundColor: "#0F3D1E",
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        height: "56px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          height: "100%",
-          padding: "0 24px",
-          display: "flex",
-          alignItems: "center",
-          gap: "24px",
-        }}
-      >
-        {/* Left — wordmark + "Admin" pill, links back to the admin overview */}
-        <Link
-          to="/admin"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            textDecoration: "none",
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              color: "#FFFFFF",
-              fontWeight: 500,
-              fontSize: "18px",
-              letterSpacing: "-0.3px",
-            }}
-          >
-            AgroRent
-          </span>
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 600,
-              color: "#0F3D1E",
-              backgroundColor: "#FF5C00",
-              padding: "2px 9px",
-              borderRadius: "20px",
-              letterSpacing: "0.02em",
-            }}
-          >
+    <nav className="bg-green-dark sticky top-0 z-50 h-14">
+      <div className="max-w-[1280px] mx-auto h-full px-6 flex items-center gap-6">
+
+        <Link to="/admin" className="flex items-center gap-2.5 no-underline shrink-0">
+          <span className="text-white font-medium text-lg tracking-[-0.3px]">AgroRent</span>
+          <span className="text-[11px] font-semibold text-green-dark bg-orange px-[9px] py-[2px] rounded-full tracking-[0.02em]">
             Admin
           </span>
         </Link>
 
-        {/* Centre — section links, each highlighted only on an exact match
-            so /admin doesn't stay lit up while browsing /admin/users etc. */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            flex: 1,
-            justifyContent: "center",
-          }}
-        >
+        <div className="flex items-center gap-1 flex-1 justify-center overflow-x-auto">
           {ADMIN_LINKS.map((link) => {
             const Icon = link.icon;
             const active = location.pathname === link.path;
@@ -118,26 +45,11 @@ export default function AdminTopNav() {
               <Link
                 key={link.path}
                 to={link.path}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "7px",
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                  fontWeight: active ? 500 : 400,
-                  color: active ? "#FF5C00" : "#A8E6BE",
-                  backgroundColor: active ? "rgba(255, 92, 0, 0.14)" : "transparent",
-                  textDecoration: "none",
-                  transition: "background-color 0.15s ease, color 0.15s ease",
-                  whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) => {
-                  if (!active) e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)";
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) e.currentTarget.style.backgroundColor = "transparent";
-                }}
+                className={`flex items-center gap-[7px] px-3.5 py-2 rounded-lg text-[13px] no-underline whitespace-nowrap transition-colors duration-150 ${
+                  active
+                    ? "font-medium text-orange bg-orange/14"
+                    : "font-normal text-green-tint-2 hover:bg-white/8"
+                }`}
               >
                 <Icon size={15} />
                 {link.label}
@@ -146,30 +58,18 @@ export default function AdminTopNav() {
           })}
         </div>
 
-        {/* Right — who's logged in + a real, working log out */}
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="flex items-center gap-3.5 shrink-0">
+          <div className="flex items-center gap-2">
             <img
               src={user?.photo || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop"}
               alt={user?.name || "Admin"}
-              style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }}
+              className="w-7 h-7 rounded-full object-cover"
             />
-            <span style={{ color: "#FFFFFF", fontSize: "13px" }}>
-              {user?.name || "Admin"}
-            </span>
+            <span className="text-white text-[13px]">{user?.name || "Admin"}</span>
           </div>
           <button
             onClick={handleLogout}
-            style={{
-              backgroundColor: "transparent",
-              color: "#A8E6BE",
-              fontSize: "13px",
-              fontWeight: 500,
-              padding: "7px 14px",
-              borderRadius: "8px",
-              border: "1px solid rgba(168, 230, 190, 0.4)",
-              cursor: "pointer",
-            }}
+            className="bg-transparent text-green-tint-2 text-[13px] font-medium px-3.5 py-[7px] rounded-lg border border-green-tint-2/40 cursor-pointer"
           >
             Log Out
           </button>
