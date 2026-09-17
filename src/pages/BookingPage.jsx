@@ -5,6 +5,7 @@ import { equipmentService } from "../services/equipmentService";
 import { bookingService } from "../services/bookingService";
 import { paymentService } from "../services/paymentService";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 import { calculateDays } from "../utils/calculateDays";
 import { calculateBooking } from "../utils/calculateBooking";
 
@@ -149,7 +150,7 @@ export default function BookingPage() {
                 className="w-full h-40 rounded-lg object-cover mb-3" />
               <div className="text-base font-medium text-ink">{eq.name}</div>
               <div className="flex items-center gap-2 mt-1">
-                <img src={eq.owner?.photo_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                <Avatar src={eq.owner?.photo_url} name={eq.owner?.name} className="w-6 h-6 text-[8px]" />
                 <span className="text-[13px] text-ink-muted">by {eq.owner?.name}</span>
               </div>
 

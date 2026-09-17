@@ -9,6 +9,7 @@ import { bookingService } from "../services/bookingService";
 import { messageService } from "../services/messageService";
 import { useNotifications } from "../context/NotificationContext";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -75,8 +76,8 @@ export default function Dashboard() {
               <div className="flex flex-col gap-2.5">
                 {pendingRequests.map((r) => (
                   <div key={r.id} className="bg-white rounded-xl p-4 border border-border/50 flex items-start gap-3">
-                    <img src={r.renter?.photo_url} alt={r.renter?.name}
-                      className="w-11 h-11 rounded-full object-cover shrink-0 bg-page" />
+                    <Avatar src={r.renter?.photo_url} name={r.renter?.name}
+                      className="w-11 h-11 text-[13px]" />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-ink">{r.renter?.name}</div>
                       <div className="text-[13px] text-ink-muted">{r.equipment?.name}</div>
@@ -129,8 +130,8 @@ export default function Dashboard() {
                 {conversations.slice(0, 2).map((m) => (
                   <Link key={m.id} to="/messages"
                     className="bg-white rounded-xl p-3.5 flex items-center gap-3 border border-border/50 no-underline">
-                    <img src={m.photo} alt={m.person}
-                      className="w-9 h-9 rounded-full object-cover shrink-0 bg-page" />
+                    <Avatar src={m.photo} name={m.person}
+                      className="w-9 h-9 text-[11px]" />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-ink">{m.person}</div>
                       <div className="text-[13px] text-ink-muted truncate">{m.lastMessage}</div>

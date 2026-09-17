@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-
-const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop";
+import Avatar from "./Avatar";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -46,11 +45,7 @@ export default function Navbar() {
                 to={user.role === "admin" ? "/admin" : "/dashboard"}
                 className="flex items-center gap-2 text-white text-sm no-underline"
               >
-                <img
-                  src={user.photo_url || DEFAULT_AVATAR}
-                  alt={user.name}
-                  className="w-7 h-7 rounded-full object-cover"
-                />
+                <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
                 {user.name}
               </Link>
               <button
@@ -105,11 +100,7 @@ export default function Navbar() {
                 onClick={closeMobileMenu}
                 className="flex items-center gap-2 text-white text-sm no-underline"
               >
-                <img
-                  src={user.photo_url || DEFAULT_AVATAR}
-                  alt={user.name}
-                  className="w-7 h-7 rounded-full object-cover"
-                />
+                <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
                 {user.name}
               </Link>
               <button

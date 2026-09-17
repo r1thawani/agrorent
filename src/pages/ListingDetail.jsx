@@ -8,6 +8,7 @@ import StarRating from "../components/StarRating";
 import ReviewCard from "../components/ReviewCard";
 import { useWishlist } from "../context/WishlistContext";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 
 function isDateBooked(dateObj, bookedRanges) {
   const dateStr = dateObj.toISOString().split("T")[0];
@@ -278,8 +279,8 @@ export default function ListingDetail() {
               <div className="border-t border-border my-4" />
 
               <div className="flex items-start gap-3">
-                <img src={eq.owner?.photo_url} alt={eq.owner?.name}
-                  className="w-11 h-11 rounded-full object-cover shrink-0" />
+                <Avatar src={eq.owner?.photo_url} name={eq.owner?.name}
+                  className="w-11 h-11 text-[13px]" />
                 <div>
                   <div className="text-sm font-medium text-ink">{eq.owner?.name}</div>
                 </div>

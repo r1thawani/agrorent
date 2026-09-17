@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
+import Avatar from "../components/Avatar";
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -85,10 +86,10 @@ export default function EditProfile() {
           <h1 className="text-[22px] font-medium text-ink mb-6">Edit profile</h1>
 
           <div className="flex flex-col items-center mb-7">
-            <img
-              src={user?.photo_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=192&h=192&fit=crop"}
-              alt="Profile"
-              className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-sm"
+            <Avatar
+              src={user?.photo_url || null}
+              name={user?.name}
+              className="w-24 h-24 text-2xl border-4 border-white shadow-sm"
             />
             <label className="mt-2 text-[13px] text-orange cursor-pointer">
               <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />

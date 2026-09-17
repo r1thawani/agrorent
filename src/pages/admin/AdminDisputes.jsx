@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import AdminTopNav from "../../components/AdminTopNav";
 import { adminService } from "../../services/adminService";
+import Avatar from "../../components/Avatar";
 
 export default function AdminDisputes() {
   const [activeTab, setActiveTab] = useState("open");
@@ -59,16 +60,16 @@ export default function AdminDisputes() {
                   <div>
                     <div className={miniLabel}>Reported by</div>
                     <div className="flex items-center gap-2">
-                      <img src={d.reporter?.photo_url} alt={d.reporter?.name}
-                        className="w-7 h-7 rounded-full object-cover shrink-0 bg-page" />
+                      <Avatar src={d.reporter?.photo_url} name={d.reporter?.name}
+                        className="w-7 h-7 text-[9px]" />
                       <span className="text-[14px] text-ink">{d.reporter?.name}</span>
                     </div>
                   </div>
                   <div>
                     <div className={miniLabel}>Against</div>
                     <div className="flex items-center gap-2">
-                      <img src={d.against?.photo_url} alt={d.against?.name}
-                        className="w-7 h-7 rounded-full object-cover shrink-0 bg-page" />
+                      <Avatar src={d.against?.photo_url} name={d.against?.name}
+                        className="w-7 h-7 text-[9px]" />
                       <span className="text-[14px] text-ink">{d.against?.name}</span>
                     </div>
                   </div>

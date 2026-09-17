@@ -5,6 +5,7 @@ import EquipmentCard from "../components/EquipmentCard";
 import { equipmentService } from "../services/equipmentService";
 import { toEquipmentCardProps } from "../utils/equipmentMappers";
 import { supabase } from "../lib/supabaseClient";
+import Avatar from "../components/Avatar";
 
 export default function PublicProfile() {
   const { id } = useParams();
@@ -80,8 +81,8 @@ export default function PublicProfile() {
       <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-10">
         <div className="bg-white rounded-xl p-7 mb-7 border border-border/50">
           <div className="flex gap-6">
-            <img src={owner.photo_url} alt={owner.name}
-              className="w-24 h-24 rounded-full object-cover shrink-0 bg-page" />
+            <Avatar src={owner.photo_url} name={owner.name}
+              className="w-24 h-24" />
             <div>
               <h1 className="text-[22px] font-medium text-ink">{owner.name}</h1>
               {memberSince && (
@@ -131,8 +132,8 @@ export default function PublicProfile() {
               <div key={r.id} className="bg-white rounded-xl p-4 border border-border/50">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <img src={r.reviewer?.photo_url} alt={r.reviewer?.name}
-                      className="w-8 h-8 rounded-full object-cover bg-page" />
+                    <Avatar src={r.reviewer?.photo_url} name={r.reviewer?.name}
+                      className="w-8 h-8 text-[10px]" />
                     <span className="text-sm font-medium text-ink">{r.reviewer?.name}</span>
                   </div>
                   <span className="text-xs text-ink-muted">

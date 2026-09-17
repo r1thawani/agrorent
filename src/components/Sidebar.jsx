@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import Avatar from "./Avatar";
 import {
   LayoutDashboard,
   Calendar,
@@ -31,19 +32,12 @@ export default function Sidebar({ activeLink, userName, userPhoto }) {
 
   const currentPath = activeLink || location.pathname;
   const displayName = userName || user?.name || "Your account";
-  const displayPhoto =
-    userPhoto ||
-    user?.photo_url ||
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop";
+  const displayPhoto = userPhoto || user?.photo_url || null;
 
   return (
     <aside className="w-[240px] shrink-0 bg-white rounded-xl border border-border/50 p-5 sticky top-20 self-start h-fit">
       <div className="flex items-center gap-3 mb-4">
-        <img
-          src={displayPhoto}
-          alt="Profile"
-          className="w-12 h-12 rounded-full object-cover"
-        />
+        <Avatar src={displayPhoto} name={displayName} className="w-12 h-12 text-[15px]" />
         <div className="text-[15px] font-medium text-ink">{displayName}</div>
       </div>
 

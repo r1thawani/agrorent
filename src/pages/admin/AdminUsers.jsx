@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import AdminTopNav from "../../components/AdminTopNav";
 import AdminTable from "../../components/AdminTable";
 import { adminService } from "../../services/adminService";
+import Avatar from "../../components/Avatar";
 
 const ROLE_CLS = {
   owner: "bg-green-tint text-green-dark",
@@ -52,8 +53,8 @@ export default function AdminUsers() {
       label: "Name",
       render: (u) => (
         <div className="flex items-center gap-2.5">
-          <img src={u.photo_url} alt={u.name}
-            className="w-8 h-8 rounded-full object-cover shrink-0 bg-page" />
+          <Avatar src={u.photo_url} name={u.name}
+            className="w-8 h-8 text-[10px]" />
           <span className="text-sm font-medium text-ink">{u.name}</span>
         </div>
       ),

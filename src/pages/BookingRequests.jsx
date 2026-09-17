@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { bookingService } from "../services/bookingService";
 import { useAuth } from "../hooks/useAuth";
+import Avatar from "../components/Avatar";
 
 const TABS = ["Pending", "Accepted", "Declined"];
 const TAB_TO_STATUS = { Pending: "pending", Accepted: "confirmed", Declined: "declined" };
@@ -25,8 +26,8 @@ function StatusBadge({ status }) {
 function RequestRow({ request, onAccept, onDecline }) {
   return (
     <div className="bg-white rounded-xl p-4 border border-border/50 flex items-start gap-3">
-      <img src={request.renter?.photo_url} alt={request.renter?.name}
-        className="w-11 h-11 rounded-full object-cover shrink-0 bg-page" />
+      <Avatar src={request.renter?.photo_url} name={request.renter?.name}
+        className="w-11 h-11 text-[13px]" />
       <div className="flex-1 min-w-0">
         <div className="text-[15px] font-medium text-ink">{request.renter?.name}</div>
         <div className="text-[13px] text-ink-muted mt-0.5">
