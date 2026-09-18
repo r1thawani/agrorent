@@ -274,7 +274,27 @@ create table disputes (
 
 
 -- ---------------------------------------------------------------------
--- 11. Indexes
+-- 11. Functions
+-- ---------------------------------------------------------------------
+
+-- Returns pending/confirmed booking date ranges for a given piece of
+-- equipment. Declared SECURITY DEFINER so it runs as the schema owner
+-- and bypasses the RLS policy that would otherwise hide other renters'
+-- bookings. Only exposes start_date / end_date / status — no personal
+-- data (renter_id, prices, etc.) is returned.
+-- Used by bookingService.getForEquipment() for overlap checks.
+create or replace function get_equipment_booking_dates(p_equipment_id uuid)
+returns table (start_date date, end_date date, status text)
+language sql stable security definer as $$
+  select start_date, end_date, status::text
+  from bookings
+  where equipment_id = p_equipment_id
+    and status in ('pending', 'confirmed');
+$$;
+
+
+-- ---------------------------------------------------------------------
+-- 13. Indexes
 -- ---------------------------------------------------------------------
 create index idx_equipment_owner       on equipment(owner_id);
 create index idx_equipment_category    on equipment(category);
@@ -294,7 +314,7 @@ create index idx_disputes_against      on disputes(against_id);
 
 
 -- =====================================================================
--- 12. Row Level Security
+-- 14. Row Level Security
 -- General shape: everyone can read "public" data (listings, photos,
 -- reviews); people can only read/write records where they're a party
 -- (renter_id/owner_id/user_id/sender_id/reviewer_id = auth.uid()).
@@ -496,7 +516,7 @@ create policy "admins manage all disputes"
 
 
 -- =====================================================================
--- 13. Seed data
+-- 15. Seed data
 -- Pulled directly from the frontend's own mock data:
 --   - people        <- ADMIN_USERS + equipment owners in mockData.js
 --   - equipment     <- EQUIPMENT in mockData.js

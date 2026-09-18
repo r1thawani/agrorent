@@ -38,13 +38,11 @@ export const bookingService = {
   },
 
   // Every pending or confirmed booking for a piece of equipment — used both
-  // to render the availability calendar and to block overlapping bookings.
+  // to show taken dates on the booking page and to block overlapping bookings.
+  // Uses a security-definer RPC so RLS doesn't hide other renters' bookings.
   async getForEquipment(equipmentId) {
     const { data, error } = await supabase
-      .from("bookings")
-      .select("start_date, end_date, status")
-      .eq("equipment_id", equipmentId)
-      .in("status", ["pending", "confirmed"]);
+      .rpc("get_equipment_booking_dates", { p_equipment_id: equipmentId });
     if (error) throw error;
     return data;
   },
