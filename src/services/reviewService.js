@@ -12,6 +12,16 @@ export const reviewService = {
     return data;
   },
 
+  async getByBookingId(bookingId) {
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("id")
+      .eq("booking_id", bookingId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   async create({ bookingId, equipmentId, reviewerId, rating, text }) {
     if (!rating) throw new Error("A rating is required");
     const { data, error } = await supabase

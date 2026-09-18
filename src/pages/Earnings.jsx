@@ -64,7 +64,7 @@ export default function Earnings() {
   const earningBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "completed");
   const totalEarnings = earningBookings.reduce((sum, b) => sum + Number(b.total_price), 0);
   const pendingPayout = bookings.filter((b) => b.status === "confirmed")
-    .reduce((sum, b) => sum + Number(b.balance_due), 0);
+    .reduce((sum, b) => sum + Number(b.total_price), 0);
 
   const months = lastEightMonths();
   const monthlyData = months.map(({ key, label }) => {

@@ -14,6 +14,7 @@ export default function LeaveReview() {
 
   const [booking, setBooking] = useState(null);
   const [loadError, setLoadError] = useState("");
+  const [alreadyReviewed, setAlreadyReviewed] = useState(false);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [text, setText] = useState("");
@@ -22,7 +23,18 @@ export default function LeaveReview() {
 
   useEffect(() => {
     bookingService.getById(bookingId)
-      .then(setBooking)
+      .then(async (b) => {
+        if (b.status !== "completed") {
+          setLoadError("You can only review a booking that has been completed.");
+          return;
+        }
+        // Check for existing review
+        const existing = await reviewService.getByBookingId(bookingId);
+        if (existing) {
+          setAlreadyReviewed(true);
+        }
+        setBooking(b);
+      })
       .catch(() => setLoadError("We couldn't find that booking."));
   }, [bookingId]);
 
@@ -63,6 +75,21 @@ export default function LeaveReview() {
   if (!booking) {
     return (
       <div className="min-h-screen bg-page pt-[88px] text-center text-ink-muted">Loading…</div>
+    );
+  }
+
+  if (alreadyReviewed) {
+    return (
+      <div className="min-h-screen bg-page pt-12 px-4">
+        <div className="max-w-[560px] mx-auto bg-white rounded-xl p-10 text-center border border-border/50">
+          <div className="text-[32px] mb-3">⭐</div>
+          <h2 className="text-[18px] font-medium text-ink mb-2">Already reviewed</h2>
+          <p className="text-sm text-ink-muted mb-5">You've already submitted a review for this booking.</p>
+          <Link to="/my-bookings" className="text-sm font-medium text-orange no-underline">
+            Back to My Bookings
+          </Link>
+        </div>
+      </div>
     );
   }
 

@@ -1,14 +1,29 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
+import { supabase } from "../lib/supabaseClient";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setSent(true);
+    setError("");
+    setLoading(true);
+    try {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (err) throw err;
+      setSent(true);
+    } catch (err) {
+      setError(err.message || "Could not send reset email. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -44,11 +59,14 @@ export default function ForgotPassword() {
                 />
               </div>
 
+              {error && <p className="text-[13px] text-red -mt-2">{error}</p>}
+
               <button
                 type="submit"
-                className="w-full h-12 rounded-lg border-none text-white text-[15px] font-medium bg-orange cursor-pointer"
+                disabled={loading}
+                className={`w-full h-12 rounded-lg border-none text-white text-[15px] font-medium bg-orange ${loading ? "opacity-70 cursor-default" : "cursor-pointer"}`}
               >
-                Send Reset Link
+                {loading ? "Sending…" : "Send Reset Link"}
               </button>
             </form>
 

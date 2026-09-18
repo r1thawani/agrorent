@@ -81,6 +81,16 @@ export const messageService = {
     };
   },
 
+  async markMessagesRead(conversationId, userId) {
+    const { error } = await supabase
+      .from("messages")
+      .update({ read: true })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", userId)
+      .eq("read", false);
+    if (error) throw error;
+  },
+
   async sendMessage(conversationId, senderId, text) {
     const { data, error } = await supabase
       .from("messages")

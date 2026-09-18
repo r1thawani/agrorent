@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Send } from "lucide-react";
 import Sidebar from "../components/Sidebar";
+import Avatar from "../components/Avatar";
 import MessageBubble from "../components/MessageBubble";
 import { messageService } from "../services/messageService";
+import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Conversation() {
@@ -12,13 +14,53 @@ export default function Conversation() {
   const [conv, setConv] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [input, setInput] = useState("");
+  const bottomRef = useRef(null);
 
   useEffect(() => {
     if (!user) return;
     messageService.getConversation(id, user.id)
-      .then(setConv)
+      .then((data) => {
+        setConv(data);
+        messageService.markMessagesRead(id, user.id).catch(() => {});
+      })
       .catch(() => setLoadError("Conversation not found."));
   }, [id, user]);
+
+  // Real-time: append messages sent by the other person
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`conversation:${id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `conversation_id=eq.${id}`,
+      }, (payload) => {
+        const msg = payload.new;
+        if (msg.sender_id === user.id) return;
+        setConv((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            messages: [...prev.messages, {
+              id: msg.id,
+              from: "them",
+              text: msg.text,
+              time: new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            }],
+          };
+        });
+        messageService.markMessagesRead(id, user.id).catch(() => {});
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [id, user]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conv?.messages]);
 
   if (loadError) {
     return (
@@ -68,7 +110,7 @@ export default function Conversation() {
 
           <div className="bg-white border border-border/50 rounded-xl flex flex-col overflow-hidden flex-1">
             <div className="h-16 border-b border-border px-5 flex items-center gap-3 shrink-0">
-              <img src={conv.photo} alt={conv.person} className="w-9 h-9 rounded-full object-cover" />
+              <Avatar src={conv.photo || null} name={conv.person} className="w-9 h-9 text-[11px]" />
               <div>
                 <div className="text-[15px] font-medium text-ink">{conv.person}</div>
                 <div className="text-xs text-ink-muted">Re: {conv.equipment}</div>
@@ -79,6 +121,7 @@ export default function Conversation() {
               {conv.messages.map((msg) => (
                 <MessageBubble key={msg.id} message={msg} />
               ))}
+              <div ref={bottomRef} />
             </div>
 
             <form onSubmit={sendMessage}

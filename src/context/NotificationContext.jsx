@@ -20,22 +20,26 @@ function formatTime(isoString) {
 export function NotificationProvider({ children }) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     if (!user) {
       setNotifications([]);
       return;
     }
+    setLoading(true);
+    setLoadError("");
     supabase
       .from("notifications")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
-        if (!error && data) {
-          setNotifications(data.map((n) => ({ ...n, time: formatTime(n.created_at) })));
-        }
-      });
+        if (error) { setLoadError("Could not load notifications."); return; }
+        if (data) setNotifications(data.map((n) => ({ ...n, time: formatTime(n.created_at) })));
+      })
+      .finally(() => setLoading(false));
   }, [user]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -60,7 +64,7 @@ export function NotificationProvider({ children }) {
     }
   }
 
-  const value = { notifications, unreadCount, markAsRead, markAllAsRead };
+  const value = { notifications, unreadCount, loading, loadError, markAsRead, markAllAsRead };
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 }

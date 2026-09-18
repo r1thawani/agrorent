@@ -52,8 +52,13 @@ export default function MyListings() {
   }
 
   async function deleteListing(id) {
+    const removed = listings.find((eq) => eq.id === id);
     setListings((prev) => prev.filter((eq) => eq.id !== id));
-    try { await equipmentService.remove(id); } catch { /* stale optimistic remove is acceptable */ }
+    try {
+      await equipmentService.remove(id);
+    } catch {
+      if (removed) setListings((prev) => [...prev, removed].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+    }
   }
 
   return (
@@ -103,6 +108,13 @@ export default function MyListings() {
 
 function ListingRow({ eq, onToggle, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (deleting) return;
+    setDeleting(true);
+    await onDelete();
+  }
 
   return (
     <div className="bg-white rounded-xl px-4 py-3.5 border border-border/50 flex items-center gap-3.5">
@@ -137,9 +149,9 @@ function ListingRow({ eq, onToggle, onDelete }) {
 
       {confirmDelete ? (
         <div className="flex gap-1.5 shrink-0">
-          <button onClick={onDelete}
-            className="px-3 py-1.5 text-xs font-medium text-white bg-red rounded-lg border-none cursor-pointer">
-            Confirm
+          <button onClick={handleDelete} disabled={deleting}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-red rounded-lg border-none cursor-pointer disabled:opacity-60">
+            {deleting ? "Deleting…" : "Confirm"}
           </button>
           <button onClick={() => setConfirmDelete(false)}
             className="px-3 py-1.5 text-xs text-ink-muted bg-white border border-border rounded-lg cursor-pointer">

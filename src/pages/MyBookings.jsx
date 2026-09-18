@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { bookingService } from "../services/bookingService";
 import { useAuth } from "../hooks/useAuth";
+import { formatDateRange } from "../utils/formatDate";
 
 const TABS = [
   { key: "all", label: "All" },
@@ -44,7 +45,7 @@ function BookingRow({ booking, onCancel }) {
       <div className="flex-1 min-w-0">
         <div className="text-[15px] font-medium text-ink">{booking.equipment?.name}</div>
         <div className="text-[13px] text-ink-muted my-0.5 mb-2">
-          {booking.start_date} → {booking.end_date}
+          {formatDateRange(booking.start_date, booking.end_date)}
         </div>
         <StatusBadge status={booking.status} />
       </div>
@@ -92,9 +93,10 @@ export default function MyBookings() {
   }, [user]);
 
   async function handleCancel(id) {
+    const original = bookings.find((b) => b.id === id);
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
     try { await bookingService.cancel(id); }
-    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b))); }
+    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: original?.status ?? "pending" } : b))); }
   }
 
   const filtered = activeTab === "all" ? bookings : bookings.filter((b) => b.status === activeTab);

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import Sidebar from "../components/Sidebar";
+import Avatar from "../components/Avatar";
 import { messageService } from "../services/messageService";
 import { useAuth } from "../hooks/useAuth";
 
@@ -63,8 +64,7 @@ export default function Messages() {
                   conv.unread ? "bg-page-warm" : "bg-white"
                 }`}
               >
-                <img src={conv.photo} alt={conv.person}
-                  className="w-11 h-11 rounded-full object-cover shrink-0" />
+                <Avatar src={conv.photo || null} name={conv.person} className="w-11 h-11 text-[13px] shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline">
                     <span className="text-sm font-medium text-ink">{conv.person}</span>
