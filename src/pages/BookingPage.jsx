@@ -44,7 +44,7 @@ export default function BookingPage() {
         setEq(data);
         const defaultFrom = data.available_from && data.available_from > today ? data.available_from : today;
         setStartDate(defaultFrom);
-        setEndDate(data.available_until ?? "");
+        setEndDate(""); // user chooses their own rental duration
       })
       .catch(() => setLoadError("Could not load this listing."));
     bookingService.getForEquipment(id).then(setBookedRanges).catch(() => setBookedRanges([]));
@@ -60,8 +60,8 @@ export default function BookingPage() {
   const isOwnEquipment = user && eq.owner_id === user.id;
   const photoUrl = eq.equipment_photos?.[0]?.url ?? "";
   const rawDays = calculateDays(startDate, endDate);
-  const days = rawDays > 0 ? rawDays : 1;
-  const { subtotal, fee, total, downPayment, balance } = calculateBooking(eq.price_day, days);
+  const days = rawDays > 0 ? rawDays : 0;
+  const { subtotal, fee, total, downPayment, balance } = calculateBooking(eq.price_day, days || 1);
   const minStartDate = eq.available_from && eq.available_from > today ? eq.available_from : today;
 
   function inputCls(field) {
@@ -185,33 +185,43 @@ export default function BookingPage() {
                     onFocus={() => setFocusedField("end")} onBlur={() => setFocusedField(null)}
                     className={inputCls("end")} />
                 </div>
-                <div className="text-sm text-ink">{days} day{days === 1 ? "" : "s"}</div>
+                {days > 0 ? (
+                  <div className="text-sm text-ink">{days} day{days === 1 ? "" : "s"}</div>
+                ) : (
+                  <div className="text-sm text-ink-muted">Select an end date</div>
+                )}
               </div>
 
               <div className="border-t border-border my-4" />
 
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-ink">{days} days × K{eq.price_day.toLocaleString()}</span>
-                  <span>K{subtotal.toLocaleString()}</span>
+              {days > 0 ? (
+                <div className="flex flex-col gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-ink">{days} day{days === 1 ? "" : "s"} × K{eq.price_day.toLocaleString()}</span>
+                    <span>K{subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-ink-muted">Service fee (5%)</span>
+                    <span className="text-ink-muted">K{fee.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-medium pt-2 border-t border-border">
+                    <span>Total</span>
+                    <span className="text-orange">K{total.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-ink-muted">Down payment due now (25%)</span>
+                    <span className="font-medium text-ink">K{downPayment.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-ink-muted">Balance due at pickup</span>
+                    <span className="text-ink-muted">K{balance.toLocaleString()}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-muted">Service fee (5%)</span>
-                  <span className="text-ink-muted">K{fee.toLocaleString()}</span>
+              ) : (
+                <div className="text-sm text-ink-muted text-center py-2">
+                  Select your dates above to see pricing
                 </div>
-                <div className="flex justify-between text-base font-medium pt-2 border-t border-border">
-                  <span>Total</span>
-                  <span className="text-orange">K{total.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-ink-muted">Down payment due now (25%)</span>
-                  <span className="font-medium text-ink">K{downPayment.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-ink-muted">Balance due at pickup</span>
-                  <span className="text-ink-muted">K{balance.toLocaleString()}</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -303,7 +313,7 @@ export default function BookingPage() {
                   className={`w-full h-[52px] rounded-lg border-none bg-orange text-white text-[15px] font-medium mt-5 ${
                     submitting || isOwnEquipment ? "opacity-70 cursor-default" : "cursor-pointer"
                   }`}>
-                  {submitting ? "Confirming..." : `Confirm Booking & Pay K${downPayment.toLocaleString()}`}
+                  {submitting ? "Confirming..." : days > 0 ? `Confirm Booking & Pay K${downPayment.toLocaleString()}` : "Select dates to continue"}
                 </button>
 
                 <div className="flex items-center justify-center gap-1.5 mt-3">
