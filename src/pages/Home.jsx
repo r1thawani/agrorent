@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import EquipmentCard from "../components/EquipmentCard";
 import { CATEGORIES } from "../data/mockData";
 import { equipmentService } from "../services/equipmentService";
+import { bookingService } from "../services/bookingService";
 import { toEquipmentCardProps } from "../utils/equipmentMappers";
 import { useAsync } from "../hooks/useAsync";
 
@@ -11,10 +12,15 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
-  const { data: equipment, loading } = useAsync(() => equipmentService.getAll(), [], {
-    initialData: [],
-  });
-  const popular = equipment.slice(0, 6).map(toEquipmentCardProps);
+  const { data: [equipment, bookedMap] = [[], {}], loading } = useAsync(
+    () => Promise.all([equipmentService.getAll(), bookingService.getCurrentlyBookedMap()]),
+    [],
+    { initialData: [[], {}] }
+  );
+  const popular = equipment.slice(0, 6).map((eq) => ({
+    ...toEquipmentCardProps(eq),
+    unavailableUntil: bookedMap[eq.id] || null,
+  }));
 
   function handleSearch(e) {
     e.preventDefault();

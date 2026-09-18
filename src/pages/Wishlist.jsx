@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import EquipmentCard from "../components/EquipmentCard";
 import { equipmentService } from "../services/equipmentService";
+import { bookingService } from "../services/bookingService";
 import { toEquipmentCardProps } from "../utils/equipmentMappers";
 import { useWishlist } from "../context/WishlistContext";
 
@@ -15,9 +16,13 @@ export default function Wishlist() {
   useEffect(() => {
     if (wishlistIds.length === 0) { setSaved([]); setLoading(false); return; }
     setLoading(true);
-    equipmentService
-      .getAll()
-      .then((all) => setSaved(all.filter((eq) => wishlistIds.includes(eq.id)).map(toEquipmentCardProps)))
+    Promise.all([equipmentService.getAll(), bookingService.getCurrentlyBookedMap()])
+      .then(([all, bookedMap]) => {
+        const filtered = all
+          .filter((eq) => wishlistIds.includes(eq.id))
+          .map((eq) => ({ ...toEquipmentCardProps(eq), unavailableUntil: bookedMap[eq.id] || null }));
+        setSaved(filtered);
+      })
       .finally(() => setLoading(false));
   }, [wishlistIds]);
 
