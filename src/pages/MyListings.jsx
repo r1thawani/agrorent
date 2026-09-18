@@ -56,8 +56,9 @@ export default function MyListings() {
     setListings((prev) => prev.filter((eq) => eq.id !== id));
     try {
       await equipmentService.remove(id);
-    } catch {
+    } catch (err) {
       if (removed) setListings((prev) => [...prev, removed].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+      throw err; // re-throw so ListingRow can show the error
     }
   }
 
@@ -109,70 +110,100 @@ export default function MyListings() {
 function ListingRow({ eq, onToggle, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const hasBookings = eq.bookingsCount > 0;
 
   async function handleDelete() {
     if (deleting) return;
     setDeleting(true);
-    await onDelete();
+    setDeleteError("");
+    try {
+      await onDelete();
+    } catch {
+      setDeleteError("Could not delete — this listing has booking history attached to it.");
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
   }
 
   return (
-    <div className="bg-white rounded-xl px-4 py-3.5 border border-border/50 flex items-center gap-3.5">
-      <img src={eq.image} alt={eq.name}
-        className="w-20 h-16 rounded-lg object-cover shrink-0 bg-page" />
+    <div className="bg-white rounded-xl px-4 py-3.5 border border-border/50 flex flex-col gap-2">
+      <div className="flex items-center gap-3.5">
+        <img src={eq.image} alt={eq.name}
+          className="w-20 h-16 rounded-lg object-cover shrink-0 bg-page" />
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[15px] font-medium text-ink truncate">{eq.name}</span>
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
-            eq.isAvailable ? "bg-green-tint text-green-dark" : "bg-page text-ink-muted"
-          }`}>
-            {eq.isAvailable ? "Available" : "Unavailable"}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[15px] font-medium text-ink truncate">{eq.name}</span>
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
+              eq.isAvailable ? "bg-green-tint text-green-dark" : "bg-page text-ink-muted"
+            }`}>
+              {eq.isAvailable ? "Available" : "Unavailable"}
+            </span>
+          </div>
+          <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-tint text-green-dark mb-1">
+            {eq.category}
           </span>
+          <div className="text-xs text-ink-muted">Posted {eq.listed}</div>
         </div>
-        <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-tint text-green-dark mb-1">
-          {eq.category}
-        </span>
-        <div className="text-xs text-ink-muted">Posted {eq.listed}</div>
+
+        <div className="flex gap-7 shrink-0 mr-2">
+          <div>
+            <div className="text-xs text-ink-muted">Bookings</div>
+            <div className="text-sm font-medium text-ink">{eq.bookingsCount}</div>
+          </div>
+          <div>
+            <div className="text-xs text-ink-muted">Earnings</div>
+            <div className="text-sm font-medium text-ink">K{eq.earnings.toLocaleString()}</div>
+          </div>
+        </div>
+
+        {confirmDelete ? (
+          <div className="flex gap-1.5 shrink-0">
+            <button onClick={handleDelete} disabled={deleting}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-red rounded-lg border-none cursor-pointer disabled:opacity-60">
+              {deleting ? "Deleting…" : "Confirm"}
+            </button>
+            <button onClick={() => { setConfirmDelete(false); setDeleteError(""); }}
+              className="px-3 py-1.5 text-xs text-ink-muted bg-white border border-border rounded-lg cursor-pointer">
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1.5 shrink-0">
+            <Link to={`/listings/${eq.id}/edit`}
+              className="block px-3 py-1.5 text-[13px] font-medium text-orange border border-orange rounded-lg no-underline text-center hover:bg-orange hover:text-white transition-colors">
+              Edit
+            </Link>
+            <button onClick={onToggle}
+              className="px-3 py-1.5 text-[13px] text-ink-muted bg-white border border-border rounded-lg cursor-pointer hover:bg-page transition-colors">
+              {eq.isAvailable ? "Mark unavailable" : "Mark available"}
+            </button>
+            {hasBookings ? (
+              <div
+                title="Listings with booking history cannot be deleted. Mark it unavailable instead."
+                className="px-3 py-1.5 text-[13px] text-ink-muted bg-page border border-border rounded-lg text-center cursor-not-allowed opacity-50 select-none">
+                Delete
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)}
+                className="px-3 py-1.5 text-[13px] text-red bg-white border border-border rounded-lg cursor-pointer hover:bg-red-tint transition-colors">
+                Delete
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="flex gap-7 shrink-0 mr-2">
-        <div>
-          <div className="text-xs text-ink-muted">Bookings</div>
-          <div className="text-sm font-medium text-ink">{eq.bookingsCount}</div>
-        </div>
-        <div>
-          <div className="text-xs text-ink-muted">Earnings</div>
-          <div className="text-sm font-medium text-ink">K{eq.earnings.toLocaleString()}</div>
-        </div>
-      </div>
+      {hasBookings && (
+        <p className="text-[11px] text-ink-muted pl-[92px]">
+          This listing has booking history and cannot be deleted. Mark it as unavailable to hide it from renters.
+        </p>
+      )}
 
-      {confirmDelete ? (
-        <div className="flex gap-1.5 shrink-0">
-          <button onClick={handleDelete} disabled={deleting}
-            className="px-3 py-1.5 text-xs font-medium text-white bg-red rounded-lg border-none cursor-pointer disabled:opacity-60">
-            {deleting ? "Deleting…" : "Confirm"}
-          </button>
-          <button onClick={() => setConfirmDelete(false)}
-            className="px-3 py-1.5 text-xs text-ink-muted bg-white border border-border rounded-lg cursor-pointer">
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1.5 shrink-0">
-          <Link to={`/listings/${eq.id}/edit`}
-            className="block px-3 py-1.5 text-[13px] font-medium text-orange border border-orange rounded-lg no-underline text-center hover:bg-orange hover:text-white transition-colors">
-            Edit
-          </Link>
-          <button onClick={onToggle}
-            className="px-3 py-1.5 text-[13px] text-ink-muted bg-white border border-border rounded-lg cursor-pointer hover:bg-page transition-colors">
-            {eq.isAvailable ? "Mark unavailable" : "Mark available"}
-          </button>
-          <button onClick={() => setConfirmDelete(true)}
-            className="px-3 py-1.5 text-[13px] text-red bg-white border border-border rounded-lg cursor-pointer hover:bg-red-tint transition-colors">
-            Delete
-          </button>
-        </div>
+      {deleteError && (
+        <p className="text-[12px] text-red pl-[92px]">{deleteError}</p>
       )}
     </div>
   );
