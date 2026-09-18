@@ -4,6 +4,7 @@ import { MapPin, ChevronLeft, Heart } from "lucide-react";
 import { equipmentService } from "../services/equipmentService";
 import { bookingService } from "../services/bookingService";
 import { reviewService } from "../services/reviewService";
+import { messageService } from "../services/messageService";
 import StarRating from "../components/StarRating";
 import ReviewCard from "../components/ReviewCard";
 import { useWishlist } from "../context/WishlistContext";
@@ -75,7 +76,19 @@ export default function ListingDetail() {
   const [endDate, setEndDate] = useState("");
   const [reviews, setReviews] = useState([]);
   const [bookedRanges, setBookedRanges] = useState([]);
+  const [messagingOwner, setMessagingOwner] = useState(false);
   const { isWishlisted, toggleWishlist } = useWishlist();
+
+  async function handleMessageOwner() {
+    if (!user) { navigate("/login"); return; }
+    setMessagingOwner(true);
+    try {
+      const convId = await messageService.getOrCreate(user.id, eq.owner_id, eq.id);
+      navigate(`/messages/${convId}`);
+    } catch {
+      setMessagingOwner(false);
+    }
+  }
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -286,10 +299,12 @@ export default function ListingDetail() {
                 </div>
               </div>
 
-              <Link to="/messages"
-                className="block w-full h-10 rounded-lg border border-orange text-orange text-sm font-medium text-center leading-[40px] no-underline mt-3">
-                Message Owner
-              </Link>
+              {!isOwnEquipment && (
+                <button onClick={handleMessageOwner} disabled={messagingOwner}
+                  className="block w-full h-10 rounded-lg border border-orange text-orange text-sm font-medium text-center mt-3 bg-white cursor-pointer disabled:opacity-60 disabled:cursor-default">
+                  {messagingOwner ? "Opening…" : "Message Owner"}
+                </button>
+              )}
               {eq.owner?.id && (
                 <Link to={`/profile/${eq.owner.id}`}
                   className="block text-center text-[13px] text-green no-underline mt-2">

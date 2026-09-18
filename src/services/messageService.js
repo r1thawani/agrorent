@@ -81,6 +81,27 @@ export const messageService = {
     };
   },
 
+  // Finds the conversation between renter and owner about a piece of equipment,
+  // or creates it if one doesn't exist yet. Returns the conversation id.
+  async getOrCreate(renterId, ownerId, equipmentId) {
+    const { data: existing } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("equipment_id", equipmentId)
+      .eq("renter_id", renterId)
+      .eq("owner_id", ownerId)
+      .maybeSingle();
+    if (existing) return existing.id;
+
+    const { data: created, error } = await supabase
+      .from("conversations")
+      .insert({ equipment_id: equipmentId, renter_id: renterId, owner_id: ownerId })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return created.id;
+  },
+
   async markMessagesRead(conversationId, userId) {
     const { error } = await supabase
       .from("messages")
