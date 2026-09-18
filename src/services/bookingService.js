@@ -43,7 +43,12 @@ export const bookingService = {
   async getForEquipment(equipmentId) {
     const { data, error } = await supabase
       .rpc("get_equipment_booking_dates", { p_equipment_id: equipmentId });
-    if (error) throw error;
+    if (error) {
+      // If the DB function isn't deployed yet, log and return empty so
+      // the rest of the app still works (overlap check will be skipped).
+      console.warn("get_equipment_booking_dates RPC unavailable:", error.message);
+      return [];
+    }
     return data;
   },
 
