@@ -77,15 +77,19 @@ export default function ListingDetail() {
   const [reviews, setReviews] = useState([]);
   const [bookedRanges, setBookedRanges] = useState([]);
   const [messagingOwner, setMessagingOwner] = useState(false);
+  const [messageError, setMessageError] = useState("");
   const { isWishlisted, toggleWishlist } = useWishlist();
 
   async function handleMessageOwner() {
     if (!user) { navigate("/login"); return; }
     setMessagingOwner(true);
+    setMessageError("");
     try {
       const convId = await messageService.getOrCreate(user.id, eq.owner_id, eq.id);
       navigate(`/messages/${convId}`);
-    } catch {
+    } catch (err) {
+      console.error("Message owner failed:", err);
+      setMessageError("Could not open conversation. Please try again.");
       setMessagingOwner(false);
     }
   }
@@ -300,10 +304,15 @@ export default function ListingDetail() {
               </div>
 
               {!isOwnEquipment && (
-                <button onClick={handleMessageOwner} disabled={messagingOwner}
-                  className="block w-full h-10 rounded-lg border border-orange text-orange text-sm font-medium text-center mt-3 bg-white cursor-pointer disabled:opacity-60 disabled:cursor-default">
-                  {messagingOwner ? "Opening…" : "Message Owner"}
-                </button>
+                <>
+                  <button onClick={handleMessageOwner} disabled={messagingOwner}
+                    className="block w-full h-10 rounded-lg border border-orange text-orange text-sm font-medium text-center mt-3 bg-white cursor-pointer disabled:opacity-60 disabled:cursor-default">
+                    {messagingOwner ? "Opening…" : "Message Owner"}
+                  </button>
+                  {messageError && (
+                    <p className="text-xs text-red text-center mt-1">{messageError}</p>
+                  )}
+                </>
               )}
               {eq.owner?.id && (
                 <Link to={`/profile/${eq.owner.id}`}

@@ -15,6 +15,36 @@ const PAY_OPTIONS = [
   { id: "card", label: "Bank card", desc: "Visa or Mastercard" },
 ];
 
+function luhn(digits) {
+  let sum = 0, alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let n = parseInt(digits[i], 10);
+    if (alt) { n *= 2; if (n > 9) n -= 9; }
+    sum += n;
+    alt = !alt;
+  }
+  return sum % 10 === 0;
+}
+
+function detectCardType(digits) {
+  if (/^4/.test(digits)) return "visa";
+  if (/^5[1-5]/.test(digits) || /^2(?:2[2-9][1-9]|[3-6]\d{2}|7[01]\d|720)/.test(digits)) return "mastercard";
+  return null;
+}
+
+function CardIcon({ type }) {
+  if (type === "visa") return (
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold tracking-wider bg-[#1A1F71] text-white">VISA</span>
+  );
+  if (type === "mastercard") return (
+    <span className="inline-flex items-center gap-0.5">
+      <span className="w-5 h-5 rounded-full bg-[#EB001B] opacity-90 -mr-2.5 inline-block" />
+      <span className="w-5 h-5 rounded-full bg-[#F79E1B] opacity-90 inline-block" />
+    </span>
+  );
+  return null;
+}
+
 export default function BookingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -31,6 +61,8 @@ export default function BookingPage() {
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
+  const cardDigits = cardNumber.replace(/\s/g, "");
+  const cardType = detectCardType(cardDigits);
   const [agreed, setAgreed] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [error, setError] = useState("");
@@ -85,16 +117,35 @@ export default function BookingPage() {
       return;
     }
     if (payMethod === "card") {
-      if (!cardNumber || cardNumber.replace(/\s/g, "").length < 16) {
-        setError("Please enter a valid 16-digit card number.");
+      if (cardDigits.length !== 16) {
+        setError("Card number must be exactly 16 digits.");
         return;
       }
-      if (!expiry || !/^\d{2}\/\d{2}$/.test(expiry)) {
-        setError("Please enter a valid expiry date in MM/YY format.");
+      if (!luhn(cardDigits)) {
+        setError("Card number is invalid. Please check and re-enter.");
         return;
       }
-      if (!cvv || cvv.length < 3) {
-        setError("Please enter a valid CVV (3–4 digits).");
+      if (!cardType) {
+        setError("Only Visa and Mastercard are accepted.");
+        return;
+      }
+      if (!/^\d{2}\/\d{2}$/.test(expiry)) {
+        setError("Please enter a valid expiry date (MM/YY).");
+        return;
+      }
+      const [mm, yy] = expiry.split("/").map(Number);
+      if (mm < 1 || mm > 12) {
+        setError("Expiry month must be between 01 and 12.");
+        return;
+      }
+      const now = new Date();
+      const expYear = 2000 + yy;
+      if (expYear < now.getFullYear() || (expYear === now.getFullYear() && mm < now.getMonth() + 1)) {
+        setError("Your card has expired. Please use a valid card.");
+        return;
+      }
+      if (cvv.length !== 3) {
+        setError("CVV must be exactly 3 digits.");
         return;
       }
     }
@@ -271,26 +322,60 @@ export default function BookingPage() {
                 {payMethod === "card" && (
                   <div className="mt-3 flex flex-col gap-3">
                     <div>
-                      <label className="block text-[13px] font-medium text-ink mb-2">Card number</label>
-                      <input type="text" value={cardNumber} placeholder="1234 5678 9012 3456"
-                        onChange={(e) => setCardNumber(e.target.value)}
-                        onFocus={() => setFocusedField("cardNumber")} onBlur={() => setFocusedField(null)}
-                        className={inputCls("cardNumber")} />
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[13px] font-medium text-ink">Card number</label>
+                        <CardIcon type={cardType} />
+                      </div>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        value={cardNumber}
+                        placeholder="1234 5678 9012 3456"
+                        maxLength={19}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "").slice(0, 16);
+                          setCardNumber(digits.replace(/(.{4})/g, "$1 ").trim());
+                        }}
+                        onFocus={() => setFocusedField("cardNumber")}
+                        onBlur={() => setFocusedField(null)}
+                        className={inputCls("cardNumber")}
+                        autoComplete="cc-number"
+                      />
+                      <p className="text-[11px] text-ink-muted mt-1">16 digits — Visa or Mastercard only</p>
                     </div>
                     <div className="flex gap-3">
                       <div className="flex-1">
                         <label className="block text-[13px] font-medium text-ink mb-2">Expiry</label>
-                        <input type="text" value={expiry} placeholder="MM/YY"
-                          onChange={(e) => setExpiry(e.target.value)}
-                          onFocus={() => setFocusedField("expiry")} onBlur={() => setFocusedField(null)}
-                          className={inputCls("expiry")} />
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          value={expiry}
+                          placeholder="MM/YY"
+                          maxLength={5}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
+                            setExpiry(digits.length > 2 ? digits.slice(0, 2) + "/" + digits.slice(2) : digits);
+                          }}
+                          onFocus={() => setFocusedField("expiry")}
+                          onBlur={() => setFocusedField(null)}
+                          className={inputCls("expiry")}
+                          autoComplete="cc-exp"
+                        />
                       </div>
                       <div className="flex-1">
                         <label className="block text-[13px] font-medium text-ink mb-2">CVV</label>
-                        <input type="password" value={cvv} placeholder="•••"
-                          onChange={(e) => setCvv(e.target.value)}
-                          onFocus={() => setFocusedField("cvv")} onBlur={() => setFocusedField(null)}
-                          className={inputCls("cvv")} />
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          value={cvv}
+                          placeholder="•••"
+                          maxLength={3}
+                          onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                          onFocus={() => setFocusedField("cvv")}
+                          onBlur={() => setFocusedField(null)}
+                          className={inputCls("cvv")}
+                          autoComplete="cc-csc"
+                        />
                       </div>
                     </div>
                   </div>

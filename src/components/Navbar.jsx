@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, HelpCircle } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import Avatar from "./Avatar";
 
@@ -39,6 +39,10 @@ export default function Navbar() {
 
         {/* Right — auth-aware, desktop only */}
         <div className="hidden md:flex items-center gap-4">
+          <Link to="/contact" title="Help"
+            className="text-green-tint-2 hover:text-white transition-colors no-underline flex items-center">
+            <HelpCircle size={18} />
+          </Link>
           {isAuthenticated ? (
             <>
               <Link
@@ -89,6 +93,9 @@ export default function Navbar() {
           </Link>
           <Link to="/#how-it-works" onClick={closeMobileMenu} className="text-green-tint-2 text-sm no-underline">
             How it works
+          </Link>
+          <Link to="/contact" onClick={closeMobileMenu} className="text-green-tint-2 text-sm no-underline flex items-center gap-1.5">
+            <HelpCircle size={15} /> Help
           </Link>
 
           <div className="border-t border-white/10" />

@@ -24,6 +24,9 @@ export default function MyListings() {
           const earnings = eqBookings
             .filter((b) => b.status === "confirmed" || b.status === "completed")
             .reduce((sum, b) => sum + Number(b.total_price), 0);
+          const activeBookings = eqBookings.filter(
+            (b) => b.status === "pending" || b.status === "confirmed"
+          );
           const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
           return {
             ...eq,
@@ -31,6 +34,7 @@ export default function MyListings() {
             listed: eq.created_at ? new Date(eq.created_at).toLocaleDateString() : "",
             isAvailable: eq.is_available,
             bookingsCount: eqBookings.length,
+            activeBookingsCount: activeBookings.length,
             earnings,
           };
         });
@@ -112,7 +116,7 @@ function ListingRow({ eq, onToggle, onDelete }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  const hasBookings = eq.bookingsCount > 0;
+  const hasBookings = eq.activeBookingsCount > 0;
 
   async function handleDelete() {
     if (deleting) return;
@@ -182,7 +186,7 @@ function ListingRow({ eq, onToggle, onDelete }) {
             </button>
             {hasBookings ? (
               <div
-                title="Listings with booking history cannot be deleted. Mark it unavailable instead."
+                title="This listing has active bookings (pending or confirmed). Cancel or decline them first, or mark it unavailable instead."
                 className="px-3 py-1.5 text-[13px] text-ink-muted bg-page border border-border rounded-lg text-center cursor-not-allowed opacity-50 select-none">
                 Delete
               </div>
@@ -198,7 +202,7 @@ function ListingRow({ eq, onToggle, onDelete }) {
 
       {hasBookings && (
         <p className="text-[11px] text-ink-muted pl-[92px]">
-          This listing has booking history and cannot be deleted. Mark it as unavailable to hide it from renters.
+          This listing has active bookings and cannot be deleted. Cancel or decline them first, or mark it as unavailable to hide it from renters.
         </p>
       )}
 

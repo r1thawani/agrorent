@@ -84,21 +84,35 @@ export const messageService = {
   // Finds the conversation between renter and owner about a piece of equipment,
   // or creates it if one doesn't exist yet. Returns the conversation id.
   async getOrCreate(renterId, ownerId, equipmentId) {
-    const { data: existing } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("equipment_id", equipmentId)
-      .eq("renter_id", renterId)
-      .eq("owner_id", ownerId)
-      .maybeSingle();
+    const lookup = () =>
+      supabase
+        .from("conversations")
+        .select("id")
+        .eq("equipment_id", equipmentId)
+        .eq("renter_id", renterId)
+        .eq("owner_id", ownerId)
+        .maybeSingle();
+
+    const { data: existing, error: selectErr } = await lookup();
+    if (selectErr) throw selectErr;
     if (existing) return existing.id;
 
-    const { data: created, error } = await supabase
+    const { data: created, error: insertErr } = await supabase
       .from("conversations")
       .insert({ equipment_id: equipmentId, renter_id: renterId, owner_id: ownerId })
       .select("id")
       .single();
-    if (error) throw error;
+
+    // If the INSERT succeeded but the read-back was blocked by RLS (created is
+    // null despite no insertErr), or if there was a unique-constraint conflict
+    // because a concurrent insert beat us, retry the lookup before giving up.
+    if (!created || insertErr?.code === "23505") {
+      const { data: retry, error: retryErr } = await lookup();
+      if (retryErr) throw retryErr;
+      if (retry) return retry.id;
+    }
+
+    if (insertErr) throw insertErr;
     return created.id;
   },
 
