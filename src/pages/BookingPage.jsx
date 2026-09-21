@@ -32,9 +32,10 @@ function detectCardType(digits) {
   return null;
 }
 
+const NAV_KEYS = ["Backspace","Delete","Tab","Escape","Enter","ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End"];
+
 function blockNonDigit(e) {
-  const passthrough = ["Backspace","Delete","Tab","Escape","Enter","ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End"];
-  if (passthrough.includes(e.key) || e.ctrlKey || e.metaKey) return;
+  if (NAV_KEYS.includes(e.key) || e.ctrlKey || e.metaKey) return;
   if (!/^\d$/.test(e.key)) e.preventDefault();
 }
 
@@ -371,7 +372,11 @@ export default function BookingPage() {
                         value={cardNumber}
                         placeholder="1234 5678 9012 3456"
                         maxLength={19}
-                        onKeyDown={blockNonDigit}
+                        onKeyDown={(e) => {
+                          if (NAV_KEYS.includes(e.key) || e.ctrlKey || e.metaKey) return;
+                          if (!/^\d$/.test(e.key)) { e.preventDefault(); return; }
+                          if (cardDigits.length >= 16) e.preventDefault();
+                        }}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, "").slice(0, 16);
                           setCardNumber(digits.replace(/(.{4})/g, "$1 ").trim());
@@ -422,7 +427,11 @@ export default function BookingPage() {
                           value={cvv}
                           placeholder="•••"
                           maxLength={3}
-                          onKeyDown={blockNonDigit}
+                          onKeyDown={(e) => {
+                            if (NAV_KEYS.includes(e.key) || e.ctrlKey || e.metaKey) return;
+                            if (!/^\d$/.test(e.key)) { e.preventDefault(); return; }
+                            if (cvv.length >= 3) e.preventDefault();
+                          }}
                           onChange={(e) => {
                             setCvv(e.target.value.replace(/\D/g, "").slice(0, 3));
                             setFieldError("cvv", null);
