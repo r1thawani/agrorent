@@ -367,7 +367,7 @@ export default function BookingPage() {
                         <CardIcon type={cardType} />
                       </div>
                       <input
-                        type="tel"
+                        type="text"
                         inputMode="numeric"
                         value={cardNumber}
                         placeholder="1234 5678 9012 3456"
@@ -402,7 +402,7 @@ export default function BookingPage() {
                       <div className="flex-1">
                         <label className="block text-[13px] font-medium text-ink mb-2">Expiry</label>
                         <input
-                          type="tel"
+                          type="text"
                           inputMode="numeric"
                           value={expiry}
                           placeholder="MM/YY"
@@ -432,7 +432,7 @@ export default function BookingPage() {
                           type="text"
                           inputMode="numeric"
                           value={cvv}
-                          placeholder="•••"
+                          placeholder="123"
                           maxLength={3}
                           autoComplete="off"
                           onKeyDown={(e) => {
