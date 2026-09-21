@@ -372,10 +372,17 @@ export default function BookingPage() {
                         value={cardNumber}
                         placeholder="1234 5678 9012 3456"
                         maxLength={19}
+                        autoComplete="off"
                         onKeyDown={(e) => {
                           if (NAV_KEYS.includes(e.key) || e.ctrlKey || e.metaKey) return;
                           if (!/^\d$/.test(e.key)) { e.preventDefault(); return; }
                           if (cardDigits.length >= 16) e.preventDefault();
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 16);
+                          setCardNumber(digits.replace(/(.{4})/g, "$1 ").trim());
+                          setFieldError("cardNumber", null);
                         }}
                         onChange={(e) => {
                           const digits = e.target.value.replace(/\D/g, "").slice(0, 16);
@@ -385,7 +392,6 @@ export default function BookingPage() {
                         onFocus={() => setFocusedField("cardNumber")}
                         onBlur={() => { setFocusedField(null); validateCardNumberBlur(); }}
                         className={inputCls("cardNumber")}
-                        autoComplete="cc-number"
                       />
                       {fieldErrors.cardNumber
                         ? <p className="text-[11px] text-red mt-1">{fieldErrors.cardNumber}</p>
@@ -401,6 +407,7 @@ export default function BookingPage() {
                           value={expiry}
                           placeholder="MM/YY"
                           maxLength={5}
+                          autoComplete="off"
                           onKeyDown={blockNonDigit}
                           onChange={(e) => {
                             const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
@@ -427,10 +434,17 @@ export default function BookingPage() {
                           value={cvv}
                           placeholder="•••"
                           maxLength={3}
+                          autoComplete="off"
                           onKeyDown={(e) => {
                             if (NAV_KEYS.includes(e.key) || e.ctrlKey || e.metaKey) return;
                             if (!/^\d$/.test(e.key)) { e.preventDefault(); return; }
                             if (cvv.length >= 3) e.preventDefault();
+                          }}
+                          onPaste={(e) => {
+                            e.preventDefault();
+                            const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 3);
+                            setCvv(digits);
+                            setFieldError("cvv", null);
                           }}
                           onChange={(e) => {
                             setCvv(e.target.value.replace(/\D/g, "").slice(0, 3));
@@ -439,7 +453,6 @@ export default function BookingPage() {
                           onFocus={() => setFocusedField("cvv")}
                           onBlur={() => { setFocusedField(null); validateCvvBlur(); }}
                           className={inputCls("cvv")}
-                          autoComplete="cc-csc"
                         />
                         {fieldErrors.cvv && <p className="text-[11px] text-red mt-1">{fieldErrors.cvv}</p>}
                       </div>
