@@ -429,7 +429,7 @@ export default function BookingPage() {
                       <div className="flex-1">
                         <label className="block text-[13px] font-medium text-ink mb-2">CVV</label>
                         <input
-                          type="password"
+                          type="text"
                           inputMode="numeric"
                           value={cvv}
                           placeholder="•••"
