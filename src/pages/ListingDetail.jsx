@@ -280,15 +280,15 @@ export default function ListingDetail() {
                 </div>
               )}
 
-              {!isOwnEquipment && !activeBooking && (
+              {!isOwnEquipment && (
                 <Link to={`/listings/${eq.id}/book`}
                   className="block w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium text-center leading-[48px] no-underline mt-4">
                   Book Now
                 </Link>
               )}
               {activeBooking && (
-                <div className="mt-4 bg-red-tint rounded-lg px-3 py-3 text-[13px] text-red text-center">
-                  Currently unavailable — booked until {new Date(activeBooking.end_date).toLocaleDateString()}
+                <div className="mt-2 bg-red-tint rounded-lg px-3 py-2.5 text-[12px] text-red text-center">
+                  Booked until {new Date(activeBooking.end_date).toLocaleDateString()} — select dates after that
                 </div>
               )}
               <p className="text-center text-xs text-ink-muted mt-2">You won't be charged yet</p>
