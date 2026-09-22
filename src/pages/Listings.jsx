@@ -51,10 +51,12 @@ export default function Listings() {
     setDistrict(""); setMinPrice(""); setMaxPrice("");
   }
 
-  const mapped = allEquipment.map((eq) => ({
-    ...toEquipmentCardProps(eq),
-    unavailableUntil: bookedMap[eq.id] || null,
-  }));
+  const mapped = allEquipment
+    .filter((eq) => eq.is_available !== false)
+    .map((eq) => ({
+      ...toEquipmentCardProps(eq),
+      unavailableUntil: bookedMap[eq.id] || null,
+    }));
 
   let filtered = mapped.filter((eq) => {
     if (search && !eq.name.toLowerCase().includes(search.toLowerCase())) return false;

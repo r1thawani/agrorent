@@ -17,10 +17,13 @@ export default function Home() {
     [],
     { initialData: [[], {}] }
   );
-  const popular = equipment.slice(0, 6).map((eq) => ({
-    ...toEquipmentCardProps(eq),
-    unavailableUntil: bookedMap[eq.id] || null,
-  }));
+  const popular = equipment
+    .filter((eq) => eq.is_available !== false)
+    .slice(0, 6)
+    .map((eq) => ({
+      ...toEquipmentCardProps(eq),
+      unavailableUntil: bookedMap[eq.id] || null,
+    }));
 
   function handleSearch(e) {
     e.preventDefault();

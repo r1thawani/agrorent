@@ -19,7 +19,7 @@ export default function Wishlist() {
     Promise.all([equipmentService.getAll(), bookingService.getCurrentlyBookedMap()])
       .then(([all, bookedMap]) => {
         const filtered = all
-          .filter((eq) => wishlistIds.includes(eq.id))
+          .filter((eq) => wishlistIds.includes(eq.id) && eq.is_available !== false)
           .map((eq) => ({ ...toEquipmentCardProps(eq), unavailableUntil: bookedMap[eq.id] || null }));
         setSaved(filtered);
       })
