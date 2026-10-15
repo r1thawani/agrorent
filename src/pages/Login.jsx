@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { friendlyError } from "../utils/friendlyError";
+import { friendlyError, isRateLimitError } from "../utils/friendlyError";
+import { useCooldown } from "../hooks/useCooldown";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -10,16 +11,31 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { secondsLeft, start: startCooldown } = useCooldown();
+  const blocked = submitting || secondsLeft > 0;
+  // State updates land a render late; the ref closes the gap for two clicks in the same instant.
+  const inFlight = useRef(false);
 
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
   async function handleSubmit(e) {
     e.preventDefault();
+    // While the server is slow nothing visibly happens, and every extra click
+    // used to send another login request — which is how the rate limit got hit.
+    if (blocked || inFlight.current) return;
+    inFlight.current = true;
+    setError("");
+    setSubmitting(true);
     try {
       const profile = await login(form.email, form.password);
       navigate(profile.role === "admin" ? "/admin" : "/dashboard", { replace: true });
     } catch (err) {
       setError(friendlyError(err, "Login failed. Check your email and password."));
+      if (isRateLimitError(err)) startCooldown(30);
+    } finally {
+      inFlight.current = false;
+      setSubmitting(false);
     }
   }
 
@@ -73,9 +89,12 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium border-none cursor-pointer mt-3"
+            disabled={blocked}
+            className={`w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium border-none mt-3 ${
+              blocked ? "opacity-70 cursor-default" : "cursor-pointer"
+            }`}
           >
-            Log In
+            {submitting ? "Logging in…" : secondsLeft > 0 ? `Please wait ${secondsLeft}s` : "Log In"}
           </button>
         </form>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { friendlyError, isBusyError } from "./friendlyError";
+import { friendlyError, isBusyError, isRateLimitError } from "./friendlyError";
 
 const BUSY = "The server is busy right now. Please wait a moment and try again.";
 const RATE = "Too many attempts. Please wait a minute and try again.";
@@ -56,5 +56,20 @@ describe("isBusyError", () => {
     expect(isBusyError(new Error("Invalid login credentials"))).toBe(false);
     expect(isBusyError({ status: 429, message: "Request rate limit reached" })).toBe(false);
     expect(isBusyError(null)).toBe(false);
+  });
+});
+
+describe("isRateLimitError", () => {
+  it("recognises every shape Supabase uses for a rate limit", () => {
+    expect(isRateLimitError(new Error("Request rate limit reached"))).toBe(true);
+    expect(isRateLimitError({ code: "over_request_rate_limit", message: "" })).toBe(true);
+    expect(isRateLimitError({ status: 429, message: "" })).toBe(true);
+    expect(isRateLimitError(new Error("email rate limit exceeded"))).toBe(true);
+  });
+
+  it("is false for everything else", () => {
+    expect(isRateLimitError(new Error("Invalid login credentials"))).toBe(false);
+    expect(isRateLimitError({ code: "57014", message: "statement timeout" })).toBe(false);
+    expect(isRateLimitError(undefined)).toBe(false);
   });
 });
