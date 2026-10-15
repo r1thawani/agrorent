@@ -34,7 +34,7 @@ export default function Footer() {
 
         <div className="border-t border-white/15 pt-5">
           <p className="text-green-tint-2 text-[13px] text-center">
-            © 2025 AgroRent. All rights reserved.
+            © {new Date().getFullYear()} AgroRent. All rights reserved.
           </p>
         </div>
 

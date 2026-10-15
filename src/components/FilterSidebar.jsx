@@ -50,6 +50,7 @@ export default function FilterSidebar({
           onProvinceChange={onProvinceChange}
           onDistrictChange={onDistrictChange}
           allowEmpty
+          stacked
           inputStyle={{ height: "40px" }}
         />
       </div>

@@ -39,9 +39,12 @@ export default function Navbar() {
 
         {/* Right — auth-aware, desktop only */}
         <div className="hidden md:flex items-center gap-4">
-          <Link to="/contact" title="Help"
-            className="text-green-tint-2 hover:text-white transition-colors no-underline flex items-center">
-            <HelpCircle size={18} />
+          <Link
+            to="/contact"
+            title="Get help"
+            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 transition-colors text-white text-[13px] font-medium px-3 py-2 rounded-lg border border-white/30 no-underline"
+          >
+            <HelpCircle size={16} /> Need help?
           </Link>
           {isAuthenticated ? (
             <>
@@ -94,8 +97,12 @@ export default function Navbar() {
           <Link to="/#how-it-works" onClick={closeMobileMenu} className="text-green-tint-2 text-sm no-underline">
             How it works
           </Link>
-          <Link to="/contact" onClick={closeMobileMenu} className="text-green-tint-2 text-sm no-underline flex items-center gap-1.5">
-            <HelpCircle size={15} /> Help
+          <Link
+            to="/contact"
+            onClick={closeMobileMenu}
+            className="flex items-center gap-1.5 self-start bg-white/10 text-white text-[13px] font-medium px-3 py-2 rounded-lg border border-white/30 no-underline"
+          >
+            <HelpCircle size={16} /> Need help?
           </Link>
 
           <div className="border-t border-white/10" />

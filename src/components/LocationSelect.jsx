@@ -8,6 +8,7 @@ export default function LocationSelect({
   allowEmpty = false,
   required = false,
   inputStyle,
+  stacked = false,
 }) {
   const districts = ZAMBIA_LOCATIONS[province] || [];
 
@@ -18,12 +19,16 @@ export default function LocationSelect({
   }
 
   return (
-    <div className="flex gap-2.5">
+    // `stacked` is for narrow containers (the 260px filter sidebar), where two
+    // side-by-side selects can't fit; forms with room to spare keep them in a row.
+    // min-w-0 lets a <select> shrink below its widest option instead of
+    // overflowing its parent.
+    <div className={`flex gap-2.5 ${stacked ? "flex-col" : ""}`}>
       <select
         value={province}
         onChange={handleProvinceChange}
         required={required}
-        className="flex-1 h-11 px-3 text-[13px] border-[1.5px] border-border rounded-lg outline-none bg-white"
+        className="flex-1 min-w-0 w-full h-11 px-3 text-[13px] border-[1.5px] border-border rounded-lg outline-none bg-white"
         style={inputStyle}
       >
         <option value="">{allowEmpty ? "All provinces" : "Select province…"}</option>
@@ -37,7 +42,7 @@ export default function LocationSelect({
         onChange={(e) => onDistrictChange(e.target.value)}
         disabled={!province}
         required={required}
-        className={`flex-1 h-11 px-3 text-[13px] border-[1.5px] border-border rounded-lg outline-none bg-white ${
+        className={`flex-1 min-w-0 w-full h-11 px-3 text-[13px] border-[1.5px] border-border rounded-lg outline-none bg-white ${
           province ? "opacity-100 cursor-pointer" : "opacity-60 cursor-not-allowed"
         }`}
         style={inputStyle}
