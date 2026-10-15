@@ -102,11 +102,15 @@ export default function PublicProfile() {
                 <span className="text-[15px] font-medium text-ink">{avgRating.toFixed(1)}</span>
                 <span className="text-[13px] text-ink-muted">({totalReviews} reviews)</span>
               </div>
-              <p className="text-sm text-ink mt-3 leading-relaxed max-w-[480px]">
-                {owner.name} is an experienced equipment owner on AgroRent, listing{" "}
-                {listings.length} {listings.length === 1 ? "piece" : "pieces"} of equipment for
-                rent to farmers across Zambia.
-              </p>
+              {owner.bio ? (
+                <p className="text-sm text-ink mt-3 leading-relaxed max-w-[480px] whitespace-pre-line">
+                  {owner.bio}
+                </p>
+              ) : (
+                <p className="text-sm text-ink-muted mt-3 italic">
+                  {owner.name} hasn't added a bio yet.
+                </p>
+              )}
             </div>
           </div>
         </div>

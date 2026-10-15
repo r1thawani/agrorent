@@ -15,9 +15,7 @@ export default function EditProfile() {
     province: "Lusaka Province",
     district: "Lusaka",
   });
-  const [bio, setBio] = useState(
-    "Smallholder farmer in Lusaka Province with 10 years experience. Primarily grow maize and soya beans."
-  );
+  const [bio, setBio] = useState(user?.bio || "");
   const [focusedField, setFocusedField] = useState(null);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -42,7 +40,21 @@ export default function EditProfile() {
       return;
     }
     try {
-      await updateProfile({ name: form.name.trim() });
+      // Saved separately so a name edit still works even if the bio column
+      // hasn't been added to the database yet.
+      if (form.name.trim() !== user.name) {
+        await updateProfile({ name: form.name.trim() });
+      }
+      if (bio.trim() !== (user.bio || "")) {
+        try {
+          await updateProfile({ bio: bio.trim() });
+        } catch (err) {
+          if (/bio/i.test(err.message || "")) {
+            throw new Error("Your bio couldn't be saved yet — the database needs a one-time update. Please tell the site admin.");
+          }
+          throw err;
+        }
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
@@ -54,7 +66,10 @@ export default function EditProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => updateProfile({ photo_url: ev.target.result });
+    reader.onload = (ev) =>
+      updateProfile({ photo_url: ev.target.result }).catch((err) =>
+        setSaveError(err.message || "Could not update your photo. Please try again.")
+      );
     reader.readAsDataURL(file);
     e.target.value = "";
   }

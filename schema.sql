@@ -84,6 +84,7 @@ create table profiles (
   name          text not null,
   email         text not null,
   photo_url     text,
+  bio           text check (bio is null or char_length(bio) <= 200),
   role          user_role not null default 'renter',
   status        user_status not null default 'active',
   created_at    timestamptz not null default now()
