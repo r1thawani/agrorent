@@ -18,6 +18,7 @@ export default function ResetPassword() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     // Supabase auto-processes the recovery token from the URL hash on load.
@@ -28,6 +29,7 @@ export default function ResetPassword() {
     // Handle case where session is already set (e.g. page reload)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setSessionReady(true);
+      setChecking(false);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -71,7 +73,7 @@ export default function ResetPassword() {
             <div className="text-center mb-7">
               <div className="text-lg font-medium text-green">AgroRent</div>
               <h1 className="text-[22px] font-medium text-ink mt-1">Set a new password</h1>
-              {!sessionReady && (
+              {!checking && !sessionReady && (
                 <p className="text-sm text-red mt-2">
                   Invalid or expired reset link. Please{" "}
                   <Link to="/forgot-password" className="underline text-red">request a new one</Link>.

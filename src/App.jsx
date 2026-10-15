@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ScrollManager from "./components/ScrollManager";
+import RecoveryRedirect from "./components/RecoveryRedirect";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./pages/Home";
 import Listings from "./pages/Listings";
@@ -46,6 +47,7 @@ function Layout() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <ScrollManager />
+      <RecoveryRedirect />
       {!isAdminRoute && <Navbar />}
       <main style={{ flex: "1" }}>
         <ErrorBoundary>
