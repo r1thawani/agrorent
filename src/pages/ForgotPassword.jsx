@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import { friendlyError } from "../utils/friendlyError";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -20,7 +21,7 @@ export default function ForgotPassword() {
       if (err) throw err;
       setSent(true);
     } catch (err) {
-      setError(err.message || "Could not send reset email. Please try again.");
+      setError(friendlyError(err, "Could not send reset email. Please try again."));
     } finally {
       setLoading(false);
     }

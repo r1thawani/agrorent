@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Sparkles } from "lucide-react";
 import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
+import { friendlyError } from "../utils/friendlyError";
 
 const PHONE_REGEX = /^\+260\d{9}$/;
 
@@ -84,7 +85,7 @@ export default function Signup() {
       await signup({ name: form.name, email: form.email, password: form.password });
       navigate("/check-email", { state: { email: form.email } });
     } catch (err) {
-      setError(err.message || "Signup failed. Please try again.");
+      setError(friendlyError(err, "Signup failed. Please try again."));
     }
   }
 

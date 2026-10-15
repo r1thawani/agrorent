@@ -1,13 +1,22 @@
 // FILE: agrorent/src/context/AuthContext.jsx
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { isBusyError } from "../utils/friendlyError";
 
 export const AuthContext = createContext(null);
 
+// The profile lookup is what decides "logged in or not", so ride out a brief
+// database stall (timeout / dropped connection) with a couple of spaced
+// retries instead of failing the whole login on the first slow response.
+const RETRY_DELAYS_MS = [800, 2000];
+
 async function loadProfile(userId) {
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
-  if (error) throw error;
-  return data;
+  for (let attempt = 0; ; attempt++) {
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    if (!error) return data;
+    if (!isBusyError(error) || attempt >= RETRY_DELAYS_MS.length) throw error;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+  }
 }
 
 // A password-reset email link gives the browser a real Supabase session so

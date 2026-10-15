@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import { friendlyError } from "../utils/friendlyError";
 
 function getPasswordError(pw) {
   if (pw.length < 8) return "Password must be at least 8 characters.";
@@ -47,7 +48,7 @@ export default function ResetPassword() {
       setDone(true);
       await supabase.auth.signOut();
     } catch (err) {
-      setError(err.message || "Could not update your password. Please try again.");
+      setError(friendlyError(err, "Could not update your password. Please try again."));
     } finally {
       setLoading(false);
     }

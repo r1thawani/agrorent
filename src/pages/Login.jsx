@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { friendlyError } from "../utils/friendlyError";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -18,7 +19,7 @@ export default function Login() {
       const profile = await login(form.email, form.password);
       navigate(profile.role === "admin" ? "/admin" : "/dashboard", { replace: true });
     } catch (err) {
-      setError(err.message || "Login failed. Check your email and password.");
+      setError(friendlyError(err, "Login failed. Check your email and password."));
     }
   }
 
