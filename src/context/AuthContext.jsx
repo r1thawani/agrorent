@@ -48,11 +48,23 @@ export function AuthProvider({ children }) {
     return on;
   });
   const recoveringRef = useRef(recovering);
+  const userRef = useRef(null);
 
   const markRecovering = useCallback((on) => {
     recoveringRef.current = on;
     writeRecoveryFlag(on);
     setRecovering(on);
+  }, []);
+
+  // Nine pages/contexts refetch their data whenever `user` changes identity.
+  // Re-setting an identical profile as a *new object* (which happened on every
+  // token refresh and tab refocus) made all of them hit the database again,
+  // so only swap the object when the profile data really differs.
+  const applyUser = useCallback((next) => {
+    const prev = userRef.current;
+    if (next && prev && JSON.stringify(prev) === JSON.stringify(next)) return;
+    userRef.current = next;
+    setUser(next);
   }, []);
 
   useEffect(() => {
@@ -61,15 +73,15 @@ export function AuthProvider({ children }) {
     async function syncUser(session) {
       if (!active) return;
       if (!session?.user || recoveringRef.current) {
-        setUser(null);
+        applyUser(null);
         return;
       }
       try {
         const profile = await loadProfile(session.user.id);
-        if (active) setUser(profile);
+        if (active) applyUser(profile);
       } catch (err) {
         console.error("Could not load profile:", err);
-        if (active) setUser(null);
+        if (active) applyUser(null);
       }
     }
 
@@ -83,14 +95,20 @@ export function AuthProvider({ children }) {
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         markRecovering(true);
-        setUser(null);
+        applyUser(null);
         return;
       }
       if (event === "SIGNED_OUT") {
         markRecovering(false);
-        setUser(null);
+        applyUser(null);
         return;
       }
+      // A token refresh doesn't change the profile, and the initial-session
+      // replay is already covered by getSession() above.
+      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") return;
+      // Supabase re-announces SIGNED_IN when the tab regains focus; don't
+      // re-download the profile of someone who is already loaded.
+      if (event === "SIGNED_IN" && session?.user?.id === userRef.current?.id) return;
       // Deferred: awaiting other Supabase calls inside this callback can
       // deadlock the auth lock.
       setTimeout(() => syncUser(session), 0);
@@ -100,7 +118,7 @@ export function AuthProvider({ children }) {
       active = false;
       listener.subscription.unsubscribe();
     };
-  }, [markRecovering]);
+  }, [markRecovering, applyUser]);
 
   async function login(email, password) {
     // A normal login ends any half-finished password reset.
@@ -109,7 +127,7 @@ export function AuthProvider({ children }) {
     if (error) throw error;
     const { data: { session } } = await supabase.auth.getSession();
     const profile = await loadProfile(session.user.id);
-    setUser(profile);
+    applyUser(profile);
     return profile;
   }
 
@@ -135,10 +153,10 @@ export function AuthProvider({ children }) {
   async function updateProfile(changes) {
     if (!user) return;
     const previous = user;
-    setUser((u) => (u ? { ...u, ...changes } : u));
+    applyUser({ ...user, ...changes });
     const { error } = await supabase.from("profiles").update(changes).eq("id", user.id);
     if (error) {
-      setUser(previous);
+      applyUser(previous);
       throw error;
     }
   }
