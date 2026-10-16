@@ -98,6 +98,7 @@ export default function BookingPage() {
   }
 
   const isOwnEquipment = user && eq.owner_id === user.id;
+  const canBook = eq.is_available !== false && !eq.deleted_at;
   const photoUrl = eq.equipment_photos?.[0]?.url ?? "";
   const rawDays = calculateDays(startDate, endDate);
   const days = rawDays > 0 ? rawDays : 0;
@@ -145,6 +146,7 @@ export default function BookingPage() {
   async function handleConfirm(e) {
     e.preventDefault();
     if (isOwnEquipment) { setError("You can't book your own equipment."); return; }
+    if (!canBook) { setError("This equipment is not available for booking right now."); return; }
     if (!startDate || !endDate || rawDays < 1) { setError("Please choose a valid date range."); return; }
     if (startDate < today) { setError("Start date can't be in the past."); return; }
     const hasOverlap = bookedRanges.some((b) => startDate <= b.end_date && b.start_date <= endDate);
@@ -243,6 +245,11 @@ export default function BookingPage() {
         {isOwnEquipment && (
           <div className="bg-red-tint border border-red rounded-lg px-4 py-4 mb-5 text-sm text-red">
             This is your own listing — you can't book it as a renter.
+          </div>
+        )}
+        {!isOwnEquipment && !canBook && (
+          <div className="bg-red-tint border border-red rounded-lg px-4 py-4 mb-5 text-sm text-red">
+            This equipment is not available for booking right now.
           </div>
         )}
 
@@ -473,9 +480,9 @@ export default function BookingPage() {
 
                 {error && <div className="mt-3 text-[13px] text-red">{error}</div>}
 
-                <button type="submit" disabled={submitting || isOwnEquipment}
+                <button type="submit" disabled={submitting || isOwnEquipment || !canBook}
                   className={`w-full h-[52px] rounded-lg border-none bg-orange text-white text-[15px] font-medium mt-5 ${
-                    submitting || isOwnEquipment ? "opacity-70 cursor-default" : "cursor-pointer"
+                    submitting || isOwnEquipment || !canBook ? "opacity-70 cursor-default" : "cursor-pointer"
                   }`}>
                   {submitting ? "Confirming..." : days > 0 ? `Confirm Booking & Pay K${downPayment.toLocaleString()}` : "Select dates to continue"}
                 </button>

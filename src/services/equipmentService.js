@@ -3,7 +3,10 @@ import { supabase } from "../lib/supabaseClient";
 
 export const equipmentService = {
   async getAll(filters = {}) {
-    let query = supabase.from("equipment").select("*, equipment_photos(url, sort_order)");
+    let query = supabase
+      .from("equipment")
+      .select("*, equipment_photos(url, sort_order)")
+      .is("deleted_at", null);
     if (filters.category) query = query.eq("category", filters.category);
     if (filters.province) query = query.eq("province", filters.province);
     if (filters.district) query = query.eq("district", filters.district);
@@ -39,10 +42,35 @@ export const equipmentService = {
     return data;
   },
 
+  // Deletes a listing under the rules in the delete_listing() database
+  // function: refused while a confirmed booking is current or upcoming;
+  // otherwise pending requests are declined, and the listing is removed
+  // (or hidden, if past bookings must keep pointing at it).
   async remove(id) {
-    const { error } = await supabase.from("equipment").delete().eq("id", id);
+    const { data, error } = await supabase.rpc("delete_listing", { p_equipment_id: id });
     if (error) throw error;
-    return { id, deleted: true };
+    return { id, result: data };
+  },
+
+  // Removes photos the owner took off a listing in EditListing.
+  async removePhotos(equipmentId, urls) {
+    const { error } = await supabase
+      .from("equipment_photos")
+      .delete()
+      .eq("equipment_id", equipmentId)
+      .in("url", urls);
+    if (error) throw error;
+
+    // Free the stored files too. Best effort: the listing is already
+    // correct once the rows are gone.
+    const marker = "/object/public/equipment-photos/";
+    const paths = urls
+      .filter((url) => url.includes(marker))
+      .map((url) => decodeURIComponent(url.split(marker)[1]));
+    if (paths.length) {
+      const { error: storageError } = await supabase.storage.from("equipment-photos").remove(paths);
+      if (storageError) console.warn("Could not remove photo files:", storageError.message);
+    }
   },
 
   async uploadPhoto(equipmentId, fileOrBlob, filename = `photo-${Date.now()}.jpg`) {
@@ -66,6 +94,7 @@ export const equipmentService = {
       .from("equipment")
       .select("*, equipment_photos(url, sort_order)")
       .eq("owner_id", ownerId)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data;

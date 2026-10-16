@@ -6,6 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import PhotoUpload from "../components/PhotoUpload";
 import LocationSelect from "../components/LocationSelect";
 import Sidebar from "../components/Sidebar";
+import { LISTING_LIMITS, validateListing, maxAvailabilityDate } from "../utils/listingRules";
 
 const CONDITIONS = ["New", "Excellent", "Good", "Fair"];
 
@@ -36,44 +37,9 @@ export default function PostListing() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.category || !form.priceDay || !form.pickup.trim()) {
-      setFormError("Please fill in the equipment name, category, daily price, and pickup location.");
-      return;
-    }
-    if (!form.description.trim() || form.description.trim().length < 20) {
-      setFormError("Please add a description of at least 20 characters.");
-      return;
-    }
-    if (!form.province || !form.district) {
-      setFormError("Please select the province and district for this listing.");
-      return;
-    }
-    const priceDay = Number(form.priceDay);
-    if (!priceDay || priceDay < 1) {
-      setFormError("Daily price must be at least K1.");
-      return;
-    }
-    if (priceDay > 100000) {
-      setFormError("Daily price cannot exceed K100,000.");
-      return;
-    }
-    if (form.priceWeek) {
-      const priceWeek = Number(form.priceWeek);
-      if (priceWeek < 1 || priceWeek > 500000) {
-        setFormError("Weekly price must be between K1 and K500,000.");
-        return;
-      }
-    }
-    if (form.availFrom && form.availFrom < today) {
-      setFormError("Available from date can't be in the past.");
-      return;
-    }
-    if (form.availUntil && form.availUntil < today) {
-      setFormError("Available until date can't be in the past.");
-      return;
-    }
-    if (form.availFrom && form.availUntil && form.availUntil < form.availFrom) {
-      setFormError("Available until date can't be before the available from date.");
+    const problem = validateListing(form, { today, photoCount: photos.length });
+    if (problem) {
+      setFormError(problem);
       return;
     }
     setFormError("");
@@ -90,16 +56,16 @@ export default function PostListing() {
       }
       const created = await equipmentService.create({
         owner_id: user.id,
-        name: form.name,
+        name: form.name.trim(),
         category: form.category,
         condition: form.condition || "Good",
-        description: form.description,
-        price_day: Number(form.priceDay) || 0,
+        description: form.description.trim(),
+        price_day: Number(form.priceDay),
         price_week: form.priceWeek ? Number(form.priceWeek) : null,
         province: form.province,
         district: form.district,
         location: `${form.district}, ${form.province}`,
-        pickup_address: form.pickup,
+        pickup_address: form.pickup.trim(),
         available_from: form.availFrom || null,
         available_until: form.availUntil || null,
       });
@@ -138,7 +104,7 @@ export default function PostListing() {
                   <label className="block text-[13px] font-medium text-ink mb-2">Equipment name</label>
                   <input value={form.name} onChange={update("name")}
                     onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)}
-                    className={inputCls("name")}
+                    className={inputCls("name")} maxLength={LISTING_LIMITS.nameMax}
                     placeholder="e.g. John Deere 5075E Tractor" required />
                 </div>
 
@@ -168,14 +134,14 @@ export default function PostListing() {
                   <div className="relative">
                     <textarea value={form.description} onChange={update("description")}
                       onFocus={() => setFocusedField("description")} onBlur={() => setFocusedField(null)}
-                      maxLength={1000} rows={5}
+                      maxLength={LISTING_LIMITS.descriptionMax} rows={5}
                       placeholder="Describe your equipment — age, brand, features, any important notes for renters…"
                       className={`w-full px-3 py-2.5 text-sm text-ink rounded-lg outline-none resize-y min-h-[120px] ${
                         focusedField === "description" ? "border border-orange" : "border border-border/50"
                       }`}
                     />
                     <span className="absolute bottom-2 right-2.5 text-[11px] text-ink-muted">
-                      {form.description.length} / 1000
+                      {form.description.length} / {LISTING_LIMITS.descriptionMax}
                     </span>
                   </div>
                 </div>
@@ -189,8 +155,11 @@ export default function PostListing() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted">K</span>
                     <input type="number" value={form.priceDay} onChange={update("priceDay")}
                       onFocus={() => setFocusedField("priceDay")} onBlur={() => setFocusedField(null)}
-                      className={`${inputCls("priceDay")} pl-7`} min="1" max="100000" required />
+                      className={`${inputCls("priceDay")} pl-7`} min={LISTING_LIMITS.priceDayMin} max={LISTING_LIMITS.priceDayMax} step="1" required />
                   </div>
+                  <p className="text-xs text-ink-muted mt-1">
+                    Between K{LISTING_LIMITS.priceDayMin.toLocaleString()} and K{LISTING_LIMITS.priceDayMax.toLocaleString()}.
+                  </p>
                 </div>
                 <div className="max-w-[50%]">
                   <label className="block text-[13px] font-medium text-ink mb-2">Price per week (optional)</label>
@@ -198,9 +167,13 @@ export default function PostListing() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted">K</span>
                     <input type="number" value={form.priceWeek} onChange={update("priceWeek")}
                       onFocus={() => setFocusedField("priceWeek")} onBlur={() => setFocusedField(null)}
-                      className={`${inputCls("priceWeek")} pl-7`} min="1" max="500000" />
+                      className={`${inputCls("priceWeek")} pl-7`} step="1"
+                      min={Number(form.priceDay) || LISTING_LIMITS.priceDayMin}
+                      max={(Number(form.priceDay) || LISTING_LIMITS.priceDayMax) * LISTING_LIMITS.weekMaxDays} />
                   </div>
-                  <p className="text-xs text-ink-muted mt-1">Leave blank if you only rent daily.</p>
+                  <p className="text-xs text-ink-muted mt-1">
+                    Leave blank if you only rent daily. Must be between one day's and {LISTING_LIMITS.weekMaxDays} days' price.
+                  </p>
                 </div>
               </div>
 
@@ -219,7 +192,7 @@ export default function PostListing() {
                   <label className="block text-[13px] font-medium text-ink mb-2">Pickup location</label>
                   <input value={form.pickup} onChange={update("pickup")}
                     onFocus={() => setFocusedField("pickup")} onBlur={() => setFocusedField(null)}
-                    className={inputCls("pickup")}
+                    className={inputCls("pickup")} maxLength={LISTING_LIMITS.pickupMax}
                     placeholder="e.g. Chilanga Road near Total filling station" required />
                   <p className="text-xs text-ink-muted mt-1">Be specific so renters know where to collect.</p>
                 </div>
@@ -229,14 +202,14 @@ export default function PostListing() {
               <div className="flex items-end gap-3">
                 <div className="flex-1">
                   <label className="block text-[13px] font-medium text-ink mb-2">Available from</label>
-                  <input type="date" value={form.availFrom} min={today} onChange={update("availFrom")}
+                  <input type="date" value={form.availFrom} min={today} max={maxAvailabilityDate(today)} onChange={update("availFrom")}
                     onFocus={() => setFocusedField("availFrom")} onBlur={() => setFocusedField(null)}
                     className={inputCls("availFrom")} />
                 </div>
                 <span className="text-sm text-ink-muted pb-3">to</span>
                 <div className="flex-1">
                   <label className="block text-[13px] font-medium text-ink mb-2">Available until</label>
-                  <input type="date" value={form.availUntil} min={form.availFrom || today} onChange={update("availUntil")}
+                  <input type="date" value={form.availUntil} min={form.availFrom || today} max={maxAvailabilityDate(today)} onChange={update("availUntil")}
                     onFocus={() => setFocusedField("availUntil")} onBlur={() => setFocusedField(null)}
                     className={inputCls("availUntil")} />
                 </div>
@@ -244,7 +217,7 @@ export default function PostListing() {
               <p className="text-xs text-ink-muted mt-1">You can update availability at any time from your listings.</p>
 
               <div className={`${sectionLabel} mt-8`}>Photos</div>
-              <PhotoUpload photos={photos} onChange={setPhotos} maxPhotos={10} />
+              <PhotoUpload photos={photos} onChange={setPhotos} />
             </div>
 
             {formError && (

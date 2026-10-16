@@ -6,6 +6,8 @@ import { equipmentService } from "../services/equipmentService";
 import PhotoUpload from "../components/PhotoUpload";
 import LocationSelect from "../components/LocationSelect";
 import Sidebar from "../components/Sidebar";
+import { LISTING_LIMITS, validateListing, maxAvailabilityDate } from "../utils/listingRules";
+import { friendlyError } from "../utils/friendlyError";
 
 const CONDITIONS = ["New", "Excellent", "Good", "Fair"];
 
@@ -17,6 +19,7 @@ export default function EditListing() {
   const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState(null);
   const [photos, setPhotos] = useState([]);
+  const [originalPhotos, setOriginalPhotos] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
   const [showDelete, setShowDelete] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -43,6 +46,7 @@ export default function EditListing() {
           .slice().sort((a, b) => a.sort_order - b.sort_order)
           .map((p) => p.url);
         setPhotos(existingPhotos);
+        setOriginalPhotos(existingPhotos);
       })
       .catch(() => setLoadError("Could not load this listing."));
   }, [id]);
@@ -53,6 +57,14 @@ export default function EditListing() {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
+  function priceBounds(field) {
+    if (field === "priceDay") {
+      return { min: LISTING_LIMITS.priceDayMin, max: LISTING_LIMITS.priceDayMax };
+    }
+    const day = Number(form.priceDay) || LISTING_LIMITS.priceDayMin;
+    return { min: day, max: day * LISTING_LIMITS.weekMaxDays };
+  }
+
   function inputCls(field) {
     return `w-full h-11 px-3 text-sm text-ink rounded-lg outline-none bg-white ${
       focusedField === field ? "border border-orange" : "border border-border/50"
@@ -61,59 +73,30 @@ export default function EditListing() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.name.trim() || !form.category || !form.priceDay || !form.pickup.trim()) {
-      setFormError("Please fill in the equipment name, category, daily price, and pickup location.");
-      return;
-    }
-    if (!form.province || !form.district) {
-      setFormError("Please select the province and district for this listing.");
-      return;
-    }
-    const priceDay = Number(form.priceDay);
-    if (!priceDay || priceDay < 1) {
-      setFormError("Daily price must be at least K1.");
-      return;
-    }
-    if (priceDay > 100000) {
-      setFormError("Daily price cannot exceed K100,000.");
-      return;
-    }
-    if (form.priceWeek) {
-      const priceWeek = Number(form.priceWeek);
-      if (priceWeek < 1 || priceWeek > 500000) {
-        setFormError("Weekly price must be between K1 and K500,000.");
-        return;
-      }
-    }
-    if (form.availFrom && form.availFrom < today) {
-      setFormError("Available from date can't be in the past.");
-      return;
-    }
-    if (form.availUntil && form.availUntil < today) {
-      setFormError("Available until date can't be in the past.");
-      return;
-    }
-    if (form.availFrom && form.availUntil && form.availUntil < form.availFrom) {
-      setFormError("Available until date can't be before the available from date.");
+    const problem = validateListing(form, { today, photoCount: photos.length });
+    if (problem) {
+      setFormError(problem);
       return;
     }
     setFormError("");
     setSubmitting(true);
     try {
       await equipmentService.update(eq.id, {
-        name: form.name,
+        name: form.name.trim(),
         category: form.category,
         condition: form.condition,
-        description: form.description,
-        price_day: Number(form.priceDay) || 0,
+        description: form.description.trim(),
+        price_day: Number(form.priceDay),
         price_week: form.priceWeek ? Number(form.priceWeek) : null,
         province: form.province,
         district: form.district,
         location: `${form.district}, ${form.province}`,
-        pickup_address: form.pickup,
+        pickup_address: form.pickup.trim(),
         available_from: form.availFrom || null,
         available_until: form.availUntil || null,
       });
+      const removedPhotos = originalPhotos.filter((url) => !photos.includes(url));
+      if (removedPhotos.length) await equipmentService.removePhotos(eq.id, removedPhotos);
       const newPhotos = photos.filter((p) => p.startsWith("data:"));
       for (let i = 0; i < newPhotos.length; i++) {
         const res = await fetch(newPhotos[i]);
@@ -133,8 +116,9 @@ export default function EditListing() {
     try {
       await equipmentService.remove(eq.id);
       navigate("/my-listings");
-    } catch {
-      setFormError("Something went wrong deleting this listing. Please try again.");
+    } catch (err) {
+      setFormError(friendlyError(err, "Something went wrong deleting this listing. Please try again."));
+      setShowDelete(false);
       setSubmitting(false);
     }
   }
@@ -175,7 +159,7 @@ export default function EditListing() {
                   <label className="block text-[13px] font-medium text-ink mb-2">Equipment name</label>
                   <input value={form.name} onChange={update("name")}
                     onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)}
-                    className={inputCls("name")} required />
+                    className={inputCls("name")} maxLength={LISTING_LIMITS.nameMax} required />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -202,12 +186,12 @@ export default function EditListing() {
                   <div className="relative">
                     <textarea value={form.description} onChange={update("description")}
                       onFocus={() => setFocusedField("description")} onBlur={() => setFocusedField(null)}
-                      maxLength={1000} rows={5}
+                      maxLength={LISTING_LIMITS.descriptionMax} rows={5}
                       className={`w-full px-3 py-2.5 text-sm text-ink rounded-lg outline-none resize-y min-h-[120px] ${
                         focusedField === "description" ? "border border-orange" : "border border-border/50"
                       }`} />
                     <span className="absolute bottom-2 right-2.5 text-[11px] text-ink-muted">
-                      {form.description.length} / 1000
+                      {form.description.length} / {LISTING_LIMITS.descriptionMax}
                     </span>
                   </div>
                 </div>
@@ -223,12 +207,16 @@ export default function EditListing() {
                       <input type="number" value={form[field]} onChange={update(field)}
                         onFocus={() => setFocusedField(field)} onBlur={() => setFocusedField(null)}
                         className={`${inputCls(field)} pl-7`}
-                        min="1" max={field === "priceDay" ? "100000" : "500000"}
+                        step="1" {...priceBounds(field)}
                         required={field === "priceDay"} />
                     </div>
                   </div>
                 ))}
               </div>
+              <p className="text-xs text-ink-muted mt-1">
+                Daily price between K{LISTING_LIMITS.priceDayMin.toLocaleString()} and K{LISTING_LIMITS.priceDayMax.toLocaleString()}.
+                Weekly price (optional) between one day's and {LISTING_LIMITS.weekMaxDays} days' price.
+              </p>
 
               <div className={`${sectionLabel} mt-8`}>Location</div>
               <div className="flex flex-col gap-6">
@@ -245,7 +233,7 @@ export default function EditListing() {
                   <label className="block text-[13px] font-medium text-ink mb-2">Pickup location</label>
                   <input value={form.pickup} onChange={update("pickup")}
                     onFocus={() => setFocusedField("pickup")} onBlur={() => setFocusedField(null)}
-                    className={inputCls("pickup")}
+                    className={inputCls("pickup")} maxLength={LISTING_LIMITS.pickupMax}
                     placeholder="e.g. Chilanga Road near Total filling station" required />
                   <p className="text-xs text-ink-muted mt-1">Be specific so renters know where to collect.</p>
                 </div>
@@ -255,14 +243,14 @@ export default function EditListing() {
               <div className="flex items-end gap-3">
                 <div className="flex-1">
                   <label className="block text-[13px] font-medium text-ink mb-2">Available from</label>
-                  <input type="date" value={form.availFrom} min={today} onChange={update("availFrom")}
+                  <input type="date" value={form.availFrom} min={today} max={maxAvailabilityDate(today)} onChange={update("availFrom")}
                     onFocus={() => setFocusedField("availFrom")} onBlur={() => setFocusedField(null)}
                     className={inputCls("availFrom")} />
                 </div>
                 <span className="text-sm text-ink-muted pb-3">to</span>
                 <div className="flex-1">
                   <label className="block text-[13px] font-medium text-ink mb-2">Available until</label>
-                  <input type="date" value={form.availUntil} min={form.availFrom || today} onChange={update("availUntil")}
+                  <input type="date" value={form.availUntil} min={form.availFrom || today} max={maxAvailabilityDate(today)} onChange={update("availUntil")}
                     onFocus={() => setFocusedField("availUntil")} onBlur={() => setFocusedField(null)}
                     className={inputCls("availUntil")} />
                 </div>
@@ -270,7 +258,7 @@ export default function EditListing() {
               <p className="text-xs text-ink-muted mt-1">You can update availability at any time from your listings.</p>
 
               <div className={`${sectionLabel} mt-8`}>Photos</div>
-              <PhotoUpload photos={photos} onChange={setPhotos} maxPhotos={10} />
+              <PhotoUpload photos={photos} onChange={setPhotos} />
             </div>
 
             {showDelete && (
@@ -280,7 +268,9 @@ export default function EditListing() {
                   <div>
                     <div className="text-[15px] font-medium text-red">Are you sure?</div>
                     <div className="text-[13px] text-red mt-0.5">
-                      This will permanently delete this listing and cannot be undone.
+                      Any pending booking requests will be declined and the renters notified.
+                      This cannot be undone. If the listing has a confirmed booking that is
+                      current or upcoming, it can't be deleted — mark it unavailable instead.
                     </div>
                   </div>
                 </div>

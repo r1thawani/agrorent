@@ -5,6 +5,8 @@ import { equipmentService } from "../services/equipmentService";
 import { bookingService } from "../services/bookingService";
 import { useAuth } from "../hooks/useAuth";
 import Sidebar from "../components/Sidebar";
+import { ownerEarning } from "../utils/earnings";
+import { friendlyError } from "../utils/friendlyError";
 
 export default function MyListings() {
   const { user } = useAuth();
@@ -14,6 +16,7 @@ export default function MyListings() {
 
   useEffect(() => {
     if (!user) return;
+    const today = new Date().toISOString().split("T")[0];
     Promise.all([
       equipmentService.getMine(user.id),
       bookingService.getRequestsForOwner(user.id),
@@ -23,7 +26,8 @@ export default function MyListings() {
           const eqBookings = bookings.filter((b) => b.equipment_id === eq.id);
           const earnings = eqBookings
             .filter((b) => b.status === "confirmed" || b.status === "completed")
-            .reduce((sum, b) => sum + Number(b.total_price), 0);
+            .reduce((sum, b) => sum + ownerEarning(b), 0);
+          const blockingBooking = eqBookings.find((b) => b.status === "confirmed" && b.end_date >= today);
           const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
           return {
             ...eq,
@@ -31,6 +35,8 @@ export default function MyListings() {
             listed: eq.created_at ? new Date(eq.created_at).toLocaleDateString() : "",
             isAvailable: eq.is_available,
             bookingsCount: eqBookings.length,
+            pendingCount: eqBookings.filter((b) => b.status === "pending").length,
+            blockingBooking,
             earnings,
           };
         });
@@ -112,7 +118,7 @@ function ListingRow({ eq, onToggle, onDelete }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  const hasBookings = eq.bookingsCount > 0;
+  const isBlocked = Boolean(eq.blockingBooking);
 
   async function handleDelete() {
     if (deleting) return;
@@ -120,8 +126,8 @@ function ListingRow({ eq, onToggle, onDelete }) {
     setDeleteError("");
     try {
       await onDelete();
-    } catch {
-      setDeleteError("Could not delete — this listing has booking history and cannot be removed.");
+    } catch (err) {
+      setDeleteError(friendlyError(err, "Could not delete this listing. Please try again."));
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -160,7 +166,13 @@ function ListingRow({ eq, onToggle, onDelete }) {
         </div>
 
         {confirmDelete ? (
-          <div className="flex gap-1.5 shrink-0">
+          <div className="flex flex-col gap-1.5 shrink-0 max-w-[180px]">
+            {eq.pendingCount > 0 && (
+              <p className="text-[11px] text-ink-muted">
+                {eq.pendingCount} pending request{eq.pendingCount === 1 ? "" : "s"} will be declined.
+              </p>
+            )}
+            <div className="flex gap-1.5">
             <button onClick={handleDelete} disabled={deleting}
               className="px-3 py-1.5 text-xs font-medium text-white bg-red rounded-lg border-none cursor-pointer disabled:opacity-60">
               {deleting ? "Deleting…" : "Confirm"}
@@ -169,6 +181,7 @@ function ListingRow({ eq, onToggle, onDelete }) {
               className="px-3 py-1.5 text-xs text-ink-muted bg-white border border-border rounded-lg cursor-pointer">
               Cancel
             </button>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col gap-1.5 shrink-0">
@@ -180,9 +193,9 @@ function ListingRow({ eq, onToggle, onDelete }) {
               className="px-3 py-1.5 text-[13px] text-ink-muted bg-white border border-border rounded-lg cursor-pointer hover:bg-page transition-colors">
               {eq.isAvailable ? "Mark unavailable" : "Mark available"}
             </button>
-            {hasBookings ? (
+            {isBlocked ? (
               <div
-                title="This listing has rental history and cannot be permanently deleted. Mark it unavailable to hide it from renters."
+                title="This listing has a confirmed booking that is current or upcoming. Mark it unavailable to stop new requests."
                 className="px-3 py-1.5 text-[13px] text-ink-muted bg-page border border-border rounded-lg text-center cursor-not-allowed opacity-50 select-none">
                 Delete
               </div>
@@ -196,9 +209,10 @@ function ListingRow({ eq, onToggle, onDelete }) {
         )}
       </div>
 
-      {hasBookings && (
+      {isBlocked && (
         <p className="text-[11px] text-ink-muted pl-[92px]">
-          This listing has rental history and cannot be permanently deleted. Mark it as unavailable to hide it from renters.
+          Can't be deleted while it has a confirmed booking (until {new Date(eq.blockingBooking.end_date).toLocaleDateString()}).
+          Mark it unavailable to stop new requests.
         </p>
       )}
 

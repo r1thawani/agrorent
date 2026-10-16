@@ -130,6 +130,7 @@ export default function Conversation() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                maxLength={1000}
                 placeholder="Type a message..."
                 className="flex-1 h-10 px-3 text-sm text-ink border border-border rounded-lg outline-none"
               />

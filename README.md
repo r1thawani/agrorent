@@ -48,6 +48,32 @@ VITE_SUPABASE_ANON_KEY=<your-project's-anon-key>
 
 Then run `schema.sql` (SQL Editor in the Supabase dashboard) to create the tables, RLS policies, and seed data. Its own header comments explain the order — the `auth.users` rows for the seed people need to exist first.
 
+After that, run the files in `migrations/` in order (same SQL Editor). Each is safe to re-run:
+
+- `001_profiles_bio.sql` — per-user bio
+- `002_listing_rules_deletion_and_emails.sql` — listing price/text/photo limits, the `delete_listing()` rules, blocking bookings on unavailable listings, nightly marking of finished bookings as `completed` (uses `pg_cron`), and the column the message emails use
+
+### Emails (help requests and new-message alerts)
+
+The `api/` folder holds two Vercel serverless functions that send email through the AgroRent Gmail account:
+
+- `POST /api/help` — the Contact / "Need help?" form; the request lands in the AgroRent inbox with Reply-To set to the person who asked
+- `POST /api/notify-message` — called after a message is sent; emails the recipient who it's from plus a short glimpse, never the full text. A sender triggers at most one email until the recipient reads the conversation
+
+Set these in Vercel → Project → Settings → Environment Variables (Production and Preview):
+
+```
+GMAIL_USER=<the AgroRent Gmail address>
+GMAIL_APP_PASSWORD=<a Google App password for that account>
+SUPABASE_SERVICE_ROLE_KEY=<Supabase → Project Settings → API → service_role key; keep secret>
+# optional
+SUPPORT_INBOX=<where help requests go; defaults to GMAIL_USER>
+APP_URL=<site address for links in emails; defaults to the deployment's own address>
+VITE_SUPPORT_EMAIL=<address shown on the Contact page; hidden if unset>
+```
+
+`npm run dev` only serves the frontend, so the forms can't reach `/api` locally; use `npx vercel dev` for that, or test on a Vercel preview deployment.
+
 ## Project structure
 
 ```

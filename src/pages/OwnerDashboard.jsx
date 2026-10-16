@@ -8,6 +8,7 @@ import { bookingService } from "../services/bookingService";
 import { messageService } from "../services/messageService";
 import { useAuth } from "../hooks/useAuth";
 import Avatar from "../components/Avatar";
+import { summarizeEarnings } from "../utils/earnings";
 
 export default function OwnerDashboard() {
   const { user } = useAuth();
@@ -47,14 +48,8 @@ export default function OwnerDashboard() {
 
   const pendingRequests = bookings.filter((b) => b.status === "pending");
   const confirmedBookings = bookings.filter((b) => b.status === "confirmed");
-  const earningsThisMonth = bookings
-    .filter((b) => {
-      if (b.status !== "confirmed" && b.status !== "completed") return false;
-      const d = new Date(b.created_at);
-      const now = new Date();
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    })
-    .reduce((sum, b) => sum + Number(b.total_price), 0);
+  const today = new Date().toISOString().split("T")[0];
+  const earningsThisMonth = summarizeEarnings(bookings, today, [today.slice(0, 7)]).thisMonth;
 
   return (
     <div className="min-h-screen bg-page pt-14">

@@ -1,5 +1,6 @@
 // FILE: agrorent/src/services/messageService.js
 import { supabase } from "../lib/supabaseClient";
+import { emailService } from "./emailService";
 
 export const messageService = {
   // Returns one row per conversation the user is part of (as renter or
@@ -133,6 +134,7 @@ export const messageService = {
       .select()
       .single();
     if (error) throw error;
+    emailService.notifyNewMessage(data.id);
     return data;
   },
 };

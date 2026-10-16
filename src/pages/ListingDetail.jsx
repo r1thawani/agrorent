@@ -5,6 +5,7 @@ import { equipmentService } from "../services/equipmentService";
 import { bookingService } from "../services/bookingService";
 import { reviewService } from "../services/reviewService";
 import { messageService } from "../services/messageService";
+import { calculateBooking } from "../utils/calculateBooking";
 import StarRating from "../components/StarRating";
 import ReviewCard from "../components/ReviewCard";
 import { useWishlist } from "../context/WishlistContext";
@@ -121,9 +122,8 @@ export default function ListingDetail() {
   const days = startDate && endDate
     ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000))
     : 0;
-  const subtotal = days * eq.price_day;
-  const downpayment = Math.round(subtotal * 0.25);
-  const remaining = subtotal - downpayment;
+  const { subtotal, fee, downPayment: downpayment, balance: remaining } = calculateBooking(eq.price_day, days);
+  const canBook = eq.is_available !== false && !eq.deleted_at;
 
   const listedDate = eq.created_at
     ? new Date(eq.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })
@@ -275,12 +275,18 @@ export default function ListingDetail() {
               {days > 0 && (
                 <div className="mt-3 bg-page rounded-lg p-3 text-[13px] text-ink flex flex-col gap-1">
                   <div>{days} days × K{eq.price_day.toLocaleString()} = K{subtotal.toLocaleString()}</div>
+                  <div className="text-xs text-ink-muted">Service fee: K{fee.toLocaleString()}</div>
                   <div>Down payment due now: <strong>K{downpayment.toLocaleString()}</strong></div>
                   <div className="text-xs text-ink-muted">Remaining balance at pickup: K{remaining.toLocaleString()}</div>
                 </div>
               )}
 
-              {!isOwnEquipment && (
+              {!isOwnEquipment && !canBook && (
+                <div className="mt-4 bg-page rounded-lg px-3 py-2.5 text-[13px] text-ink-muted text-center">
+                  {eq.deleted_at ? "This listing has been removed by the owner." : "This equipment is not available for booking right now."}
+                </div>
+              )}
+              {!isOwnEquipment && canBook && (
                 <Link to={`/listings/${eq.id}/book`}
                   className="block w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium text-center leading-[48px] no-underline mt-4">
                   Book Now
