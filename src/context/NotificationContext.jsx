@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../hooks/useAuth";
+import { emailService } from "../services/emailService";
 
 const NotificationContext = createContext(null);
 
@@ -66,6 +67,9 @@ export function NotificationProvider({ children }) {
           setNotifications((prev) => [{ ...payload.new, time: formatTime(payload.new.created_at) }, ...prev]);
           setLastEventAt(Date.now());
           refreshBadges();
+          // Something happened that may have queued emails (e.g. a deposit
+          // deadline passing); ask the server to send them now.
+          emailService.flushQueue();
         }
       )
       .subscribe();
