@@ -1,45 +1,35 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { bookingService } from "../services/bookingService";
 import { useAuth } from "../hooks/useAuth";
+import { useNow } from "../hooks/useNow";
+import { useNotifications } from "../context/NotificationContext";
 import { formatDateRange } from "../utils/formatDate";
+import { friendlyError } from "../utils/friendlyError";
+import { describeStatus, effectiveStatus, timeLeft, TONE_CLASSES } from "../utils/bookingStatus";
 
+// Tabs group bookings by what the renter needs to do.
 const TABS = [
   { key: "all", label: "All" },
-  { key: "pending", label: "Pending" },
-  { key: "confirmed", label: "Confirmed" },
-  { key: "completed", label: "Completed" },
-  { key: "cancelled", label: "Cancelled" },
+  { key: "pay", label: "To pay", statuses: ["accepted"] },
+  { key: "requested", label: "Requested", statuses: ["pending"] },
+  { key: "confirmed", label: "Confirmed", statuses: ["confirmed"] },
+  { key: "completed", label: "Completed", statuses: ["completed"] },
+  { key: "closed", label: "Cancelled / declined", statuses: ["cancelled", "declined", "expired"] },
 ];
 
-const STATUS_CLASSES = {
-  confirmed: "bg-green-tint text-green-dark",
-  pending:   "bg-orange-tint text-orange-dark",
-  completed: "bg-page text-ink-muted",
-  cancelled: "bg-red-tint text-red",
-  declined:  "bg-red-tint text-red",
-};
-
-const STATUS_LABELS = {
-  confirmed: "Confirmed", pending: "Pending", completed: "Completed",
-  cancelled: "Cancelled", declined: "Declined",
-};
-
-function StatusBadge({ status }) {
-  return (
-    <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full ${STATUS_CLASSES[status] || STATUS_CLASSES.pending}`}>
-      {STATUS_LABELS[status] || "Pending"}
-    </span>
-  );
-}
-
-function BookingRow({ booking, onCancel }) {
+function BookingRow({ booking, now, onCancel }) {
   const photos = (booking.equipment?.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
   const image = photos[0]?.url || "";
+  const status = effectiveStatus(booking, now);
+  const { label, tone, note } = describeStatus(booking, "renter", now);
+  const canCancel = ["pending", "accepted", "confirmed"].includes(status);
 
   return (
-    <div className="bg-white rounded-xl p-4 flex items-center gap-4 border border-border/50">
+    <div className={`bg-white rounded-xl p-4 flex flex-wrap sm:flex-nowrap items-center gap-4 border ${
+      status === "accepted" ? "border-orange" : "border-border/50"
+    }`}>
       <img src={image} alt={booking.equipment?.name}
         className="w-[72px] h-[60px] rounded-lg object-cover shrink-0" />
       <div className="flex-1 min-w-0">
@@ -47,28 +37,34 @@ function BookingRow({ booking, onCancel }) {
         <div className="text-[13px] text-ink-muted my-0.5 mb-2">
           {formatDateRange(booking.start_date, booking.end_date)}
         </div>
-        <StatusBadge status={booking.status} />
+        <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full ${TONE_CLASSES[tone]}`}>
+          {label}
+        </span>
+        {note && <div className="text-xs text-ink-muted mt-1.5">{note}</div>}
       </div>
-      <div className="text-[15px] font-medium text-orange shrink-0">
-        K{Number(booking.total_price).toLocaleString()}
+      <div className="text-right shrink-0">
+        <div className="text-[15px] font-medium text-orange">K{Number(booking.total_price).toLocaleString()}</div>
+        <div className="text-[11px] text-ink-muted">deposit K{Number(booking.down_payment).toLocaleString()}</div>
       </div>
       <div className="flex flex-col items-end gap-1.5 shrink-0">
+        {status === "accepted" && (
+          <Link to={`/booking/${booking.id}/pay`}
+            className="text-[13px] px-3 py-1.5 rounded-lg bg-orange text-white font-medium no-underline text-center">
+            Pay deposit · {timeLeft(booking.payment_due_at, now)}
+          </Link>
+        )}
         <Link to={`/listings/${booking.equipment_id}`} className="text-[13px] text-green no-underline">
-          View details
+          View listing
         </Link>
-        {(booking.status === "pending" || booking.status === "confirmed") && (
-          <button
-            onClick={() => onCancel(booking.id)}
-            className="text-[13px] text-red bg-transparent border-none p-0 cursor-pointer"
-          >
-            Cancel booking
+        {canCancel && (
+          <button onClick={() => onCancel(booking.id)}
+            className="text-[13px] text-red bg-transparent border-none p-0 cursor-pointer">
+            {status === "pending" ? "Withdraw request" : "Cancel booking"}
           </button>
         )}
-        {booking.status === "completed" && (
-          <Link
-            to={`/review/${booking.id}`}
-            className="text-xs px-3 py-[5px] rounded-lg border-[1.5px] border-orange text-orange font-medium no-underline"
-          >
+        {status === "completed" && (
+          <Link to={`/review/${booking.id}`}
+            className="text-xs px-3 py-[5px] rounded-lg border-[1.5px] border-orange text-orange font-medium no-underline">
             Leave a review
           </Link>
         )}
@@ -79,27 +75,44 @@ function BookingRow({ booking, onCancel }) {
 
 export default function MyBookings() {
   const { user } = useAuth();
+  const location = useLocation();
+  const now = useNow(1000);
+  const { refreshBadges, lastEventAt } = useNotifications();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const flash = location.state?.flash;
 
+  // Reload when a booking notification arrives (e.g. the owner accepts).
   useEffect(() => {
     if (!user) return;
     bookingService.getMyBookings(user.id)
       .then(setBookings)
       .catch(() => setLoadError("Could not load your bookings."))
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [user, lastEventAt]);
 
   async function handleCancel(id) {
+    if (!window.confirm("Cancel this booking?")) return;
+    setActionError("");
     const original = bookings.find((b) => b.id === id);
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
-    try { await bookingService.cancel(id); }
-    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: original?.status ?? "pending" } : b))); }
+    try {
+      await bookingService.cancel(id);
+      refreshBadges();
+    } catch (err) {
+      setBookings((prev) => prev.map((b) => (b.id === id ? original : b)));
+      setActionError(friendlyError(err, "Could not cancel this booking."));
+    }
   }
 
-  const filtered = activeTab === "all" ? bookings : bookings.filter((b) => b.status === activeTab);
+  const tab = TABS.find((t) => t.key === activeTab);
+  const filtered = tab.statuses
+    ? bookings.filter((b) => tab.statuses.includes(effectiveStatus(b, now)))
+    : bookings;
+  const toPay = bookings.filter((b) => effectiveStatus(b, now) === "accepted").length;
 
   return (
     <div className="min-h-screen bg-page pt-14">
@@ -109,18 +122,30 @@ export default function MyBookings() {
         <div className="flex-1 min-w-0">
           <h1 className="text-[26px] font-medium text-ink mb-5">My bookings</h1>
 
+          {flash && (
+            <div className="bg-green-tint text-green-dark text-sm rounded-lg px-4 py-3 mb-4">{flash}</div>
+          )}
+          {actionError && (
+            <div className="bg-red-tint text-red text-sm rounded-lg px-4 py-3 mb-4">{actionError}</div>
+          )}
+
           <div className="flex gap-6 border-b border-border mb-5 overflow-x-auto">
-            {TABS.map((tab) => (
+            {TABS.map((t) => (
               <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
                 className={`text-sm pb-3 bg-transparent cursor-pointer border-none border-b-2 whitespace-nowrap ${
-                  activeTab === tab.key
+                  activeTab === t.key
                     ? "border-orange text-orange font-medium"
                     : "border-transparent text-ink-muted font-normal"
                 }`}
               >
-                {tab.label}
+                {t.label}
+                {t.key === "pay" && toPay > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red text-white text-[10px] font-medium">
+                    {toPay}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -131,16 +156,14 @@ export default function MyBookings() {
           {!loading && !loadError && filtered.length === 0 && (
             <div className="bg-white rounded-xl p-10 text-center border border-border/50">
               <div className="text-[32px] mb-2">📋</div>
-              <div className="text-sm text-ink-muted">
-                No {activeTab === "all" ? "" : STATUS_LABELS[activeTab]?.toLowerCase() + " "}bookings
-              </div>
+              <div className="text-sm text-ink-muted">Nothing here yet</div>
             </div>
           )}
 
           {!loading && !loadError && filtered.length > 0 && (
             <div className="flex flex-col gap-2.5">
               {filtered.map((b) => (
-                <BookingRow key={b.id} booking={b} onCancel={handleCancel} />
+                <BookingRow key={b.id} booking={b} now={now} onCancel={handleCancel} />
               ))}
             </div>
           )}

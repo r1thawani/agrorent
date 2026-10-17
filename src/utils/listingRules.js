@@ -10,7 +10,7 @@ export const LISTING_LIMITS = {
   pickupMin: 5,
   pickupMax: 150,
   priceDayMin: 50,
-  priceDayMax: 50000,
+  priceDayMax: 5000,
   // A weekly rate only makes sense between one day's and seven days' price.
   weekMaxDays: 7,
   maxPhotos: 8,

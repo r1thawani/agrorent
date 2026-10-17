@@ -27,7 +27,7 @@ export default function EquipmentCard({
         <img
           src={image}
           alt={name}
-          className={`w-full h-full object-cover ${unavailableUntil ? "opacity-60" : "opacity-100"}`}
+          className="w-full h-full object-cover"
         />
         <button
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm"
@@ -44,8 +44,8 @@ export default function EquipmentCard({
           </span>
         </button>
         {unavailableUntil && (
-          <span className="absolute top-2 left-2 text-xs px-2.5 py-1 rounded-full font-medium bg-red-tint text-red">
-            Unavailable
+          <span className="absolute top-2 left-2 text-xs px-2.5 py-1 rounded-full font-medium bg-orange-tint text-orange-dark">
+            Booked today
           </span>
         )}
       </div>
@@ -68,8 +68,8 @@ export default function EquipmentCard({
         </div>
 
         {unavailableUntil ? (
-          <div className="text-[12px] mt-1 text-red">
-            Unavailable until {new Date(unavailableUntil).toLocaleDateString()}
+          <div className="text-[12px] mt-1 text-orange-dark">
+            Booked until {new Date(unavailableUntil).toLocaleDateString()} · other dates open
           </div>
         ) : (
           <div className="flex items-center gap-1 mt-1">

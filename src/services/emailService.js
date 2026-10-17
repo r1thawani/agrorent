@@ -23,6 +23,12 @@ export const emailService = {
     return post("/api/help", { name, email, message, website, page: window.location.pathname });
   },
 
+  // Asks the server to send queued booking emails now (the database also
+  // asks every minute). Fire-and-forget.
+  flushQueue() {
+    post("/api/send-emails", {}).catch((err) => console.warn("Email flush failed:", err.message));
+  },
+
   // Fire-and-forget: a failed notification email must never make sending
   // the message itself look like it failed.
   notifyNewMessage(messageId) {

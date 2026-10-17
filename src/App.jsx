@@ -19,6 +19,7 @@ import EditListing from "./pages/EditListing";
 import MyListings from "./pages/MyListings";
 import BookingPage from "./pages/BookingPage";
 import BookingConfirmation from "./pages/BookingConfirmation";
+import PayDeposit from "./pages/PayDeposit";
 import MyBookings from "./pages/MyBookings";
 import BookingRequests from "./pages/BookingRequests";
 import LeaveReview from "./pages/LeaveReview";
@@ -70,6 +71,7 @@ function Layout() {
               since every account can both rent and list. */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/listings/:id/book" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
+          <Route path="/booking/:id/pay" element={<ProtectedRoute><PayDeposit /></ProtectedRoute>} />
           <Route path="/booking/:id/confirmation" element={<ProtectedRoute><BookingConfirmation /></ProtectedRoute>} />
           <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
           <Route path="/review/:bookingId" element={<ProtectedRoute><LeaveReview /></ProtectedRoute>} />

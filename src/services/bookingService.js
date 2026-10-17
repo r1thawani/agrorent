@@ -1,9 +1,18 @@
 // FILE: agrorent/src/services/bookingService.js
 import { supabase } from "../lib/supabaseClient";
-import { calculateBooking } from "../utils/calculateBooking";
+import { emailService } from "./emailService";
+import { rangesOverlap } from "../utils/bookingStatus";
 
-function rangesOverlap(startA, endA, startB, endB) {
-  return startA <= endB && startB <= endA;
+// Booking flow (see migrations/003_request_then_pay.sql):
+//   pending -> accepted (owner) -> confirmed (renter pays deposit in time)
+//   accepted -> expired (time to pay ran out)
+// Status changes go through database functions, which also write the
+// notifications and queue the emails; we then ask the server to send them.
+async function rpc(name, params) {
+  const { data, error } = await supabase.rpc(name, params);
+  if (error) throw error;
+  emailService.flushQueue();
+  return data;
 }
 
 export const bookingService = {
@@ -30,16 +39,16 @@ export const bookingService = {
   async getById(id) {
     const { data, error } = await supabase
       .from("bookings")
-      .select("*, equipment(name, price_day, equipment_photos(url, sort_order))")
+      .select("*, equipment(name, price_day, pickup_address, equipment_photos(url, sort_order)), owner:profiles!bookings_owner_id_fkey(name, photo_url)")
       .eq("id", id)
       .single();
     if (error) throw error;
     return data;
   },
 
-  // Every pending or confirmed booking for a piece of equipment — used both
-  // to show taken dates on the booking page and to block overlapping bookings.
-  // Uses a security-definer RPC so RLS doesn't hide other renters' bookings.
+  // Upcoming paid (confirmed) bookings for a piece of equipment: the dates
+  // that are actually taken. Requests don't hold dates. Uses a
+  // security-definer RPC so RLS doesn't hide other renters' bookings.
   async getForEquipment(equipmentId) {
     const { data, error } = await supabase
       .rpc("get_equipment_booking_dates", { p_equipment_id: equipmentId });
@@ -52,70 +61,48 @@ export const bookingService = {
     return data;
   },
 
-  // Maps equipment_id -> end_date for equipment that's CURRENTLY booked
-  // (a confirmed booking whose date range includes today). Used to show
-  // "Unavailable until <date>" on the browse grid without a per-card fetch.
+  // Maps equipment_id -> end_date for equipment out on a paid booking
+  // today. Used for the "Booked until" note on the browse grid.
   async getCurrentlyBookedMap() {
-    const today = new Date().toISOString().split("T")[0];
-    const { data, error } = await supabase
-      .from("bookings")
-      .select("equipment_id, end_date")
-      .eq("status", "confirmed")
-      .lte("start_date", today)
-      .gte("end_date", today);
-    if (error) throw error;
-    const map = {};
-    data.forEach((b) => {
-      map[b.equipment_id] = b.end_date;
-    });
-    return map;
+    const { data, error } = await supabase.rpc("get_currently_booked");
+    if (error) {
+      console.warn("get_currently_booked RPC unavailable:", error.message);
+      return {};
+    }
+    return Object.fromEntries(data.map((b) => [b.equipment_id, b.end_date]));
   },
 
-  async create({ equipmentId, renterId, ownerId, priceDay, startDate, endDate, totalDays }) {
+  // Sends a booking request. No payment yet; the database checks the dates
+  // and works out the price itself.
+  async create({ equipmentId, renterId, startDate, endDate }) {
     const existing = await this.getForEquipment(equipmentId);
-    const overlap = existing.some((b) => rangesOverlap(startDate, endDate, b.start_date, b.end_date));
-    if (overlap) {
+    if (existing.some((b) => rangesOverlap(startDate, endDate, b.start_date, b.end_date))) {
       throw new Error("This equipment is already booked for part of your selected dates. Please choose different dates.");
     }
-
-    const calc = calculateBooking(priceDay, totalDays);
     const { data, error } = await supabase
       .from("bookings")
-      .insert({
-        equipment_id: equipmentId,
-        renter_id: renterId,
-        owner_id: ownerId,
-        start_date: startDate,
-        end_date: endDate,
-        total_days: totalDays,
-        price_day_snapshot: priceDay,
-        subtotal: calc.subtotal,
-        service_fee: calc.fee,
-        total_price: calc.total,
-        down_payment: calc.downPayment,
-        balance_due: calc.total - calc.downPayment,
-      })
+      .insert({ equipment_id: equipmentId, renter_id: renterId, start_date: startDate, end_date: endDate })
       .select()
       .single();
     if (error) throw error;
+    emailService.flushQueue();
     return data;
   },
 
-  async cancel(id) {
-    const { data, error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id).select().single();
-    if (error) throw error;
-    return data;
+  accept(id) {
+    return rpc("accept_booking", { p_booking_id: id });
   },
 
-  async accept(id) {
-    const { data, error } = await supabase.from("bookings").update({ status: "confirmed" }).eq("id", id).select().single();
-    if (error) throw error;
-    return data;
+  decline(id) {
+    return rpc("decline_booking", { p_booking_id: id });
   },
 
-  async decline(id) {
-    const { data, error } = await supabase.from("bookings").update({ status: "declined" }).eq("id", id).select().single();
-    if (error) throw error;
-    return data;
+  cancel(id) {
+    return rpc("cancel_booking", { p_booking_id: id });
+  },
+
+  // Returns "confirmed", or "expired" if the time to pay had run out.
+  payDeposit(id, method) {
+    return rpc("pay_deposit", { p_booking_id: id, p_method: method });
   },
 };

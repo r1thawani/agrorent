@@ -1,10 +1,17 @@
 import { Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import NotificationItem from "../components/Notification";
 import { useNotifications } from "../context/NotificationContext";
 
 export default function Notifications() {
   const { notifications, loading, loadError, markAsRead, markAllAsRead } = useNotifications();
+  const navigate = useNavigate();
+
+  function open(n) {
+    markAsRead(n.id);
+    if (n.link) navigate(n.link);
+  }
 
   return (
     <div className="bg-page min-h-screen pt-14">
@@ -46,7 +53,7 @@ export default function Notifications() {
           {!loading && !loadError && notifications.length > 0 && (
             <div className="flex flex-col gap-2">
               {notifications.map((n) => (
-                <NotificationItem key={n.id} notification={n} onClick={() => markAsRead(n.id)} />
+                <NotificationItem key={n.id} notification={n} onClick={() => open(n)} />
               ))}
             </div>
           )}

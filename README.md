@@ -52,12 +52,31 @@ After that, run the files in `migrations/` in order (same SQL Editor). Each is s
 
 - `001_profiles_bio.sql` — per-user bio
 - `002_listing_rules_deletion_and_emails.sql` — listing price/text/photo limits, the `delete_listing()` rules, blocking bookings on unavailable listings, nightly marking of finished bookings as `completed` (uses `pg_cron`), and the column the message emails use
+- `003_request_then_pay.sql` — the request → accept → pay-deposit booking flow (see below), booking emails, badge counts, live notifications, K5,000/day price cap
+
+### Booking flow
+
+1. **Request** — the renter picks dates and sends a request. No payment, and the dates aren't held: several renters can ask for the same dates.
+2. **Accept** — the owner accepts one. The renter then has `payment_grace_minutes` (in the `app_config` table) to pay the 25% deposit. Until then the owner can't accept another request for overlapping dates.
+3. **Pay** — once the deposit is paid the booking is confirmed, the dates are taken, and every other request for those dates is declined automatically.
+4. **Expiry** — if the deposit isn't paid in time, a job that runs every minute declines it for the owner / cancels it for the renter.
+
+Every status change writes an in-app notification and queues an email in `email_outbox`; `POST /api/send-emails` sends the queue. The app calls it right after each action, and the every-minute job calls it too (so expiry emails go out when nobody has the site open). For that, set in the `app_config` table:
+
+```sql
+update app_config set value = 'https://<your-site>/api/send-emails' where key = 'email_flush_url';
+-- only if that URL is a protected Vercel preview (Settings -> Deployment Protection -> Protection Bypass for Automation):
+update app_config set value = '<bypass secret>' where key = 'vercel_bypass_secret';
+-- before going live, give renters a realistic time to pay (minutes; 1440 = 24 hours):
+update app_config set value = '1440' where key = 'payment_grace_minutes';
+```
 
 ### Emails (help requests and new-message alerts)
 
-The `api/` folder holds two Vercel serverless functions that send email through the AgroRent Gmail account:
+The `api/` folder holds Vercel serverless functions that send email through the AgroRent Gmail account:
 
 - `POST /api/help` — the Contact / "Need help?" form; the request lands in the AgroRent inbox with Reply-To set to the person who asked
+- `POST /api/send-emails` — sends queued booking emails (new request, accepted, declined, deposit paid, payment deadline missed, cancelled)
 - `POST /api/notify-message` — called after a message is sent; emails the recipient who it's from plus a short glimpse, never the full text. A sender triggers at most one email until the recipient reads the conversation
 
 Set these in Vercel → Project → Settings → Environment Variables (Production and Preview):

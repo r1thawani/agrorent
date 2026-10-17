@@ -3,10 +3,24 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, HelpCircle } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import Avatar from "./Avatar";
+import { useNotifications } from "../context/NotificationContext";
+
+function AttentionDot({ count }) {
+  if (!count) return null;
+  return (
+    <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-orange border-2 border-green-dark"
+      title={`${count} thing${count === 1 ? "" : "s"} need your attention`} />
+  );
+}
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const { badges } = useNotifications();
+  // Things waiting on this user: requests to answer, deposits to pay, unread messages/notifications.
+  const pending = isAuthenticated
+    ? badges.booking_requests + badges.my_bookings + badges.messages + badges.notifications
+    : 0;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   function handleLogout() {
@@ -52,7 +66,10 @@ export default function Navbar() {
                 to={user.role === "admin" ? "/admin" : "/dashboard"}
                 className="flex items-center gap-2 text-white text-sm no-underline"
               >
-                <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
+                <span className="relative">
+                  <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
+                  <AttentionDot count={pending} />
+                </span>
                 {user.name}
               </Link>
               <button
@@ -82,9 +99,10 @@ export default function Navbar() {
           onClick={() => setMobileOpen((open) => !open)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
-          className="md:hidden text-white p-1 bg-transparent border-none cursor-pointer"
+          className="md:hidden relative text-white p-1 bg-transparent border-none cursor-pointer"
         >
           {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+          {!mobileOpen && <AttentionDot count={pending} />}
         </button>
       </div>
 
@@ -114,7 +132,10 @@ export default function Navbar() {
                 onClick={closeMobileMenu}
                 className="flex items-center gap-2 text-white text-sm no-underline"
               >
-                <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
+                <span className="relative">
+                  <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
+                  <AttentionDot count={pending} />
+                </span>
                 {user.name}
               </Link>
               <button

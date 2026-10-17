@@ -16,6 +16,24 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { useNotifications } from "../context/NotificationContext";
+
+// Which badge count (from my_badge_counts) shows next to which menu item.
+const BADGE_FOR = {
+  "/my-bookings": "my_bookings",
+  "/booking-requests": "booking_requests",
+  "/messages": "messages",
+  "/notifications": "notifications",
+};
+
+export function CountBadge({ count, className = "" }) {
+  if (!count) return null;
+  return (
+    <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red text-white text-[10px] font-medium leading-none ${className}`}>
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
 const LINKS = [
   { label: "Overview", path: "/dashboard", icon: LayoutDashboard },
@@ -31,6 +49,7 @@ const LINKS = [
 
 export default function Sidebar({ activeLink, userName, userPhoto }) {
   const { user } = useAuth();
+  const { badges } = useNotifications();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -40,6 +59,7 @@ export default function Sidebar({ activeLink, userName, userPhoto }) {
 
   const activeLink_ = LINKS.find((l) => l.path === currentPath);
   const ActiveIcon = activeLink_?.icon || LayoutDashboard;
+  const totalBadges = Object.values(BADGE_FOR).reduce((sum, key) => sum + (badges[key] || 0), 0);
 
   function close() { setMobileOpen(false); }
 
@@ -61,6 +81,7 @@ export default function Sidebar({ activeLink, userName, userPhoto }) {
             </div>
           </div>
         </div>
+        {!mobileOpen && <CountBadge count={totalBadges} className="ml-auto mr-2" />}
         {mobileOpen ? <ChevronUp size={18} className="text-ink-muted" /> : <ChevronDown size={18} className="text-ink-muted" />}
       </button>
 
@@ -90,6 +111,7 @@ export default function Sidebar({ activeLink, userName, userPhoto }) {
               >
                 <Icon size={16} />
                 {link.label}
+                <CountBadge count={badges[BADGE_FOR[link.path]]} className="ml-auto" />
               </Link>
             );
           })}

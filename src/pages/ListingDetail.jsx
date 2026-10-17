@@ -166,8 +166,8 @@ export default function ListingDetail() {
                   {eq.condition} condition
                 </span>
                 {activeBooking && (
-                  <span className="text-[11px] font-medium px-2.5 py-[3px] rounded-full bg-red-tint text-red">
-                    Unavailable
+                  <span className="text-[11px] font-medium px-2.5 py-[3px] rounded-full bg-orange-tint text-orange-dark">
+                    Booked today
                   </span>
                 )}
               </div>
@@ -276,7 +276,7 @@ export default function ListingDetail() {
                 <div className="mt-3 bg-page rounded-lg p-3 text-[13px] text-ink flex flex-col gap-1">
                   <div>{days} days × K{eq.price_day.toLocaleString()} = K{subtotal.toLocaleString()}</div>
                   <div className="text-xs text-ink-muted">Service fee: K{fee.toLocaleString()}</div>
-                  <div>Down payment due now: <strong>K{downpayment.toLocaleString()}</strong></div>
+                  <div>Deposit after the owner accepts: <strong>K{downpayment.toLocaleString()}</strong></div>
                   <div className="text-xs text-ink-muted">Remaining balance at pickup: K{remaining.toLocaleString()}</div>
                 </div>
               )}
@@ -289,15 +289,15 @@ export default function ListingDetail() {
               {!isOwnEquipment && canBook && (
                 <Link to={`/listings/${eq.id}/book`}
                   className="block w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium text-center leading-[48px] no-underline mt-4">
-                  Book Now
+                  Request to book
                 </Link>
               )}
               {activeBooking && (
                 <div className="mt-2 bg-red-tint rounded-lg px-3 py-2.5 text-[12px] text-red text-center">
-                  Booked until {new Date(activeBooking.end_date).toLocaleDateString()} — select dates after that
+                  Booked until {new Date(activeBooking.end_date).toLocaleDateString()}. You can still request other dates.
                 </div>
               )}
-              <p className="text-center text-xs text-ink-muted mt-2">You won't be charged yet</p>
+              <p className="text-center text-xs text-ink-muted mt-2">No payment until the owner accepts</p>
 
               <div className="border-t border-border my-4" />
 

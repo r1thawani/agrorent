@@ -35,7 +35,7 @@ export default function MyListings() {
             listed: eq.created_at ? new Date(eq.created_at).toLocaleDateString() : "",
             isAvailable: eq.is_available,
             bookingsCount: eqBookings.length,
-            pendingCount: eqBookings.filter((b) => b.status === "pending").length,
+            pendingCount: eqBookings.filter((b) => b.status === "pending" || b.status === "accepted").length,
             blockingBooking,
             earnings,
           };

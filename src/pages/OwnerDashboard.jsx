@@ -34,18 +34,6 @@ export default function OwnerDashboard() {
       .finally(() => setLoading(false));
   }, [user]);
 
-  async function accept(id) {
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "confirmed" } : b)));
-    try { await bookingService.accept(id); }
-    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b))); }
-  }
-
-  async function decline(id) {
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "declined" } : b)));
-    try { await bookingService.decline(id); }
-    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b))); }
-  }
-
   const pendingRequests = bookings.filter((b) => b.status === "pending");
   const confirmedBookings = bookings.filter((b) => b.status === "confirmed");
   const today = new Date().toISOString().split("T")[0];
@@ -90,14 +78,10 @@ export default function OwnerDashboard() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2 shrink-0">
-                        <button onClick={() => accept(r.id)}
-                          className="px-[18px] py-2 text-[13px] font-medium text-white bg-green rounded-lg border-none cursor-pointer">
-                          Accept
-                        </button>
-                        <button onClick={() => decline(r.id)}
-                          className="px-[18px] py-2 text-[13px] font-medium text-ink-muted bg-transparent border border-border-muted rounded-lg cursor-pointer">
-                          Decline
-                        </button>
+                        <Link to="/booking-requests"
+                          className="px-[18px] py-2 text-[13px] font-medium text-white bg-green rounded-lg no-underline text-center">
+                          Review
+                        </Link>
                         <Link to="/messages"
                           className="text-xs text-center text-green no-underline">
                           Message renter
@@ -121,7 +105,7 @@ export default function OwnerDashboard() {
             ) : (
               <div className="flex flex-col gap-2.5">
                 {confirmedBookings.map((b) => (
-                  <BookingCard key={b.id} booking={b} linkTo="/booking-requests" />
+                  <BookingCard key={b.id} booking={b} linkTo="/booking-requests" role="owner" />
                 ))}
               </div>
             )}

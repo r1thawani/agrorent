@@ -7,10 +7,12 @@ import MessageBubble from "../components/MessageBubble";
 import { messageService } from "../services/messageService";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../hooks/useAuth";
+import { useNotifications } from "../context/NotificationContext";
 
 export default function Conversation() {
   const { id } = useParams();
   const { user } = useAuth();
+  const { refreshBadges } = useNotifications();
   const [conv, setConv] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [input, setInput] = useState("");
@@ -21,10 +23,10 @@ export default function Conversation() {
     messageService.getConversation(id, user.id)
       .then((data) => {
         setConv(data);
-        messageService.markMessagesRead(id, user.id).catch(() => {});
+        messageService.markMessagesRead(id, user.id).then(refreshBadges, () => {});
       })
       .catch(() => setLoadError("Conversation not found."));
-  }, [id, user]);
+  }, [id, user, refreshBadges]);
 
   // Real-time: append messages sent by the other person
   useEffect(() => {
@@ -51,11 +53,11 @@ export default function Conversation() {
             }],
           };
         });
-        messageService.markMessagesRead(id, user.id).catch(() => {});
+        messageService.markMessagesRead(id, user.id).then(refreshBadges, () => {});
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
-  }, [id, user]);
+  }, [id, user, refreshBadges]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
