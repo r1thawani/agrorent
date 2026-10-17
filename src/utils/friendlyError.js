@@ -8,7 +8,7 @@ function messageOf(err) {
   return String(err?.message ?? err ?? "");
 }
 
-function isRateLimitError(err) {
+export function isRateLimitError(err) {
   return (
     err?.status === 429 ||
     err?.code === "over_request_rate_limit" ||

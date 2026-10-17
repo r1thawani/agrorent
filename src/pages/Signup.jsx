@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Sparkles } from "lucide-react";
 import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
-import { friendlyError } from "../utils/friendlyError";
+import { friendlyError, isRateLimitError } from "../utils/friendlyError";
+import { useCooldown } from "../hooks/useCooldown";
 
 const PHONE_REGEX = /^\+260\d{9}$/;
 
@@ -43,6 +44,10 @@ function generateStrongPassword() {
 export default function Signup() {
   const [form, setForm] = useState({ name: "", email: "", phone: "+260", dob: "", password: "", confirm: "", province: "", district: "" });
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { secondsLeft, start: startCooldown } = useCooldown();
+  const blocked = submitting || secondsLeft > 0;
+  const inFlight = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
   const [suggested, setSuggested] = useState(false);
   const navigate = useNavigate();
@@ -63,6 +68,9 @@ export default function Signup() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    // Each extra click would send another confirmation email and count toward
+    // Supabase's email and sign-up limits.
+    if (blocked || inFlight.current) return;
 
     if (!PHONE_REGEX.test(form.phone)) {
       setError("Please enter your phone number in the format +260XXXXXXXXX.");
@@ -81,11 +89,17 @@ export default function Signup() {
     if (form.password !== form.confirm) { setError("Passwords do not match."); return; }
     if (!form.province || !form.district) { setError("Please select your province and district."); return; }
     setError("");
+    inFlight.current = true;
+    setSubmitting(true);
     try {
       await signup({ name: form.name, email: form.email, password: form.password });
       navigate("/check-email", { state: { email: form.email } });
     } catch (err) {
       setError(friendlyError(err, "Signup failed. Please try again."));
+      if (isRateLimitError(err)) startCooldown(30);
+    } finally {
+      inFlight.current = false;
+      setSubmitting(false);
     }
   }
 
@@ -204,9 +218,12 @@ export default function Signup() {
 
           <button
             type="submit"
-            className="w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium border-none cursor-pointer mt-3"
+            disabled={blocked}
+            className={`w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium border-none mt-3 ${
+              blocked ? "opacity-70 cursor-default" : "cursor-pointer"
+            }`}
           >
-            Create Account
+            {submitting ? "Creating account…" : secondsLeft > 0 ? `Please wait ${secondsLeft}s` : "Create Account"}
           </button>
         </form>
 
