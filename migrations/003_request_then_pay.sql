@@ -45,7 +45,7 @@ create table if not exists app_config (
 alter table app_config enable row level security;
 
 insert into app_config (key, value) values
-  ('payment_grace_minutes', '2'),   -- TESTING. Raise before going live (e.g. 1440 = 24h).
+  ('payment_grace_minutes', '1440'), -- minutes renters get to pay; use e.g. 2 while testing
   ('email_flush_url', ''),          -- e.g. https://agrorent-nine.vercel.app/api/send-emails
   ('vercel_bypass_secret', '')      -- only needed while testing on a protected preview URL
 on conflict (key) do nothing;

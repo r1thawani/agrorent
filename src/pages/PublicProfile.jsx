@@ -19,7 +19,7 @@ export default function PublicProfile() {
     async function load() {
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, name, photo_url, bio, created_at") // email is private (migrations/004)
         .eq("id", id)
         .single();
 

@@ -10,9 +10,17 @@ export const AuthContext = createContext(null);
 // retries instead of failing the whole login on the first slow response.
 const RETRY_DELAYS_MS = [800, 2000];
 
-async function loadProfile(userId) {
+async function loadProfile() {
   for (let attempt = 0; ; attempt++) {
-    const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    // my_profile() returns the signed-in user's own row in full; other
+    // people's emails are hidden (migrations/004_private_emails.sql).
+    // Until that migration has run the function doesn't exist yet, so fall
+    // back to reading the row directly.
+    let { data, error } = await supabase.rpc("my_profile").single();
+    if (error?.code === "PGRST202") {
+      const { data: { user } } = await supabase.auth.getUser();
+      ({ data, error } = await supabase.from("profiles").select("*").eq("id", user?.id).single());
+    }
     if (!error) return data;
     if (!isBusyError(error) || attempt >= RETRY_DELAYS_MS.length) throw error;
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
@@ -86,7 +94,7 @@ export function AuthProvider({ children }) {
         return;
       }
       try {
-        const profile = await loadProfile(session.user.id);
+        const profile = await loadProfile();
         if (active) applyUser(profile);
       } catch (err) {
         console.error("Could not load profile:", err);
@@ -135,7 +143,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     const { data: { session } } = await supabase.auth.getSession();
-    const profile = await loadProfile(session.user.id);
+    const profile = await loadProfile();
     applyUser(profile);
     return profile;
   }
