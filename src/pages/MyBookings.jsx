@@ -68,6 +68,11 @@ function BookingRow({ booking, now, onCancel, contact }) {
             Pay deposit · {timeLeft(booking.payment_due_at, now)}
           </Link>
         )}
+        {(status === "confirmed" || status === "completed") && (
+          <Link to={`/booking/${booking.id}/confirmation`} className="text-[13px] text-green font-medium no-underline">
+            Booking details
+          </Link>
+        )}
         <Link to={`/listings/${booking.equipment_id}`} className="text-[13px] text-green no-underline">
           View listing
         </Link>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Send } from "lucide-react";
 import { equipmentService } from "../services/equipmentService";
 import { bookingService } from "../services/bookingService";
@@ -12,6 +12,8 @@ import { formatDateRange } from "../utils/formatDate";
 
 export default function BookingPage() {
   const { id } = useParams();
+  // Dates already picked on the listing page arrive as ?start=…&end=…
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -33,8 +35,11 @@ export default function BookingPage() {
       .then((data) => {
         setEq(data);
         const defaultFrom = data.available_from && data.available_from > today ? data.available_from : today;
-        setStartDate(defaultFrom);
-        setEndDate(""); // user chooses their own rental duration
+        const pickedStart = searchParams.get("start") || "";
+        const pickedEnd = searchParams.get("end") || "";
+        const validPick = pickedStart >= defaultFrom && pickedEnd > pickedStart;
+        setStartDate(validPick ? pickedStart : defaultFrom);
+        setEndDate(validPick ? pickedEnd : ""); // otherwise the renter picks their own end date
       })
       .catch(() => setLoadError("Could not load this listing."));
     bookingService.getForEquipment(id).then(setBookedRanges).catch(() => setBookedRanges([]));

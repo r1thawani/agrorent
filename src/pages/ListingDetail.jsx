@@ -287,7 +287,7 @@ export default function ListingDetail() {
                 </div>
               )}
               {!isOwnEquipment && canBook && (
-                <Link to={`/listings/${eq.id}/book`}
+                <Link to={`/listings/${eq.id}/book${startDate && endDate ? `?start=${startDate}&end=${endDate}` : ""}`}
                   className="block w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium text-center leading-[48px] no-underline mt-4">
                   Request to book
                 </Link>
