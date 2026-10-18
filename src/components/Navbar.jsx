@@ -13,6 +13,12 @@ function AttentionDot({ count }) {
   );
 }
 
+// Logged-out buttons, so Log In reads as a button next to Sign Up.
+const LOGIN_BTN =
+  "inline-flex items-center justify-center bg-transparent hover:bg-white/10 transition-colors text-white font-medium rounded-lg border border-white/50 no-underline";
+const SIGNUP_BTN =
+  "inline-flex items-center justify-center bg-orange hover:bg-orange-dark transition-colors text-white font-medium rounded-lg border border-orange no-underline";
+
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
@@ -81,29 +87,40 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" className="text-white text-sm no-underline">
-                Login
+              <Link to="/login" className={`${LOGIN_BTN} h-9 px-4 text-[13px]`}>
+                Log In
               </Link>
-              <Link
-                to="/signup"
-                className="bg-orange text-white text-[13px] font-medium px-4 py-2 rounded-lg no-underline"
-              >
+              <Link to="/signup" className={`${SIGNUP_BTN} h-9 px-4 text-[13px]`}>
                 Sign Up
               </Link>
             </>
           )}
         </div>
 
-        {/* Hamburger — mobile only */}
-        <button
-          onClick={() => setMobileOpen((open) => !open)}
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-          aria-expanded={mobileOpen}
-          className="md:hidden relative text-white p-1 bg-transparent border-none cursor-pointer"
-        >
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-          {!mobileOpen && <AttentionDot count={pending} />}
-        </button>
+        {/* Mobile — Log In / Sign Up stay visible without opening the menu */}
+        <div className="md:hidden flex items-center gap-2">
+          {!isAuthenticated && (
+            <>
+              <Link to="/login" onClick={closeMobileMenu} className={`${LOGIN_BTN} h-8 px-3 text-[13px]`}>
+                Log In
+              </Link>
+              <Link to="/signup" onClick={closeMobileMenu} className={`${SIGNUP_BTN} h-8 px-3 text-[13px]`}>
+                Sign Up
+              </Link>
+            </>
+          )}
+
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={() => setMobileOpen((open) => !open)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            className="md:hidden relative text-white p-1 bg-transparent border-none cursor-pointer"
+          >
+            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+            {!mobileOpen && <AttentionDot count={pending} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile dropdown panel */}
@@ -123,10 +140,9 @@ export default function Navbar() {
             <HelpCircle size={16} /> Need help?
           </Link>
 
-          <div className="border-t border-white/10" />
-
-          {isAuthenticated ? (
+          {isAuthenticated && (
             <>
+              <div className="border-t border-white/10" />
               <Link
                 to={user.role === "admin" ? "/admin" : "/dashboard"}
                 onClick={closeMobileMenu}
@@ -144,19 +160,6 @@ export default function Navbar() {
               >
                 Log Out
               </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" onClick={closeMobileMenu} className="text-white text-sm no-underline">
-                Login
-              </Link>
-              <Link
-                to="/signup"
-                onClick={closeMobileMenu}
-                className="bg-orange text-white text-[13px] font-medium px-4 py-2 rounded-lg no-underline text-center"
-              >
-                Sign Up
-              </Link>
             </>
           )}
         </div>
