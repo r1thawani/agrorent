@@ -4,6 +4,7 @@ import { ArrowLeft, Send } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Avatar from "../components/Avatar";
 import MessageBubble from "../components/MessageBubble";
+import SuggestedQuestions from "../components/SuggestedQuestions";
 import { messageService } from "../services/messageService";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../hooks/useAuth";
@@ -17,6 +18,14 @@ export default function Conversation() {
   const [loadError, setLoadError] = useState("");
   const [input, setInput] = useState("");
   const bottomRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // A tapped suggestion goes into the box (after anything already typed)
+  // so the renter can change it before sending.
+  function addSuggestion(question) {
+    setInput((current) => (current.trim() ? `${current.trim()} ${question}` : question).slice(0, 1000));
+    inputRef.current?.focus();
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -126,9 +135,15 @@ export default function Conversation() {
               <div ref={bottomRef} />
             </div>
 
+            {conv.isRenter && (
+              <SuggestedQuestions category={conv.category} onPick={addSuggestion}
+                defaultOpen={conv.messages.length === 0} />
+            )}
+
             <form onSubmit={sendMessage}
               className="h-16 border-t border-border px-4 flex items-center gap-3 shrink-0 bg-white">
               <input
+                ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

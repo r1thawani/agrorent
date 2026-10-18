@@ -64,7 +64,7 @@ export default function Sidebar({ activeLink, userName, userPhoto }) {
   function close() { setMobileOpen(false); }
 
   return (
-    <aside className="w-full lg:w-[240px] shrink-0 bg-white rounded-xl border border-border/50 sticky top-20 self-start h-fit">
+    <aside className="w-full lg:w-[240px] shrink-0 bg-white rounded-xl border border-border/50 lg:sticky lg:top-20 self-start h-fit">
 
       {/* Mobile: collapsed header row with toggle */}
       <button
