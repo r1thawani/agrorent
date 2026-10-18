@@ -54,6 +54,7 @@ After that, run the files in `migrations/` in order (same SQL Editor). Each is s
 - `002_listing_rules_deletion_and_emails.sql` — listing price/text/photo limits, the `delete_listing()` rules, blocking bookings on unavailable listings, nightly marking of finished bookings as `completed` (uses `pg_cron`), and the column the message emails use
 - `003_request_then_pay.sql` — the request → accept → pay-deposit booking flow (see below), booking emails, badge counts, live notifications, K5,000/day price cap
 - `004_private_emails.sql` — hides email addresses from other users (you see your own via `my_profile()`, admins via `admin_list_profiles()`); adds `equipment.flagged` and `disputes.resolution_notes`
+- `005_profile_contact_details.sql` — saves phone, province/district and date of birth on profiles. Location is public; phone is private except to the other person on a booking whose deposit is paid (`my_booking_contacts()`); date of birth is private
 
 Setting up a brand-new project? `schema.sql` alone builds everything (it carries every migration in its last section), so you don't need to run the migrations separately.
 
@@ -116,7 +117,7 @@ This started as a mock-data class prototype and now runs on a real Supabase back
 
 - **Mobile-first CSS migration in progress.** Most of the UI is still the original desktop-only inline styles; Navbar, Home, and EquipmentCard have been converted to Tailwind so far (see the `@theme` tokens in `src/index.css`).
 - **Test coverage is just starting.** `npm test` currently covers the pure calculation/formatting/mapping helpers; the Supabase-backed services and pages don't have automated tests yet.
-- **Known gaps**: payments are recorded but not connected to a real mobile-money provider, phone numbers on profiles aren't saved yet, and there's no refund rule for a renter who cancels after paying.
+- **Known gaps**: payments are recorded but not connected to a real mobile-money provider, and there's no refund rule for a renter who cancels after paying.
 
 The previous mock-data layer (`src/data/mockData.js`'s equipment/bookings/messages arrays) is no longer used by any page and is a cleanup candidate; a few of its still-relevant static lists (categories, provinces/districts) remain in use.
 

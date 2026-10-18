@@ -5,15 +5,16 @@ import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
 import Avatar from "../components/Avatar";
+import { formatPhoneInput, isValidPhone } from "../utils/phone";
 
 export default function EditProfile() {
   const navigate = useNavigate();
   const { user, updateProfile, logout } = useAuth();
   const [form, setForm] = useState({
     name: user?.name || "",
-    phone: "",
-    province: "Lusaka Province",
-    district: "Lusaka",
+    phone: user?.phone || "+260",
+    province: user?.province || "",
+    district: user?.district || "",
   });
   const [bio, setBio] = useState(user?.bio || "");
   const [focusedField, setFocusedField] = useState(null);
@@ -39,7 +40,18 @@ export default function EditProfile() {
       setSaveError("Name cannot be empty.");
       return;
     }
+    // "+260" alone means the field was left empty.
+    const phone = form.phone === "+260" ? null : form.phone;
+    if (phone && !isValidPhone(phone)) {
+      setSaveError("Please enter your phone number in the format +260XXXXXXXXX.");
+      return;
+    }
     try {
+      const details = {};
+      if (phone !== (user.phone || null)) details.phone = phone;
+      if (form.province !== (user.province || "")) details.province = form.province || null;
+      if (form.district !== (user.district || "")) details.district = form.district || null;
+      if (Object.keys(details).length) await updateProfile(details);
       // Saved separately so a name edit still works even if the bio column
       // hasn't been added to the database yet.
       if (form.name.trim() !== user.name) {
@@ -137,10 +149,13 @@ export default function EditProfile() {
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-ink mb-2">Phone Number</label>
-                <input type="tel" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                <input type="tel" value={form.phone} placeholder="+260XXXXXXXXX"
+                  onChange={(e) => setForm((f) => ({ ...f, phone: formatPhoneInput(e.target.value) }))}
                   onFocus={() => setFocusedField("phone")} onBlur={() => setFocusedField(null)}
                   className={inputCls("phone")} />
-                <p className="text-[11px] text-ink-faint mt-1">Not saved yet — coming soon.</p>
+                <p className="text-[11px] text-ink-muted mt-1">
+                  Private. Only shared with the other person on a booking once the deposit is paid, so you can arrange pickup.
+                </p>
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-ink mb-2">Location</label>
@@ -149,9 +164,8 @@ export default function EditProfile() {
                   district={form.district}
                   onProvinceChange={(v) => setForm((f) => ({ ...f, province: v }))}
                   onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
-                  required
                 />
-                <p className="text-[11px] text-ink-faint mt-1">Not saved yet — coming soon.</p>
+                <p className="text-[11px] text-ink-muted mt-1">Shown on your public profile.</p>
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-ink mb-2">Short bio</label>

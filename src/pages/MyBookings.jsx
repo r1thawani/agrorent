@@ -19,7 +19,21 @@ const TABS = [
   { key: "closed", label: "Cancelled / declined", statuses: ["cancelled", "declined", "expired"] },
 ];
 
-function BookingRow({ booking, now, onCancel }) {
+function ContactLine({ contact, who }) {
+  if (!contact) return null;
+  return (
+    <div className="text-xs text-ink mt-1.5">
+      {who}: {contact.name}
+      {contact.phone ? (
+        <> · <a href={`tel:${contact.phone}`} className="text-green no-underline select-all">{contact.phone}</a></>
+      ) : (
+        <span className="text-ink-muted"> · no phone number added yet, use Messages</span>
+      )}
+    </div>
+  );
+}
+
+function BookingRow({ booking, now, onCancel, contact }) {
   const photos = (booking.equipment?.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
   const image = photos[0]?.url || "";
   const status = effectiveStatus(booking, now);
@@ -41,6 +55,7 @@ function BookingRow({ booking, now, onCancel }) {
           {label}
         </span>
         {note && <div className="text-xs text-ink-muted mt-1.5">{note}</div>}
+        <ContactLine contact={contact} who="Owner" />
       </div>
       <div className="text-right shrink-0">
         <div className="text-[15px] font-medium text-orange">K{Number(booking.total_price).toLocaleString()}</div>
@@ -79,6 +94,7 @@ export default function MyBookings() {
   const now = useNow(1000);
   const { refreshBadges, lastEventAt } = useNotifications();
   const [bookings, setBookings] = useState([]);
+  const [contacts, setContacts] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -88,6 +104,7 @@ export default function MyBookings() {
   // Reload when a booking notification arrives (e.g. the owner accepts).
   useEffect(() => {
     if (!user) return;
+    bookingService.getContacts().then(setContacts);
     bookingService.getMyBookings(user.id)
       .then(setBookings)
       .catch(() => setLoadError("Could not load your bookings."))
@@ -163,7 +180,7 @@ export default function MyBookings() {
           {!loading && !loadError && filtered.length > 0 && (
             <div className="flex flex-col gap-2.5">
               {filtered.map((b) => (
-                <BookingRow key={b.id} booking={b} now={now} onCancel={handleCancel} />
+                <BookingRow key={b.id} booking={b} now={now} onCancel={handleCancel} contact={contacts[b.id]} />
               ))}
             </div>
           )}

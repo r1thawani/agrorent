@@ -17,7 +17,7 @@ const TABS = [
   { key: "closed", label: "Declined / cancelled", statuses: ["declined", "expired", "cancelled"] },
 ];
 
-function RequestRow({ request, allBookings, now, busy, onAccept, onDecline }) {
+function RequestRow({ request, allBookings, now, busy, onAccept, onDecline, contact }) {
   const status = effectiveStatus(request, now);
   const { label, tone, note } = describeStatus(request, "owner", now);
   const blocker = status === "pending" ? acceptBlocker(request, allBookings, now) : "";
@@ -46,6 +46,14 @@ function RequestRow({ request, allBookings, now, busy, onAccept, onDecline }) {
         )}
         {note && status !== "accepted" && <div className="text-xs text-ink-muted mt-1">{note}</div>}
         {blocker && <div className="text-xs text-ink-muted mt-1">{blocker}</div>}
+        {contact && (
+          <div className="text-xs text-ink mt-1">
+            Renter phone:{" "}
+            {contact.phone
+              ? <a href={`tel:${contact.phone}`} className="text-green no-underline select-all">{contact.phone}</a>
+              : <span className="text-ink-muted">not added yet, use Messages</span>}
+          </div>
+        )}
       </div>
       <div className="shrink-0 flex flex-col gap-2 items-stretch">
         {status === "pending" || status === "accepted" ? (
@@ -80,15 +88,16 @@ export default function BookingRequests() {
   const { refreshBadges, lastEventAt } = useNotifications();
   const [activeTab, setActiveTab] = useState("pending");
   const [requests, setRequests] = useState([]);
+  const [contacts, setContacts] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState(null);
 
-  const load = useCallback(
-    () => bookingService.getRequestsForOwner(user.id).then(setRequests),
-    [user]
-  );
+  const load = useCallback(() => {
+    bookingService.getContacts().then(setContacts);
+    return bookingService.getRequestsForOwner(user.id).then(setRequests);
+  }, [user]);
 
   // Reload when a booking notification arrives (new request, deposit paid...).
   useEffect(() => {
@@ -166,6 +175,7 @@ export default function BookingRequests() {
               {filtered.map((r) => (
                 <RequestRow key={r.id} request={r} allBookings={requests} now={now}
                   busy={busyId === r.id}
+                  contact={contacts[r.id]}
                   onAccept={(id) => act(id, bookingService.accept)}
                   onDecline={(id) => act(id, bookingService.decline)} />
               ))}

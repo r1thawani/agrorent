@@ -5,8 +5,7 @@ import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
 import { friendlyError, isRateLimitError } from "../utils/friendlyError";
 import { useCooldown } from "../hooks/useCooldown";
-
-const PHONE_REGEX = /^\+260\d{9}$/;
+import { PHONE_REGEX, formatPhoneInput } from "../utils/phone";
 
 function getPasswordError(password) {
   if (password.length < 8) return "Password must be at least 8 characters.";
@@ -15,11 +14,6 @@ function getPasswordError(password) {
   if (!/[0-9]/.test(password)) return "Password must include at least one number.";
   if (!/[^A-Za-z0-9]/.test(password)) return "Password must include at least one special character.";
   return "";
-}
-
-function formatPhoneInput(value) {
-  const digitsOnly = value.replace(/\D/g, "").replace(/^260/, "");
-  return "+260" + digitsOnly.slice(0, 9);
 }
 
 function generateStrongPassword() {
@@ -92,7 +86,15 @@ export default function Signup() {
     inFlight.current = true;
     setSubmitting(true);
     try {
-      await signup({ name: form.name, email: form.email, password: form.password });
+      await signup({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        phone: form.phone,
+        province: form.province,
+        district: form.district,
+        dateOfBirth: form.dob,
+      });
       navigate("/check-email", { state: { email: form.email } });
     } catch (err) {
       setError(friendlyError(err, "Signup failed. Please try again."));

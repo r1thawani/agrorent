@@ -28,7 +28,8 @@ begin
   select string_agg(quote_ident(column_name), ', ' order by ordinal_position)
   into v_cols
   from information_schema.columns
-  where table_schema = 'public' and table_name = 'profiles' and column_name <> 'email';
+  where table_schema = 'public' and table_name = 'profiles'
+    and column_name not in ('email', 'phone', 'date_of_birth'); -- private (phone, dob: see 005)
 
   execute 'revoke select on profiles from anon, authenticated';
   execute format('grant select (%s) on profiles to anon, authenticated', v_cols);

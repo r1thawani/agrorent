@@ -10,8 +10,32 @@ export const AuthContext = createContext(null);
 // retries instead of failing the whole login on the first slow response.
 const RETRY_DELAYS_MS = [800, 2000];
 
-// Profile columns anyone may read (everything except email).
+// Profile columns anyone may read and that exist in every version of the
+// database (not email, phone or date of birth, which are private).
 const PUBLIC_PROFILE_COLUMNS = "id, name, photo_url, bio, role, status, created_at";
+
+// Details typed on the sign-up form travel with the account (user metadata)
+// until the person first logs in; copy any the profile is still missing.
+const SIGNUP_FIELDS = ["phone", "province", "district", "date_of_birth"];
+
+async function fillFromSignup(profile) {
+  // Only with the full profile (my_profile()): the public fallback can't see
+  // phone or date of birth, so it can't tell whether they're missing.
+  if (!profile || !("phone" in profile)) return profile;
+  const { data: { session } } = await supabase.auth.getSession();
+  const meta = session?.user?.user_metadata || {};
+  const changes = {};
+  for (const field of SIGNUP_FIELDS) {
+    if (!profile[field] && meta[field]) changes[field] = meta[field];
+  }
+  if (Object.keys(changes).length === 0) return profile;
+  const { error } = await supabase.from("profiles").update(changes).eq("id", profile.id);
+  if (error) {
+    console.warn("Could not copy sign-up details to the profile:", error.message);
+    return profile;
+  }
+  return { ...profile, ...changes };
+}
 
 async function loadProfile() {
   for (let attempt = 0; ; attempt++) {
@@ -32,7 +56,7 @@ async function loadProfile() {
       data = res.data ? { ...res.data, email: session.user.email } : null;
       error = res.error;
     }
-    if (!error) return data;
+    if (!error) return fillFromSignup(data);
     if (!isBusyError(error) || attempt >= RETRY_DELAYS_MS.length) throw error;
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
   }
@@ -158,11 +182,12 @@ export function AuthProvider({ children }) {
     return profile;
   }
 
-  async function signup({ name, email, password }) {
+  async function signup({ name, email, password, phone, province, district, dateOfBirth }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      // Saved to the profile at first login (fillFromSignup).
+      options: { data: { name, phone, province, district, date_of_birth: dateOfBirth } },
     });
     if (error) throw error;
     // identities is empty when the email is already registered (Supabase silent-duplicate behaviour)

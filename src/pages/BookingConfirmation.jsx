@@ -34,7 +34,7 @@ export default function BookingConfirmation() {
     { label: "Down payment paid", value: `K${booking.downPayment.toLocaleString()}` },
     { label: "Balance at pickup", value: `K${booking.balance.toLocaleString()}` },
     { label: "Owner name", value: booking.ownerName },
-    { label: "Owner phone", value: booking.ownerPhone },
+    { label: "Owner phone", value: booking.ownerPhone || "Not added yet: use Messages" },
     { label: "Pickup location", value: booking.pickup },
   ];
 
@@ -70,8 +70,9 @@ export default function BookingConfirmation() {
 
           <div className="text-sm font-medium text-ink mb-2">What happens next?</div>
           <p className="text-[13px] text-ink-muted leading-relaxed">
-            The owner has received your booking request. They will confirm within 24 hours.
-            You'll get a notification when they accept.
+            Your deposit is paid and these dates are yours. Contact the owner to arrange pickup,
+            and pay the remaining balance when you collect the equipment. You'll find the
+            owner's details in My Bookings at any time.
           </p>
         </div>
 

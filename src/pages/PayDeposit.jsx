@@ -182,6 +182,8 @@ export default function PayDeposit() {
         setBooking((b) => ({ ...b, status: "expired" }));
         return;
       }
+      // Paid: the owner's phone number is now shared with this renter.
+      const contacts = await bookingService.getContacts();
       navigate(`/booking/${booking.id}/confirmation`, {
         state: {
           bookingRef: booking.id,
@@ -189,6 +191,7 @@ export default function PayDeposit() {
           equipmentImage: photoUrl,
           ownerName: booking.owner?.name,
           ownerPhoto: booking.owner?.photo_url,
+          ownerPhone: contacts[booking.id]?.phone,
           pickup: booking.equipment?.pickup_address,
           startDate: booking.start_date,
           endDate: booking.end_date,

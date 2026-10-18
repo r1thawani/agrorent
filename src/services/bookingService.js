@@ -72,6 +72,17 @@ export const bookingService = {
     return Object.fromEntries(data.map((b) => [b.equipment_id, b.end_date]));
   },
 
+  // booking id -> { name, phone } of the other person, for your bookings
+  // whose deposit is paid. Phone numbers are private until then.
+  async getContacts() {
+    const { data, error } = await supabase.rpc("my_booking_contacts");
+    if (error) {
+      console.warn("my_booking_contacts unavailable:", error.message);
+      return {};
+    }
+    return Object.fromEntries(data.map((c) => [c.booking_id, { name: c.name, phone: c.phone }]));
+  },
+
   // Sends a booking request. No payment yet; the database checks the dates
   // and works out the price itself.
   async create({ equipmentId, renterId, startDate, endDate }) {
