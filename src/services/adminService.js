@@ -1,13 +1,15 @@
 // FILE: agrorent/src/services/adminService.js
 import { supabase } from "../lib/supabaseClient";
 
-// Everyone's profile including email, for admins (migrations/004). Before
-// that migration has run, the function doesn't exist and the table is
-// still fully readable, so read it directly.
+// Everyone's profile including email, for admins (migrations/004). If the
+// function can't be reached, show the list without emails rather than fail.
 async function adminProfiles(limit) {
   const res = await supabase.rpc("admin_list_profiles", limit ? { p_limit: limit } : {});
-  if (res.error?.code !== "PGRST202") return res;
-  let query = supabase.from("profiles").select("*").order("created_at", { ascending: false });
+  if (!res.error) return res;
+  let query = supabase
+    .from("profiles")
+    .select("id, name, photo_url, bio, role, status, created_at")
+    .order("created_at", { ascending: false });
   if (limit) query = query.limit(limit);
   return query;
 }

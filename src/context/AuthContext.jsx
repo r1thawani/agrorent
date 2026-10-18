@@ -10,16 +10,27 @@ export const AuthContext = createContext(null);
 // retries instead of failing the whole login on the first slow response.
 const RETRY_DELAYS_MS = [800, 2000];
 
+// Profile columns anyone may read (everything except email).
+const PUBLIC_PROFILE_COLUMNS = "id, name, photo_url, bio, role, status, created_at";
+
 async function loadProfile() {
   for (let attempt = 0; ; attempt++) {
     // my_profile() returns the signed-in user's own row in full; other
     // people's emails are hidden (migrations/004_private_emails.sql).
-    // Until that migration has run the function doesn't exist yet, so fall
-    // back to reading the row directly.
     let { data, error } = await supabase.rpc("my_profile").single();
-    if (error?.code === "PGRST202") {
-      const { data: { user } } = await supabase.auth.getUser();
-      ({ data, error } = await supabase.from("profiles").select("*").eq("id", user?.id).single());
+    // If the function can't be reached (migration not run yet, or Supabase's
+    // API hasn't picked it up), read the columns everyone may read and take
+    // the email from the login session. Never select("*"): once emails are
+    // private, that is refused outright.
+    if (error && !isBusyError(error)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase
+        .from("profiles")
+        .select(PUBLIC_PROFILE_COLUMNS)
+        .eq("id", session?.user?.id)
+        .single();
+      data = res.data ? { ...res.data, email: session.user.email } : null;
+      error = res.error;
     }
     if (!error) return data;
     if (!isBusyError(error) || attempt >= RETRY_DELAYS_MS.length) throw error;
@@ -142,7 +153,6 @@ export function AuthProvider({ children }) {
     markRecovering(false);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    const { data: { session } } = await supabase.auth.getSession();
     const profile = await loadProfile();
     applyUser(profile);
     return profile;
