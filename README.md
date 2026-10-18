@@ -56,6 +56,7 @@ After that, run the files in `migrations/` in order (same SQL Editor). Each is s
 - `004_private_emails.sql` — hides email addresses from other users (you see your own via `my_profile()`, admins via `admin_list_profiles()`); adds `equipment.flagged` and `disputes.resolution_notes`
 - `005_profile_contact_details.sql` — saves phone, province/district and date of birth on profiles. Location is public; phone is private except to the other person on a booking whose deposit is paid (`my_booking_contacts()`); date of birth is private
 - `006_refund_on_cancel.sql` — a renter can cancel a paid booking until it starts; the deposit is marked refunded and they're told it comes back within 5 working days (no payment provider is connected, so the refund itself is outside the app)
+- `007_delete_account.sql` — "Delete my account" on Edit Profile (see below). Also stops the profile row being deleted along with its login, and blocks messages to deleted accounts
 
 Setting up a brand-new project? `schema.sql` alone builds everything (it carries every migration in its last section), so you don't need to run the migrations separately.
 
@@ -75,6 +76,16 @@ update app_config set value = '<bypass secret>' where key = 'vercel_bypass_secre
 -- before going live, give renters a realistic time to pay (minutes; 1440 = 24 hours):
 update app_config set value = '1440' where key = 'payment_grace_minutes';
 ```
+
+### Deleting an account
+
+Edit Profile → Delete my account asks for the password, then calls `POST /api/delete-account`:
+
+1. `delete_account()` refuses while the person has a paid booking that hasn't finished (as renter or owner), and refuses admin accounts.
+2. Otherwise it withdraws their unpaid requests, declines requests on their equipment (the other person is notified and emailed as usual), removes their listings (hidden rather than deleted if they have booking history), and wipes their name, email, photo, bio, phone, location and date of birth. The profile stays as "Deleted user" so the other side's bookings, earnings, reviews and chats still make sense.
+3. The server function then deletes the login (service-role key), which frees the email address for a new sign-up.
+
+Deleting a user from the Supabase dashboard (Authentication → Users) closes the account the same way, but skips the booking check.
 
 ### Emails (help requests and new-message alerts)
 

@@ -2,6 +2,7 @@
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { isBusyError } from "../utils/friendlyError";
+import { postApi } from "../lib/api";
 
 export const AuthContext = createContext(null);
 
@@ -56,7 +57,15 @@ async function loadProfile() {
       data = res.data ? { ...res.data, email: session.user.email } : null;
       error = res.error;
     }
-    if (!error) return fillFromSignup(data);
+    if (!error) {
+      // Closed account whose login wasn't removed (the last step of
+      // /api/delete-account failed): don't let it back in.
+      if (data?.deleted_at) {
+        await supabase.auth.signOut({ scope: "local" });
+        throw new Error("This account has been deleted.");
+      }
+      return fillFromSignup(data);
+    }
     if (!isBusyError(error) || attempt >= RETRY_DELAYS_MS.length) throw error;
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
   }
@@ -200,6 +209,21 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut();
   }
 
+  // Closes the account (/api/delete-account). The password is checked
+  // first so an unattended, logged-in device can't be used to delete it.
+  // Doesn't sign out: the caller moves to /account-deleted first, which
+  // does, so the protected page it came from doesn't bounce to /login.
+  async function deleteAccount(password) {
+    if (!user) return;
+    const { error } = await supabase.auth.signInWithPassword({ email: user.email, password });
+    if (error) {
+      throw new Error(/invalid login credentials/i.test(error.message)
+        ? "That password isn't right. Please try again."
+        : error.message);
+    }
+    await postApi("/api/delete-account");
+  }
+
   // Optimistic update that rolls back and throws if the database rejects it,
   // so callers can show the real error instead of a false "saved".
   async function updateProfile(changes) {
@@ -222,6 +246,7 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     updateProfile,
+    deleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

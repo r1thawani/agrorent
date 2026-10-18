@@ -6,10 +6,11 @@ import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../lib/supabaseClient";
 import Avatar from "../components/Avatar";
 import { formatPhoneInput, isValidPhone } from "../utils/phone";
+import { friendlyError } from "../utils/friendlyError";
 
 export default function EditProfile() {
   const navigate = useNavigate();
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, deleteAccount } = useAuth();
   const [form, setForm] = useState({
     name: user?.name || "",
     phone: user?.phone || "+260",
@@ -26,6 +27,9 @@ export default function EditProfile() {
   const [pwSaved, setPwSaved] = useState(false);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   function inputCls(field) {
     return `w-full h-11 px-3 text-sm text-ink rounded-lg outline-none ${
@@ -84,6 +88,29 @@ export default function EditProfile() {
       );
     reader.readAsDataURL(file);
     e.target.value = "";
+  }
+
+  function cancelDelete() {
+    setConfirmDelete(false);
+    setDeletePassword("");
+    setDeleteError("");
+  }
+
+  async function handleDelete(e) {
+    e.preventDefault();
+    if (!deletePassword) {
+      setDeleteError("Enter your password to confirm.");
+      return;
+    }
+    setDeleteError("");
+    setDeleting(true);
+    try {
+      await deleteAccount(deletePassword);
+      navigate("/account-deleted", { replace: true });
+    } catch (err) {
+      setDeleteError(friendlyError(err, "We couldn't delete your account. Please try again."));
+      setDeleting(false);
+    }
   }
 
   function getPasswordError(pw) {
@@ -235,8 +262,13 @@ export default function EditProfile() {
 
           <div className="bg-white rounded-xl p-6 border border-border/50 border-l-[3px] border-l-red">
             <h2 className="text-[15px] font-medium text-red mb-2">Delete account</h2>
+            <p className="text-[13px] text-ink-muted mb-2">
+              This permanently deletes your account. Your profile, phone number and listings are removed, any
+              requests you haven't paid for are withdrawn, and you won't be able to log in again.
+            </p>
             <p className="text-[13px] text-ink-muted mb-4">
-              Deleting your account is permanent. All your listings, bookings, and data will be removed.
+              Bookings and messages you shared with other people stay in their history, shown as
+              "Deleted user". You can't delete your account while a paid booking hasn't finished.
             </p>
 
             {!confirmDelete ? (
@@ -245,16 +277,34 @@ export default function EditProfile() {
                 Delete my account
               </button>
             ) : (
-              <div className="flex gap-2.5">
-                <button onClick={() => setConfirmDelete(false)}
-                  className="flex-1 h-11 rounded-lg text-sm font-medium bg-transparent border border-border-muted text-ink-muted cursor-pointer">
-                  Cancel
-                </button>
-                <button onClick={() => { logout(); navigate("/"); }}
-                  className="flex-1 h-11 rounded-lg text-sm font-medium text-white bg-red border-none cursor-pointer">
-                  Confirm delete
-                </button>
-              </div>
+              <form onSubmit={handleDelete} className="flex flex-col gap-3">
+                <label className="text-[13px] text-ink" htmlFor="delete-password">
+                  Enter your password to confirm
+                </label>
+                <input
+                  id="delete-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  onFocus={() => setFocusedField("deletePassword")}
+                  onBlur={() => setFocusedField(null)}
+                  className={inputCls("deletePassword")}
+                />
+                {deleteError && (
+                  <div className="text-[13px] text-red bg-red-tint rounded-lg px-3 py-2">{deleteError}</div>
+                )}
+                <div className="flex gap-2.5">
+                  <button type="button" onClick={cancelDelete} disabled={deleting}
+                    className="flex-1 h-11 rounded-lg text-sm font-medium bg-transparent border border-border-muted text-ink-muted cursor-pointer">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={deleting}
+                    className="flex-1 h-11 rounded-lg text-sm font-medium text-white bg-red border-none cursor-pointer disabled:opacity-60">
+                    {deleting ? "Deleting…" : "Delete permanently"}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>

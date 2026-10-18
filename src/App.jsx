@@ -39,6 +39,7 @@ import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
+import AccountDeleted from "./pages/AccountDeleted";
 import CheckEmail from "./pages/CheckEmail";
 
 function Layout() {
@@ -66,6 +67,7 @@ function Layout() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/check-email" element={<CheckEmail />} />
+          <Route path="/account-deleted" element={<AccountDeleted />} />
 
           {/* Any logged-in user — role no longer restricts any of these,
               since every account can both rent and list. */}

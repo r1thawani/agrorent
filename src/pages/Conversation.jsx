@@ -9,6 +9,7 @@ import { messageService } from "../services/messageService";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../hooks/useAuth";
 import { useNotifications } from "../context/NotificationContext";
+import { friendlyError } from "../utils/friendlyError";
 
 export default function Conversation() {
   const { id } = useParams();
@@ -17,6 +18,7 @@ export default function Conversation() {
   const [conv, setConv] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [input, setInput] = useState("");
+  const [sendError, setSendError] = useState("");
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -102,10 +104,13 @@ export default function Conversation() {
     const optimisticMsg = { id: `temp-${Date.now()}`, from: "me", text, time: "Now" };
     setConv((prev) => ({ ...prev, messages: [...prev.messages, optimisticMsg] }));
     setInput("");
+    setSendError("");
     try {
       await messageService.sendMessage(id, user.id, text);
-    } catch {
+    } catch (err) {
       setConv((prev) => ({ ...prev, messages: prev.messages.filter((m) => m.id !== optimisticMsg.id) }));
+      setInput(text);
+      setSendError(friendlyError(err, "Your message wasn't sent. Please try again."));
     }
   }
 
@@ -138,6 +143,10 @@ export default function Conversation() {
             {conv.isRenter && (
               <SuggestedQuestions category={conv.category} onPick={addSuggestion}
                 defaultOpen={conv.messages.length === 0} />
+            )}
+
+            {sendError && (
+              <div className="px-4 py-2 text-[13px] text-red bg-red-tint border-t border-border">{sendError}</div>
             )}
 
             <form onSubmit={sendMessage}
