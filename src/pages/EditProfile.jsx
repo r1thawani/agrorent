@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
-import { supabase } from "../lib/supabaseClient";
 import Avatar from "../components/Avatar";
 import { formatPhoneInput, isValidPhone } from "../utils/phone";
 import { friendlyError } from "../utils/friendlyError";
+import { getPasswordError, PASSWORD_HINT } from "../utils/password";
 
 export default function EditProfile() {
   const navigate = useNavigate();
-  const { user, updateProfile, deleteAccount } = useAuth();
+  const { user, updateProfile, changePassword, deleteAccount } = useAuth();
   const [form, setForm] = useState({
     name: user?.name || "",
     phone: user?.phone || "+260",
@@ -25,6 +25,7 @@ export default function EditProfile() {
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [pwError, setPwError] = useState("");
   const [pwSaved, setPwSaved] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
@@ -113,14 +114,6 @@ export default function EditProfile() {
     }
   }
 
-  function getPasswordError(pw) {
-    if (pw.length < 8) return "New password must be at least 8 characters.";
-    if (!/[A-Z]/.test(pw)) return "New password must include at least one uppercase letter.";
-    if (!/[a-z]/.test(pw)) return "New password must include at least one lowercase letter.";
-    if (!/[0-9]/.test(pw)) return "New password must include at least one number.";
-    return "";
-  }
-
   async function handlePasswordUpdate(e) {
     e.preventDefault();
     if (!pwForm.current || !pwForm.next || !pwForm.confirm) {
@@ -133,15 +126,21 @@ export default function EditProfile() {
       setPwError("New password and confirmation don't match.");
       return;
     }
+    if (pwForm.next === pwForm.current) {
+      setPwError("Your new password must be different from your current one.");
+      return;
+    }
     setPwError("");
+    setPwSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: pwForm.next });
-      if (error) throw error;
+      await changePassword(pwForm.current, pwForm.next);
       setPwSaved(true);
       setPwForm({ current: "", next: "", confirm: "" });
       setTimeout(() => setPwSaved(false), 2500);
     } catch (err) {
-      setPwError(err.message || "Could not update your password. Please try again.");
+      setPwError(friendlyError(err, "Could not update your password. Please try again."));
+    } finally {
+      setPwSaving(false);
     }
   }
 
@@ -229,20 +228,22 @@ export default function EditProfile() {
             <h2 className="text-[15px] font-medium text-ink mb-5">Change password</h2>
             <div className="flex flex-col gap-6">
               {[
-                { label: "Current Password", field: "current" },
-                { label: "New Password", field: "next" },
-                { label: "Confirm New Password", field: "confirm" },
-              ].map(({ label, field }) => (
+                { label: "Current Password", field: "current", autoComplete: "current-password" },
+                { label: "New Password", field: "next", autoComplete: "new-password", hint: PASSWORD_HINT },
+                { label: "Confirm New Password", field: "confirm", autoComplete: "new-password" },
+              ].map(({ label, field, autoComplete, hint }) => (
                 <div key={field}>
                   <label className="block text-[13px] font-medium text-ink mb-2">{label}</label>
                   <input
                     type="password"
+                    autoComplete={autoComplete}
                     value={pwForm[field]}
                     onChange={(e) => setPwForm((f) => ({ ...f, [field]: e.target.value }))}
                     onFocus={() => setFocusedField(field)}
                     onBlur={() => setFocusedField(null)}
                     className={inputCls(field)}
                   />
+                  {hint && <p className="text-xs text-ink-muted mt-1">{hint}</p>}
                 </div>
               ))}
 
@@ -253,9 +254,9 @@ export default function EditProfile() {
                 </div>
               )}
 
-              <button type="submit"
-                className="w-full h-11 rounded-lg text-sm font-medium bg-transparent border border-orange text-orange cursor-pointer">
-                Update password
+              <button type="submit" disabled={pwSaving}
+                className="w-full h-11 rounded-lg text-sm font-medium bg-transparent border border-orange text-orange cursor-pointer disabled:opacity-60">
+                {pwSaving ? "Updating…" : "Update password"}
               </button>
             </div>
           </form>

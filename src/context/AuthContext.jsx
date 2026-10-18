@@ -209,18 +209,30 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut();
   }
 
-  // Closes the account (/api/delete-account). The password is checked
-  // first so an unattended, logged-in device can't be used to delete it.
-  // Doesn't sign out: the caller moves to /account-deleted first, which
-  // does, so the protected page it came from doesn't bounce to /login.
-  async function deleteAccount(password) {
-    if (!user) return;
+  // Re-checks the signed-in person's password before a sensitive change,
+  // so an unattended, logged-in device can't be used to make it.
+  async function verifyPassword(password) {
     const { error } = await supabase.auth.signInWithPassword({ email: user.email, password });
     if (error) {
       throw new Error(/invalid login credentials/i.test(error.message)
         ? "That password isn't right. Please try again."
         : error.message);
     }
+  }
+
+  async function changePassword(currentPassword, newPassword) {
+    if (!user) return;
+    await verifyPassword(currentPassword);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
+  // Closes the account (/api/delete-account). Doesn't sign out: the caller
+  // moves to /account-deleted first, which does, so the protected page it
+  // came from doesn't bounce to /login.
+  async function deleteAccount(password) {
+    if (!user) return;
+    await verifyPassword(password);
     await postApi("/api/delete-account");
   }
 
@@ -246,6 +258,7 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     updateProfile,
+    changePassword,
     deleteAccount,
   };
 

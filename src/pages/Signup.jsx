@@ -6,15 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import { friendlyError, isRateLimitError } from "../utils/friendlyError";
 import { useCooldown } from "../hooks/useCooldown";
 import { PHONE_REGEX, formatPhoneInput } from "../utils/phone";
-
-function getPasswordError(password) {
-  if (password.length < 8) return "Password must be at least 8 characters.";
-  if (!/[A-Z]/.test(password)) return "Password must include at least one uppercase letter.";
-  if (!/[a-z]/.test(password)) return "Password must include at least one lowercase letter.";
-  if (!/[0-9]/.test(password)) return "Password must include at least one number.";
-  if (!/[^A-Za-z0-9]/.test(password)) return "Password must include at least one special character.";
-  return "";
-}
+import { getPasswordError, PASSWORD_HINT } from "../utils/password";
 
 function generateStrongPassword() {
   const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -190,7 +182,7 @@ export default function Signup() {
             {suggested ? (
               <p className="text-xs text-green-dark mt-1">Suggested password filled in — make sure to save it somewhere safe.</p>
             ) : (
-              <p className="text-xs text-ink-muted mt-1">Min 8 characters, with uppercase, lowercase, a number, and a special character.</p>
+              <p className="text-xs text-ink-muted mt-1">{PASSWORD_HINT}</p>
             )}
           </div>
 
