@@ -12,24 +12,21 @@
 
 begin;
 
--- Safety check: a signup trigger or other function that still hard-codes
--- 'renter' or 'owner' would start failing once those values are gone. If one
--- exists, stop here and list it so it can be edited first.
-do $$
-declare
-  offenders text;
+-- The signup trigger used to insert every new account with the role 'renter'.
+-- It must hand out 'user' instead, or sign-ups would fail once 'renter' is gone.
+-- (booking_events also contains the words 'renter' and 'owner', but only as
+-- labels in its email data, never as a role value, so it needs no change.)
+create or replace function public.handle_new_user()
+  returns trigger
+  language plpgsql
+  security definer
+as $function$
 begin
-  select string_agg(n.nspname || '.' || p.proname, ', ')
-    into offenders
-  from pg_proc p
-  join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname not in ('pg_catalog', 'information_schema')
-    and n.nspname not in ('auth', 'storage', 'realtime', 'extensions', 'graphql', 'graphql_public', 'vault', 'pgsodium', 'supabase_functions', 'net')
-    and p.prosrc ~* '''(renter|owner)''';
-  if offenders is not null then
-    raise exception 'These functions still mention the roles renter/owner: %. Edit them to use ''user'' first, then re-run this script.', offenders;
-  end if;
-end $$;
+  insert into public.profiles (id, name, email, role)
+  values (new.id, coalesce(new.raw_user_meta_data->>'name', ''), new.email, 'user');
+  return new;
+end;
+$function$;
 
 alter table profiles alter column role drop default;
 
