@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 
 // Guards a route behind login (and optionally a specific role).
 //
-// requireRole: "owner" | "admin" — if set, redirects users who ARE logged
+// requireRole: "admin" — if set, redirects users who ARE logged
 // in but don't have that role, instead of just checking isAuthenticated.
 export default function ProtectedRoute({ children, requireRole }) {
   const { isAuthenticated, user, loading } = useAuth();

@@ -61,7 +61,7 @@ drop type if exists user_role;
 -- Matches the string literals actually used in the frontend (mockData.js,
 -- AuthContext.jsx, bookingService.js, AdminDisputes.jsx, etc).
 -- ---------------------------------------------------------------------
-create type user_role as enum ('renter', 'owner', 'admin');
+create type user_role as enum ('user', 'admin');
 create type user_status as enum ('active', 'suspended');
 create type equipment_condition as enum ('New', 'Excellent', 'Good', 'Fair');
 create type equipment_category as enum ('Tractors', 'Ploughs', 'Planters', 'Harvesters', 'Irrigation', 'Sprayers', 'Other');
@@ -74,10 +74,10 @@ create type notification_type as enum ('confirmed', 'request', 'message', 'compl
 -- ---------------------------------------------------------------------
 -- 2. profiles
 -- One row per authenticated user, 1:1 with auth.users.
--- AuthContext.jsx: role is not a separate account type for
--- renter/owner — every account can act as both, `role` just tracks
--- which mode the UI is currently in ("Switch to Owner/Renter Mode").
--- `admin` is a genuinely separate account type (Login page, not Signup).
+-- Only two roles exist: 'user' and 'admin'. There is no separate renter
+-- or owner account type: every 'user' can both rent equipment (as the
+-- renter on a booking) and list equipment (as its owner). Renter/owner
+-- is decided per booking/listing by renter_id / owner_id, not by role.
 -- ---------------------------------------------------------------------
 create table profiles (
   id            uuid primary key references auth.users(id) on delete cascade,
@@ -85,12 +85,12 @@ create table profiles (
   email         text not null,
   photo_url     text,
   bio           text check (bio is null or char_length(bio) <= 200),
-  role          user_role not null default 'renter',
+  role          user_role not null default 'user',
   status        user_status not null default 'active',
   created_at    timestamptz not null default now()
 );
 
-comment on table profiles is 'Extends auth.users. role = which mode (renter/owner/admin) the UI shows, not a fixed account type — see AuthContext.jsx.';
+comment on table profiles is 'Extends auth.users. role is either user (can both rent and list equipment) or admin.';
 
 
 -- ---------------------------------------------------------------------
@@ -554,18 +554,18 @@ create policy "admins manage all disputes"
 -- MOCK_REVIEWS respectively — added here as their own profiles so the
 -- foreign keys on bookings/reviews resolve.
 insert into profiles (id, name, email, role, status) values
-  ('55555555-5555-5555-5555-555555555501', 'Chanda Mutale',    'chanda@example.com',         'owner',  'active'),    -- au2
-  ('55555555-5555-5555-5555-555555555502', 'Mwaka Banda',      'mwaka@example.com',          'owner',  'suspended'), -- au7
-  ('55555555-5555-5555-5555-555555555503', 'Amos Phiri',       'amos@example.com',           'owner',  'suspended'), -- au4
-  ('55555555-5555-5555-5555-555555555504', 'Bupe Musonda',     'bupe@example.com',           'owner',  'active'),    -- au3
-  ('55555555-5555-5555-5555-555555555505', 'Grace Tembo',      'grace@example.com',          'owner',  'active'),    -- au5
-  ('55555555-5555-5555-5555-555555555506', 'Kalinda Nkonde',   'kalinda@example.com',        'renter', 'active'),    -- au1
-  ('55555555-5555-5555-5555-555555555507', 'Mutinta Mwansa',   'mutinta@example.com',        'renter', 'active'),    -- au8, AuthContext.jsx DEFAULT_USER
-  ('55555555-5555-5555-5555-555555555508', 'Bwalya Mwape',     'bwalya@example.com',         'renter', 'active'),    -- au6
-  ('55555555-5555-5555-5555-555555555509', 'Darious Phiri',    'darious@example.com',        'renter', 'active'),    -- au9
-  ('55555555-5555-5555-5555-555555555510', 'Mutinta Siwale',   'mutinta.siwale@example.com', 'renter', 'active'),    -- BOOKING_REQUESTS r3 only
+  ('55555555-5555-5555-5555-555555555501', 'Chanda Mutale',    'chanda@example.com',         'user',  'active'),    -- au2
+  ('55555555-5555-5555-5555-555555555502', 'Mwaka Banda',      'mwaka@example.com',          'user',  'suspended'), -- au7
+  ('55555555-5555-5555-5555-555555555503', 'Amos Phiri',       'amos@example.com',           'user',  'suspended'), -- au4
+  ('55555555-5555-5555-5555-555555555504', 'Bupe Musonda',     'bupe@example.com',           'user',  'active'),    -- au3
+  ('55555555-5555-5555-5555-555555555505', 'Grace Tembo',      'grace@example.com',          'user',  'active'),    -- au5
+  ('55555555-5555-5555-5555-555555555506', 'Kalinda Nkonde',   'kalinda@example.com',        'user', 'active'),    -- au1
+  ('55555555-5555-5555-5555-555555555507', 'Mutinta Mwansa',   'mutinta@example.com',        'user', 'active'),    -- au8, AuthContext.jsx DEFAULT_USER
+  ('55555555-5555-5555-5555-555555555508', 'Bwalya Mwape',     'bwalya@example.com',         'user', 'active'),    -- au6
+  ('55555555-5555-5555-5555-555555555509', 'Darious Phiri',    'darious@example.com',        'user', 'active'),    -- au9
+  ('55555555-5555-5555-5555-555555555510', 'Mutinta Siwale',   'mutinta.siwale@example.com', 'user', 'active'),    -- BOOKING_REQUESTS r3 only
   ('55555555-5555-5555-5555-555555555511', 'Natasha Chileshe', 'admin@agrorent.com',         'admin',  'active'),    -- au10, AuthContext.jsx ADMIN_USER
-  ('55555555-5555-5555-5555-555555555512', 'Bupe Siwale',      'bupe.siwale@example.com',    'renter', 'active');    -- ListingDetail.jsx MOCK_REVIEWS only
+  ('55555555-5555-5555-5555-555555555512', 'Bupe Siwale',      'bupe.siwale@example.com',    'user', 'active');    -- ListingDetail.jsx MOCK_REVIEWS only
 
 -- equipment — matches EQUIPMENT in mockData.js: name, category,
 -- condition, prices, location, pickup address, availability window,

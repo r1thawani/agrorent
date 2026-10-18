@@ -142,7 +142,7 @@ export default function EditListing() {
   if (loadError) {
     return (
       <div className="min-h-screen bg-page pt-14 flex flex-col lg:flex-row">
-        <Sidebar role="owner" activeLink="/my-listings" />
+        <Sidebar activeLink="/my-listings" />
         <div className="flex-1 pt-[88px] text-center text-red">{loadError}</div>
       </div>
     );
@@ -151,7 +151,7 @@ export default function EditListing() {
   if (!eq || !form) {
     return (
       <div className="min-h-screen bg-page pt-14 flex flex-col lg:flex-row">
-        <Sidebar role="owner" activeLink="/my-listings" />
+        <Sidebar activeLink="/my-listings" />
         <div className="flex-1 pt-[88px] text-center text-ink-muted">Loading…</div>
       </div>
     );
@@ -162,7 +162,7 @@ export default function EditListing() {
   return (
     <div className="min-h-screen bg-page pt-14">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6">
-        <Sidebar role="owner" activeLink="/my-listings" />
+        <Sidebar activeLink="/my-listings" />
 
         <div className="flex-1 min-w-0 max-w-[760px]">
           <h1 className="text-[22px] font-medium text-ink mb-7">Edit your listing</h1>

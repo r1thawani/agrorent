@@ -12,7 +12,7 @@ export const authService = {
     return { email, token: "mock-token" };
   },
 
-  async signup({ name, email, role = "renter" }) {
+  async signup({ name, email, role = "user" }) {
     await mockDelay();
     if (!email) throw new Error("Email is required");
     return { name, email, role, token: "mock-token" };

@@ -11,7 +11,7 @@ const CONDITIONS = ["New", "Excellent", "Good", "Fair"];
 
 export default function PostListing() {
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const [photos, setPhotos] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
@@ -107,10 +107,6 @@ export default function PostListing() {
         const res = await fetch(photos[i]);
         const blob = await res.blob();
         await equipmentService.uploadPhoto(created.id, blob, `photo-${i}.jpg`);
-      }
-      // Promote role to "owner" the first time a user posts a listing
-      if (user.role === "renter") {
-        await updateProfile({ role: "owner" });
       }
       navigate("/my-listings");
     } catch {

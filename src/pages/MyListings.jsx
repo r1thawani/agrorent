@@ -65,7 +65,7 @@ export default function MyListings() {
   return (
     <div className="min-h-screen bg-page pt-14">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6">
-        <Sidebar role="owner" activeLink="/my-listings" />
+        <Sidebar activeLink="/my-listings" />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-6">

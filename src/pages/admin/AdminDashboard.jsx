@@ -5,8 +5,7 @@ import StatCard from "../../components/StatCard";
 import { adminService } from "../../services/adminService";
 
 const ROLE_CLS = {
-  owner: "bg-green-tint text-green-dark",
-  renter: "bg-page text-ink-muted",
+  user: "bg-page text-ink-muted",
   admin: "bg-green-dark text-white",
 };
 const STATUS_CLS = {
@@ -16,7 +15,7 @@ const STATUS_CLS = {
 
 function RoleBadge({ role }) {
   return (
-    <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full capitalize ${ROLE_CLS[role] || ROLE_CLS.renter}`}>
+    <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full capitalize ${ROLE_CLS[role] || ROLE_CLS.user}`}>
       {role}
     </span>
   );

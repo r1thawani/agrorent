@@ -109,7 +109,7 @@ export default function EditProfile() {
   return (
     <div className="min-h-screen bg-page pt-14">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6">
-        <Sidebar role={user?.role || "renter"} activeLink="/profile/edit" />
+        <Sidebar activeLink="/profile/edit" />
 
         <div className="flex-1 min-w-0 max-w-[560px]">
           <h1 className="text-[22px] font-medium text-ink mb-6">Edit profile</h1>

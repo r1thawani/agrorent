@@ -6,8 +6,7 @@ import { adminService } from "../../services/adminService";
 import Avatar from "../../components/Avatar";
 
 const ROLE_CLS = {
-  owner: "bg-green-tint text-green-dark",
-  renter: "bg-page text-ink-muted",
+  user: "bg-page text-ink-muted",
   admin: "bg-green-dark text-white",
 };
 const STATUS_CLS = {
@@ -17,7 +16,7 @@ const STATUS_CLS = {
 
 function RoleBadge({ role }) {
   return (
-    <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full capitalize ${ROLE_CLS[role] || ROLE_CLS.renter}`}>
+    <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full capitalize ${ROLE_CLS[role] || ROLE_CLS.user}`}>
       {role}
     </span>
   );
@@ -107,7 +106,7 @@ export default function AdminUsers() {
               searchKeys={["name", "email"]}
               searchPlaceholder="Search by name or email…"
               filters={[
-                { key: "role", label: "Role", options: ["All roles", "renter", "owner", "admin"] },
+                { key: "role", label: "Role", options: ["All roles", "user", "admin"] },
               ]}
               pageSize={5}
               emptyMessage="No users match your search."
