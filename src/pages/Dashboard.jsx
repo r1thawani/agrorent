@@ -45,7 +45,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-page">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-[88px] pb-8 flex flex-col lg:flex-row gap-6 items-start">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-[88px] pb-8 flex flex-col lg:flex-row gap-6 lg:items-start">
         <Sidebar activeLink="/dashboard" />
 
         <div className="flex-1 min-w-0">

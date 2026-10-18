@@ -135,11 +135,11 @@ function ListingRow({ eq, onToggle, onDelete }) {
 
   return (
     <div className="bg-white rounded-xl px-4 py-3.5 border border-border/50 flex flex-col gap-2">
-      <div className="flex items-center gap-3.5">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-3.5">
         <img src={eq.image} alt={eq.name}
           className="w-20 h-16 rounded-lg object-cover shrink-0 bg-page" />
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 basis-[calc(100%-94px)] sm:basis-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[15px] font-medium text-ink truncate">{eq.name}</span>
             <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
@@ -184,24 +184,24 @@ function ListingRow({ eq, onToggle, onDelete }) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-1.5 shrink-0">
+          <div className="flex flex-row sm:flex-col gap-1.5 shrink-0 w-full sm:w-auto">
             <Link to={`/listings/${eq.id}/edit`}
-              className="block px-3 py-1.5 text-[13px] font-medium text-orange border border-orange rounded-lg no-underline text-center hover:bg-orange hover:text-white transition-colors">
+              className="flex-1 sm:flex-initial block px-3 py-1.5 text-[13px] font-medium text-orange border border-orange rounded-lg no-underline text-center hover:bg-orange hover:text-white transition-colors">
               Edit
             </Link>
             <button onClick={onToggle}
-              className="px-3 py-1.5 text-[13px] text-ink-muted bg-white border border-border rounded-lg cursor-pointer hover:bg-page transition-colors">
+              className="flex-1 sm:flex-initial px-3 py-1.5 text-[13px] text-ink-muted bg-white border border-border rounded-lg cursor-pointer hover:bg-page transition-colors">
               {eq.isAvailable ? "Mark unavailable" : "Mark available"}
             </button>
             {isBlocked ? (
               <div
                 title="This listing has a confirmed booking that is current or upcoming. Mark it unavailable to stop new requests."
-                className="px-3 py-1.5 text-[13px] text-ink-muted bg-page border border-border rounded-lg text-center cursor-not-allowed opacity-50 select-none">
+                className="flex-1 sm:flex-initial px-3 py-1.5 text-[13px] text-ink-muted bg-page border border-border rounded-lg text-center cursor-not-allowed opacity-50 select-none">
                 Delete
               </div>
             ) : (
               <button onClick={() => setConfirmDelete(true)}
-                className="px-3 py-1.5 text-[13px] text-red bg-white border border-border rounded-lg cursor-pointer hover:bg-red-tint transition-colors">
+                className="flex-1 sm:flex-initial px-3 py-1.5 text-[13px] text-red bg-white border border-border rounded-lg cursor-pointer hover:bg-red-tint transition-colors">
                 Delete
               </button>
             )}

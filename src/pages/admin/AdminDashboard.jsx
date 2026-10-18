@@ -110,30 +110,32 @@ export default function AdminDashboard() {
                 {openDisputes.length === 0 ? (
                   <p className="text-[13px] text-ink-muted">No open disputes right now.</p>
                 ) : (
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-page">
-                        <th className={thCls}>Reporter</th>
-                        <th className={thCls}>Against</th>
-                        <th className={thCls}>Reason</th>
-                        <th className={thCls}>Date</th>
-                        <th className={thCls}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {openDisputes.map((d) => (
-                        <tr key={d.id} className="border-t border-border">
-                          <td className={`${tdCls} text-ink`}>{d.reporter?.name}</td>
-                          <td className={tdCls}>{d.against?.name}</td>
-                          <td className={`${tdCls} max-w-[220px] truncate`}>{d.reason}</td>
-                          <td className={tdCls}>{new Date(d.created_at).toLocaleDateString()}</td>
-                          <td className={tdCls}>
-                            <Link to="/admin/disputes" className="text-[13px] font-medium text-orange no-underline">Resolve</Link>
-                          </td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-page">
+                          <th className={thCls}>Reporter</th>
+                          <th className={thCls}>Against</th>
+                          <th className={thCls}>Reason</th>
+                          <th className={thCls}>Date</th>
+                          <th className={thCls}>Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {openDisputes.map((d) => (
+                          <tr key={d.id} className="border-t border-border">
+                            <td className={`${tdCls} text-ink`}>{d.reporter?.name}</td>
+                            <td className={tdCls}>{d.against?.name}</td>
+                            <td className={`${tdCls} max-w-[220px] truncate`}>{d.reason}</td>
+                            <td className={tdCls}>{new Date(d.created_at).toLocaleDateString()}</td>
+                            <td className={tdCls}>
+                              <Link to="/admin/disputes" className="text-[13px] font-medium text-orange no-underline">Resolve</Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             </>

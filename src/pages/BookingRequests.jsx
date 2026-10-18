@@ -26,7 +26,7 @@ function RequestRow({ request, allBookings, now, busy, onAccept, onDecline, cont
     <div className="bg-white rounded-xl p-4 border border-border/50 flex flex-wrap sm:flex-nowrap items-start gap-3">
       <Avatar src={request.renter?.photo_url} name={request.renter?.name}
         className="w-11 h-11 text-[13px]" />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 basis-[calc(100%-56px)] sm:basis-0">
         <div className="text-[15px] font-medium text-ink">{request.renter?.name}</div>
         <div className="text-[13px] text-ink-muted mt-0.5">
           wants to rent{" "}
@@ -55,20 +55,20 @@ function RequestRow({ request, allBookings, now, busy, onAccept, onDecline, cont
           </div>
         )}
       </div>
-      <div className="shrink-0 flex flex-col gap-2 items-stretch">
+      <div className="shrink-0 w-full sm:w-auto flex flex-row sm:flex-col gap-2 items-center sm:items-stretch">
         {status === "pending" || status === "accepted" ? (
           <>
             {status === "pending" && (
               <button onClick={() => onAccept(request.id)} disabled={Boolean(blocker) || busy}
-                className="bg-green text-white border-none rounded-lg px-4 py-2 text-[13px] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                className="flex-1 sm:flex-initial bg-green text-white border-none rounded-lg px-4 py-2 text-[13px] font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
                 Accept
               </button>
             )}
             <button onClick={() => onDecline(request.id)} disabled={busy}
-              className="bg-transparent text-ink-muted border border-border-muted rounded-lg px-4 py-2 text-[13px] font-medium cursor-pointer disabled:opacity-40">
+              className="flex-1 sm:flex-initial bg-transparent text-ink-muted border border-border-muted rounded-lg px-4 py-2 text-[13px] font-medium cursor-pointer disabled:opacity-40">
               Decline
             </button>
-            <Link to="/messages" className="text-xs text-center text-green no-underline">
+            <Link to="/messages" className="flex-1 sm:flex-initial text-xs text-center text-green no-underline">
               Message renter
             </Link>
           </>
@@ -127,7 +127,7 @@ export default function BookingRequests() {
 
   return (
     <div className="min-h-screen bg-page pt-14">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 items-start">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 lg:items-start">
         <Sidebar activeLink="/booking-requests" />
 
         <div className="flex-1 min-w-0">

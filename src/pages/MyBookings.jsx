@@ -48,7 +48,7 @@ function BookingRow({ booking, now, onCancel, contact }) {
     }`}>
       <img src={image} alt={booking.equipment?.name}
         className="w-[72px] h-[60px] rounded-lg object-cover shrink-0" />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 basis-[calc(100%-88px)] sm:basis-0">
         <div className="text-[15px] font-medium text-ink">{booking.equipment?.name}</div>
         <div className="text-[13px] text-ink-muted my-0.5 mb-2">
           {formatDateRange(booking.start_date, booking.end_date)}
@@ -59,11 +59,11 @@ function BookingRow({ booking, now, onCancel, contact }) {
         {note && <div className="text-xs text-ink-muted mt-1.5">{note}</div>}
         <ContactLine contact={contact} who="Owner" />
       </div>
-      <div className="text-right shrink-0">
+      <div className="w-full sm:w-auto flex sm:block items-baseline gap-2 text-left sm:text-right shrink-0">
         <div className="text-[15px] font-medium text-orange">K{Number(booking.total_price).toLocaleString()}</div>
         <div className="text-[11px] text-ink-muted">deposit K{Number(booking.down_payment).toLocaleString()}</div>
       </div>
-      <div className="flex flex-col items-end gap-1.5 shrink-0">
+      <div className="w-full sm:w-auto flex flex-row flex-wrap sm:flex-col items-center sm:items-end gap-x-4 gap-y-2 sm:gap-1.5 shrink-0">
         {status === "accepted" && (
           <Link to={`/booking/${booking.id}/pay`}
             className="text-[13px] px-3 py-1.5 rounded-lg bg-orange text-white font-medium no-underline text-center">
@@ -151,7 +151,7 @@ export default function MyBookings() {
 
   return (
     <div className="min-h-screen bg-page pt-14">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 items-start">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 lg:items-start">
         <Sidebar activeLink="/my-bookings" />
 
         <div className="flex-1 min-w-0">

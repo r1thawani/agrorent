@@ -97,9 +97,9 @@ export default function BookingConfirmation() {
 
           <div className="flex flex-col gap-2.5">
             {rows.map(({ label, value }) => (
-              <div key={label} className="flex justify-between">
-                <span className="text-[13px] text-ink-muted">{label}</span>
-                <span className="text-[13px] font-medium text-ink">{value}</span>
+              <div key={label} className="flex justify-between gap-4">
+                <span className="text-[13px] text-ink-muted shrink-0">{label}</span>
+                <span className="text-[13px] font-medium text-ink text-right">{value}</span>
               </div>
             ))}
           </div>

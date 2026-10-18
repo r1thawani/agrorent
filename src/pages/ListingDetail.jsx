@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { MapPin, ChevronLeft, Heart } from "lucide-react";
 import { equipmentService } from "../services/equipmentService";
@@ -80,6 +80,20 @@ export default function ListingDetail() {
   const [messagingOwner, setMessagingOwner] = useState(false);
   const [messageError, setMessageError] = useState("");
   const { isWishlisted, toggleWishlist } = useWishlist();
+
+  // Phones: the booking box comes after the photos, details and reviews, so a
+  // bar pinned to the bottom of the screen offers it until it scrolls into view.
+  const bookingBoxRef = useRef(null);
+  const [bookingBoxReached, setBookingBoxReached] = useState(false);
+  useEffect(() => {
+    const box = bookingBoxRef.current;
+    if (!box || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setBookingBoxReached(entry.isIntersecting || entry.boundingClientRect.top < 0);
+    });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [eq]);
 
   async function handleMessageOwner() {
     if (!user) { navigate("/login"); return; }
@@ -243,7 +257,7 @@ export default function ListingDetail() {
             </div>
           </div>
 
-          <div className="w-full lg:w-[340px] shrink-0 lg:sticky lg:top-20">
+          <div ref={bookingBoxRef} id="booking-box" className="w-full lg:w-[340px] shrink-0 lg:sticky lg:top-20 scroll-mt-20">
             <div className="bg-white border border-border/50 rounded-xl p-5">
               <div className="flex items-baseline gap-1">
                 <span className="text-[24px] font-medium text-orange">K{eq.price_day.toLocaleString()}</span>
@@ -330,6 +344,20 @@ export default function ListingDetail() {
           </div>
         </div>
       </div>
+
+      {!isOwnEquipment && canBook && !bookingBoxReached && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+          <div className="flex items-baseline gap-1">
+            <span className="text-[20px] font-medium text-orange">K{eq.price_day.toLocaleString()}</span>
+            <span className="text-sm text-ink-muted">/ day</span>
+          </div>
+          <a href="#booking-box"
+            onClick={(e) => { e.preventDefault(); bookingBoxRef.current?.scrollIntoView({ behavior: "smooth" }); }}
+            className="h-11 px-5 rounded-lg bg-orange text-white text-[15px] font-medium leading-[44px] no-underline">
+            Request to book
+          </a>
+        </div>
+      )}
     </div>
   );
 }

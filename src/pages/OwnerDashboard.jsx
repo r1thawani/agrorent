@@ -41,7 +41,7 @@ export default function OwnerDashboard() {
 
   return (
     <div className="min-h-screen bg-page pt-14">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 items-start">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 lg:items-start">
         <Sidebar role="owner" activeLink="/dashboard/owner" />
 
         <div className="flex-1 min-w-0">
