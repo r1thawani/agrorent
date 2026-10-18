@@ -57,6 +57,16 @@ export function describeStatus(booking, role, now = new Date()) {
   if (status === "declined") {
     return { ...base, note: DECLINE_NOTES[role === "owner" ? "owner" : "renter"][booking.status_reason] || base.note };
   }
+  // A paid booking that was cancelled: the deposit goes back to the renter.
+  if (status === "cancelled" && booking.paid_at) {
+    const deposit = `K${Number(booking.down_payment || 0).toLocaleString("en-US")}`;
+    return {
+      ...base,
+      note: role === "owner"
+        ? `The renter cancelled. Their ${deposit} deposit is being refunded.`
+        : `You cancelled. Your ${deposit} deposit will be refunded within 5 working days.`,
+    };
+  }
   return base;
 }
 

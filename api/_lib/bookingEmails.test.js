@@ -41,6 +41,12 @@ describe("renderBookingEmail", () => {
     expect(renderBookingEmail("expired_renter", data, opts).subject).toBe("Booking cancelled: John Deere Tractor");
   });
 
+  it("tells the renter their deposit refund is on its way", () => {
+    const e = renderBookingEmail("refund_pending", data, opts);
+    expect(e.subject).toBe("Booking cancelled: your K919 deposit will be refunded");
+    expect(e.text).toContain("refunded to you within 5 working days");
+  });
+
   it("escapes names in the HTML version", () => {
     const e = renderBookingEmail("request_received", { ...data, renter: "<b>x</b>" }, opts);
     expect(e.html).toContain("&lt;b&gt;x&lt;/b&gt;");

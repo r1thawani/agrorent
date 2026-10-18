@@ -38,7 +38,9 @@ function BookingRow({ booking, now, onCancel, contact }) {
   const image = photos[0]?.url || "";
   const status = effectiveStatus(booking, now);
   const { label, tone, note } = describeStatus(booking, "renter", now);
-  const canCancel = ["pending", "accepted", "confirmed"].includes(status);
+  const today = now.toISOString().slice(0, 10);
+  // A paid booking can be cancelled (with a deposit refund) until it starts.
+  const canCancel = status === "pending" || status === "accepted" || (status === "confirmed" && booking.start_date > today);
 
   return (
     <div className={`bg-white rounded-xl p-4 flex flex-wrap sm:flex-nowrap items-center gap-4 border ${
@@ -77,7 +79,7 @@ function BookingRow({ booking, now, onCancel, contact }) {
           View listing
         </Link>
         {canCancel && (
-          <button onClick={() => onCancel(booking.id)}
+          <button onClick={() => onCancel(booking)}
             className="text-[13px] text-red bg-transparent border-none p-0 cursor-pointer">
             {status === "pending" ? "Withdraw request" : "Cancel booking"}
           </button>
@@ -116,13 +118,24 @@ export default function MyBookings() {
       .finally(() => setLoading(false));
   }, [user, lastEventAt]);
 
-  async function handleCancel(id) {
-    if (!window.confirm("Cancel this booking?")) return;
+  const [notice, setNotice] = useState("");
+
+  async function handleCancel(booking) {
+    const id = booking.id;
+    const paid = booking.status === "confirmed";
+    const deposit = `K${Number(booking.down_payment).toLocaleString()}`;
+    const question = paid
+      ? `Cancel this booking? Your ${deposit} deposit will be refunded within 5 working days.`
+      : "Cancel this request?";
+    if (!window.confirm(question)) return;
     setActionError("");
+    setNotice("");
     const original = bookings.find((b) => b.id === id);
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
     try {
-      await bookingService.cancel(id);
+      const updated = await bookingService.cancel(id);
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, ...updated } : b)));
+      if (paid) setNotice(`Booking cancelled. Your ${deposit} deposit will be refunded within 5 working days, and we've emailed you the details.`);
       refreshBadges();
     } catch (err) {
       setBookings((prev) => prev.map((b) => (b.id === id ? original : b)));
@@ -146,6 +159,9 @@ export default function MyBookings() {
 
           {flash && (
             <div className="bg-green-tint text-green-dark text-sm rounded-lg px-4 py-3 mb-4">{flash}</div>
+          )}
+          {notice && (
+            <div className="bg-green-tint text-green-dark text-sm rounded-lg px-4 py-3 mb-4">{notice}</div>
           )}
           {actionError && (
             <div className="bg-red-tint text-red text-sm rounded-lg px-4 py-3 mb-4">{actionError}</div>

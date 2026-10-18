@@ -87,6 +87,16 @@ function content(kind, d, bookingId) {
         ],
         button: { label: "Browse equipment", path: "/listings" },
       };
+    case "refund_pending":
+      return {
+        subject: `Booking cancelled: your ${kwacha(d.deposit)} deposit will be refunded`,
+        lines: [
+          `Your booking for ${d.equipment} (${dates}) is cancelled.`,
+          `Your ${kwacha(d.deposit)} deposit will be refunded to you within 5 working days. You don't need to do anything.`,
+          "If you haven't received it by then, reply to this email or use Need help on AgroRent.",
+        ],
+        button: { label: "View my bookings", path: "/my-bookings" },
+      };
     case "renter_cancelled":
       return {
         subject: `${d.renter} cancelled their booking for ${d.equipment}`,

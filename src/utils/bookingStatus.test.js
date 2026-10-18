@@ -32,6 +32,22 @@ describe("describeStatus", () => {
   });
 });
 
+describe("describeStatus for a cancelled paid booking", () => {
+  const b = { status: "cancelled", paid_at: "2026-10-17T09:00:00Z", down_payment: "919.00" };
+
+  it("tells the renter the deposit will be refunded", () => {
+    expect(describeStatus(b, "renter", NOW).note).toBe("You cancelled. Your K919 deposit will be refunded within 5 working days.");
+  });
+
+  it("tells the owner the deposit is going back to the renter", () => {
+    expect(describeStatus(b, "owner", NOW).note).toBe("The renter cancelled. Their K919 deposit is being refunded.");
+  });
+
+  it("says nothing about refunds when no deposit was paid", () => {
+    expect(describeStatus({ status: "cancelled" }, "renter", NOW).note).toBe("You cancelled this booking.");
+  });
+});
+
 describe("timeLeft", () => {
   it("counts down in minutes:seconds under an hour", () => {
     expect(timeLeft(inMinutes(1.75), NOW)).toBe("1:45");

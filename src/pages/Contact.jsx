@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Mail, MapPin, MessageCircle } from "lucide-react";
+import { Mail, MapPin, MessageCircle, ChevronDown } from "lucide-react";
+import { HELP_FAQS } from "../data/helpFaqs";
 import { useAuth } from "../hooks/useAuth";
 import { emailService } from "../services/emailService";
 import { friendlyError } from "../utils/friendlyError";
@@ -46,13 +47,40 @@ export default function Contact() {
   return (
     <div className="pt-14 bg-page min-h-[calc(100vh-56px)]">
       <section className="bg-green-dark px-6 py-14 text-center">
-        <h1 className="text-[26px] font-medium text-white">Contact us</h1>
+        <h1 className="text-[26px] font-medium text-white">How can we help?</h1>
         <p className="text-sm text-green-tint-2 mt-2">
-          Questions about renting, listing, or a booking? We're happy to help.
+          Find a quick answer below, or send us a message.
         </p>
       </section>
 
-      <section className="max-w-[900px] mx-auto px-4 sm:px-6 py-12 flex flex-col sm:flex-row gap-10 flex-wrap">
+      <section className="max-w-[900px] mx-auto px-4 sm:px-6 pt-10">
+        <h2 className="text-[18px] font-medium text-ink mb-4">Common questions</h2>
+        <div className="flex flex-col gap-6">
+          {HELP_FAQS.map((group) => (
+            <div key={group.title}>
+              <div className="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-muted mb-2">{group.title}</div>
+              <div className="bg-white rounded-xl border border-border/50 divide-y divide-border">
+                {group.items.map((item) => (
+                  <details key={item.q} className="group px-4 py-3">
+                    <summary className="flex items-center justify-between gap-3 cursor-pointer list-none text-sm font-medium text-ink">
+                      {item.q}
+                      <ChevronDown size={16} className="shrink-0 text-ink-muted transition-transform group-open:rotate-180" />
+                    </summary>
+                    <p className="text-[13px] text-ink-muted leading-relaxed mt-2 mb-1">{item.a}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="max-w-[900px] mx-auto px-4 sm:px-6 pt-10">
+        <h2 className="text-[18px] font-medium text-ink">Still need help?</h2>
+        <p className="text-sm text-ink-muted mt-1">Send us a message and we'll reply by email.</p>
+      </section>
+
+      <section className="max-w-[900px] mx-auto px-4 sm:px-6 pt-6 pb-12 flex flex-col sm:flex-row gap-10 flex-wrap">
         <div className="flex-1 min-w-[220px] flex flex-col gap-5">
           {SUPPORT_EMAIL && (
             <div className="flex gap-3 items-start">
