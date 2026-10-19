@@ -39,25 +39,13 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [user]);
 
-  const upcomingBookings = myBookings.filter((b) => b.status === "confirmed" || b.status === "pending");
+  const upcomingBookings = myBookings.filter((b) => ["pending", "accepted", "confirmed"].includes(b.status));
   const pendingRequests = requests.filter((r) => r.status === "pending");
   const completedCount = myBookings.filter((b) => b.status === "completed").length;
 
-  async function acceptRequest(id) {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "confirmed" } : r)));
-    try { await bookingService.accept(id); }
-    catch { setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r))); }
-  }
-
-  async function declineRequest(id) {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "declined" } : r)));
-    try { await bookingService.decline(id); }
-    catch { setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: "pending" } : r))); }
-  }
-
   return (
     <div className="min-h-screen bg-page">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-[88px] pb-8 flex flex-col lg:flex-row gap-6 items-start">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-[88px] pb-8 flex flex-col lg:flex-row gap-6 lg:items-start">
         <Sidebar activeLink="/dashboard" />
 
         <div className="flex-1 min-w-0">
@@ -85,14 +73,10 @@ export default function Dashboard() {
                       <div className="text-sm font-medium text-orange mt-1">K{Number(r.total_price).toLocaleString()} total</div>
                     </div>
                     <div className="flex flex-col gap-2 shrink-0">
-                      <button onClick={() => acceptRequest(r.id)}
-                        className="px-4 py-2 text-[13px] font-medium text-white bg-green rounded-lg border-none cursor-pointer">
-                        Accept
-                      </button>
-                      <button onClick={() => declineRequest(r.id)}
-                        className="px-4 py-2 text-[13px] font-medium text-ink-muted bg-transparent rounded-lg border border-border-muted cursor-pointer">
-                        Decline
-                      </button>
+                      <Link to="/booking-requests"
+                        className="px-4 py-2 text-[13px] font-medium text-white bg-green rounded-lg no-underline text-center">
+                        Review
+                      </Link>
                     </div>
                   </div>
                 ))}

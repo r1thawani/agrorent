@@ -4,12 +4,14 @@ import Sidebar from "../components/Sidebar";
 import StatCard from "../components/StatCard";
 import { bookingService } from "../services/bookingService";
 import { useAuth } from "../hooks/useAuth";
+import { summarizeEarnings, lastMonths } from "../utils/earnings";
+import { friendlyError } from "../utils/friendlyError";
 
 const PAYOUT_CLASSES = {
   completed: "bg-green-tint text-green-dark",
-  confirmed: "bg-orange-tint text-orange-dark",
+  upcoming: "bg-orange-tint text-orange-dark",
 };
-const PAYOUT_LABELS = { completed: "Completed", confirmed: "Confirmed" };
+const PAYOUT_LABELS = { completed: "Completed", upcoming: "Upcoming" };
 
 function PayoutStatusBadge({ status }) {
   const cls = PAYOUT_CLASSES[status] || "bg-border text-ink-muted";
@@ -38,45 +40,29 @@ function MiniBarChart({ data }) {
   );
 }
 
-function lastEightMonths() {
-  const months = [];
-  const now = new Date();
-  for (let i = 7; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleString("default", { month: "short" }) });
-  }
-  return months;
-}
-
 export default function Earnings() {
   const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [payoutRequested, setPayoutRequested] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     if (!user) return;
     bookingService.getRequestsForOwner(user.id)
       .then(setBookings)
+      .catch((err) => setLoadError(friendlyError(err, "Could not load your earnings.")))
       .finally(() => setLoading(false));
   }, [user]);
 
-  const earningBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "completed");
-  const totalEarnings = earningBookings.reduce((sum, b) => sum + Number(b.total_price), 0);
-  const pendingPayout = bookings.filter((b) => b.status === "confirmed")
-    .reduce((sum, b) => sum + Number(b.total_price), 0);
+  const today = new Date().toISOString().split("T")[0];
+  const months = lastMonths(today);
+  const summary = summarizeEarnings(bookings, today, months.map((m) => m.key));
+  const monthlyData = months.map(({ key, label }) => ({ month: label, amount: summary.byMonth[key] }));
 
-  const months = lastEightMonths();
-  const monthlyData = months.map(({ key, label }) => {
-    const amount = earningBookings.filter((b) => {
-      const d = new Date(b.created_at);
-      return `${d.getFullYear()}-${d.getMonth()}` === key;
-    }).reduce((sum, b) => sum + Number(b.total_price), 0);
-    return { month: label, amount };
-  });
-  const thisMonth = monthlyData[monthlyData.length - 1]?.amount || 0;
-
-  const payoutHistory = earningBookings.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 10);
+  const payoutHistory = summary.earning
+    .slice()
+    .sort((a, b) => b.start_date.localeCompare(a.start_date))
+    .slice(0, 10);
 
   return (
     <div className="min-h-screen bg-page pt-14">
@@ -88,16 +74,21 @@ export default function Earnings() {
 
           {loading ? (
             <div className="text-center py-16 text-ink-muted">Loading…</div>
+          ) : loadError ? (
+            <div className="text-center py-16 text-red">{loadError}</div>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-7">
-                <StatCard label="Total earnings" value={`K${totalEarnings.toLocaleString()}`} valueColor="#FF5C00" />
-                <StatCard label="This month" value={`K${thisMonth.toLocaleString()}`} valueColor="#FF5C00" />
-                <StatCard label="Balance due at pickup" value={`K${pendingPayout.toLocaleString()}`} />
+                <StatCard label="Earned (completed rentals)" value={`K${summary.earned.toLocaleString()}`} valueColor="#FF5C00" />
+                <StatCard label="Upcoming (confirmed rentals)" value={`K${summary.upcoming.toLocaleString()}`} />
+                <StatCard label="To collect from renters at pickup" value={`K${summary.toCollectAtPickup.toLocaleString()}`} />
               </div>
 
               <div className="bg-white rounded-xl p-5 mb-7 border border-border/50">
-                <h2 className="text-[15px] font-medium text-ink mb-4">Monthly earnings</h2>
+                <div className="flex items-baseline justify-between mb-4">
+                  <h2 className="text-[15px] font-medium text-ink">Monthly earnings</h2>
+                  <span className="text-[13px] text-ink-muted">This month: K{summary.thisMonth.toLocaleString()}</span>
+                </div>
                 <MiniBarChart data={monthlyData} />
               </div>
 
@@ -115,11 +106,11 @@ export default function Earnings() {
                         className={`flex items-center px-4 py-3 ${i !== payoutHistory.length - 1 ? "border-b border-border" : ""}`}
                       >
                         <span className="text-[13px] text-ink-muted w-[120px] shrink-0">
-                          {new Date(b.created_at).toLocaleDateString()}
+                          {new Date(b.start_date).toLocaleDateString()}
                         </span>
                         <span className="text-sm text-ink flex-1">Booking for {b.equipment?.name}</span>
-                        <span className="text-sm font-medium text-ink mr-3">K{Number(b.total_price).toLocaleString()}</span>
-                        <PayoutStatusBadge status={b.status} />
+                        <span className="text-sm font-medium text-ink mr-3">K{b.ownerAmount.toLocaleString()}</span>
+                        <PayoutStatusBadge status={b.earningStatus} />
                       </div>
                     ))}
                   </div>
@@ -127,21 +118,10 @@ export default function Earnings() {
               </div>
 
               <p className="text-xs text-ink-faint mb-7">
-                Payout transfers to your mobile money account aren't set up yet — the figures above reflect booking value, not an actual completed bank transfer.
+                Amounts are what you earn from each rental (price per day × days); AgroRent's 5% service fee
+                is not included. Monthly figures are grouped by the month the rental starts. Payouts to mobile
+                money aren't set up yet.
               </p>
-
-              {!payoutRequested ? (
-                <button
-                  onClick={() => setPayoutRequested(true)}
-                  className="px-6 py-2.5 text-sm font-medium text-white rounded-lg bg-green border-none cursor-pointer mb-7"
-                >
-                  Request payout
-                </button>
-              ) : (
-                <div className="text-[13px] text-green-dark bg-green-tint rounded-lg px-4 py-2.5 mb-7 inline-block">
-                  Payout requested — you'll be notified once it's processed.
-                </div>
-              )}
 
               <div className="bg-white rounded-xl p-5 border border-border/50">
                 <h2 className="text-[15px] font-medium text-ink mb-3">Your payout account</h2>

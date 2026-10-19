@@ -3,14 +3,7 @@ import { Link } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { friendlyError } from "../utils/friendlyError";
-
-function getPasswordError(pw) {
-  if (pw.length < 8) return "Password must be at least 8 characters.";
-  if (!/[A-Z]/.test(pw)) return "Password must contain at least one uppercase letter.";
-  if (!/[a-z]/.test(pw)) return "Password must contain at least one lowercase letter.";
-  if (!/\d/.test(pw)) return "Password must contain at least one number.";
-  return "";
-}
+import { getPasswordError, PASSWORD_HINT } from "../utils/password";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -93,6 +86,7 @@ export default function ResetPassword() {
                   disabled={!sessionReady}
                   className="w-full h-11 px-3 text-sm border border-border rounded-lg outline-none disabled:opacity-50"
                 />
+                <p className="text-xs text-ink-muted mt-1">{PASSWORD_HINT}</p>
               </div>
 
               <div>

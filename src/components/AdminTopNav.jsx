@@ -28,8 +28,8 @@ export default function AdminTopNav() {
   }
 
   return (
-    <nav className="bg-green-dark sticky top-0 z-50 h-14">
-      <div className="max-w-[1280px] mx-auto h-full px-6 flex items-center gap-6">
+    <nav className="bg-green-dark sticky top-0 z-50 md:h-14">
+      <div className="max-w-[1280px] mx-auto h-full px-4 md:px-6 py-2 md:py-0 flex flex-wrap md:flex-nowrap items-center gap-x-6 gap-y-2">
 
         <Link to="/admin" className="flex items-center gap-2.5 no-underline shrink-0">
           <span className="text-white font-medium text-lg tracking-[-0.3px]">AgroRent</span>
@@ -38,7 +38,7 @@ export default function AdminTopNav() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-1 flex-1 justify-center overflow-x-auto">
+        <div className="order-last md:order-none w-full md:w-auto flex-none md:flex-1 flex items-center gap-1 justify-start md:justify-center overflow-x-auto">
           {ADMIN_LINKS.map((link) => {
             const Icon = link.icon;
             const active = location.pathname === link.path;
@@ -59,14 +59,14 @@ export default function AdminTopNav() {
           })}
         </div>
 
-        <div className="flex items-center gap-3.5 shrink-0">
+        <div className="flex items-center gap-3.5 shrink-0 ml-auto md:ml-0">
           <div className="flex items-center gap-2">
             <Avatar
               src={user?.photo_url || null}
               name={user?.name}
               className="w-7 h-7 text-[9px]"
             />
-            <span className="text-white text-[13px]">{user?.name || "Admin"}</span>
+            <span className="hidden sm:inline text-white text-[13px]">{user?.name || "Admin"}</span>
           </div>
           <button
             onClick={handleLogout}

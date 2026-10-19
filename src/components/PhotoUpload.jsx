@@ -1,26 +1,37 @@
 import { useState } from "react";
 import { Upload, X } from "lucide-react";
+import { LISTING_LIMITS, checkPhotoFile } from "../utils/listingRules";
+import { resizeImage } from "../utils/resizeImage";
 
-export default function PhotoUpload({ photos = [], onChange, maxPhotos = 10 }) {
+export default function PhotoUpload({ photos = [], onChange, maxPhotos = LISTING_LIMITS.maxPhotos }) {
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState("");
+  const [processing, setProcessing] = useState(false);
 
-  function readFiles(files) {
+  async function readFiles(files) {
+    const chosen = Array.from(files);
+    const problems = [];
+    const valid = chosen.filter((file) => {
+      const problem = checkPhotoFile(file);
+      if (problem) problems.push(problem);
+      return !problem;
+    });
+
     const remaining = maxPhotos - photos.length;
-    const toRead = Array.from(files).slice(0, remaining);
+    if (valid.length > remaining) {
+      problems.push(`Only ${maxPhotos} photos are allowed, so ${valid.length - remaining} of your photos were not added.`);
+    }
+    const toRead = valid.slice(0, Math.max(remaining, 0));
+    setError(problems.join(" "));
     if (!toRead.length) return;
 
-    const readers = toRead.map(
-      (file) =>
-        new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target.result);
-          reader.readAsDataURL(file);
-        })
-    );
-
-    Promise.all(readers).then((results) => {
-      onChange([...photos, ...results]);
-    });
+    setProcessing(true);
+    const results = await Promise.allSettled(toRead.map((file) => resizeImage(file)));
+    setProcessing(false);
+    const added = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
+    const failed = results.filter((r) => r.status === "rejected").map((r) => r.reason.message);
+    if (failed.length) setError([...problems, ...failed].join(" "));
+    if (added.length) onChange([...photos, ...added]);
   }
 
   function handleFileChange(e) {
@@ -35,6 +46,7 @@ export default function PhotoUpload({ photos = [], onChange, maxPhotos = 10 }) {
   }
 
   function remove(index) {
+    setError("");
     onChange(photos.filter((_, i) => i !== index));
   }
 
@@ -78,7 +90,7 @@ export default function PhotoUpload({ photos = [], onChange, maxPhotos = 10 }) {
         >
           <input
             type="file"
-            accept="image/*"
+            accept={LISTING_LIMITS.photoTypes.join(",")}
             multiple
             className="hidden"
             onChange={handleFileChange}
@@ -88,16 +100,18 @@ export default function PhotoUpload({ photos = [], onChange, maxPhotos = 10 }) {
             <>
               <span className="text-sm text-ink-muted">Click to upload or drag and drop</span>
               <span className="text-xs text-ink-muted">
-                Up to {maxPhotos} photos — JPG or PNG. First photo is the cover image.
+                Up to {maxPhotos} photos — JPG, PNG or WebP, up to {LISTING_LIMITS.maxPhotoMB} MB each. First photo is the cover image.
               </span>
             </>
           ) : (
             <span className="text-sm text-ink-muted">
-              Add more photos ({photos.length}/{maxPhotos})
+              {processing ? "Preparing photos…" : `Add more photos (${photos.length}/${maxPhotos})`}
             </span>
           )}
         </label>
       )}
+
+      {error && <p className="text-[12px] text-red mt-2">{error}</p>}
     </div>
   );
 }

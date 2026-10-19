@@ -109,7 +109,7 @@ export default function AdminBookings() {
             searchKeys={["renterName", "equipmentName"]}
             searchPlaceholder="Search bookings…"
             filters={[
-              { key: "status", label: "Status", options: ["All status", "pending", "confirmed", "completed", "cancelled", "declined"] },
+              { key: "status", label: "Status", options: ["All status", "pending", "accepted", "confirmed", "completed", "cancelled", "declined", "expired"] },
             ]}
             emptyMessage="No bookings match your filters"
           />

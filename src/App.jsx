@@ -19,6 +19,7 @@ import EditListing from "./pages/EditListing";
 import MyListings from "./pages/MyListings";
 import BookingPage from "./pages/BookingPage";
 import BookingConfirmation from "./pages/BookingConfirmation";
+import PayDeposit from "./pages/PayDeposit";
 import MyBookings from "./pages/MyBookings";
 import BookingRequests from "./pages/BookingRequests";
 import LeaveReview from "./pages/LeaveReview";
@@ -38,6 +39,7 @@ import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
+import AccountDeleted from "./pages/AccountDeleted";
 import CheckEmail from "./pages/CheckEmail";
 
 function Layout() {
@@ -65,11 +67,13 @@ function Layout() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/check-email" element={<CheckEmail />} />
+          <Route path="/account-deleted" element={<AccountDeleted />} />
 
           {/* Any logged-in user — role no longer restricts any of these,
               since every account can both rent and list. */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/listings/:id/book" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
+          <Route path="/booking/:id/pay" element={<ProtectedRoute><PayDeposit /></ProtectedRoute>} />
           <Route path="/booking/:id/confirmation" element={<ProtectedRoute><BookingConfirmation /></ProtectedRoute>} />
           <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
           <Route path="/review/:bookingId" element={<ProtectedRoute><LeaveReview /></ProtectedRoute>} />

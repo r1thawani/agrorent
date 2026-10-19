@@ -17,11 +17,15 @@ export default function PublicProfile() {
 
   useEffect(() => {
     async function load() {
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", id)
-        .single();
+      // Email and phone are private. Location columns arrive with
+      // migrations/005; until then, load the profile without them.
+      const base = "id, name, photo_url, bio, created_at";
+      let { data: profile, error: profileError } = await supabase
+        .from("profiles").select(`${base}, province, district`).eq("id", id).single();
+      if (profileError && profileError.code !== "PGRST116") {
+        ({ data: profile, error: profileError } = await supabase
+          .from("profiles").select(base).eq("id", id).single());
+      }
 
       if (profileError || !profile) {
         setNotFound(true);
@@ -73,7 +77,8 @@ export default function PublicProfile() {
     ? listings.reduce((sum, l) => sum + (l.rating || 0), 0) / listings.length
     : 0;
   const memberSince = owner.created_at ? new Date(owner.created_at).getFullYear() : "";
-  const primaryLocation = listings[0]?.location || "";
+  const primaryLocation =
+    [owner.district, owner.province].filter(Boolean).join(", ") || listings[0]?.location || "";
   const mappedListings = listings.map(toEquipmentCardProps);
 
   return (

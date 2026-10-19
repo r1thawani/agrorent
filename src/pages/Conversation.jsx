@@ -4,27 +4,40 @@ import { ArrowLeft, Send } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Avatar from "../components/Avatar";
 import MessageBubble from "../components/MessageBubble";
+import SuggestedQuestions from "../components/SuggestedQuestions";
 import { messageService } from "../services/messageService";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../hooks/useAuth";
+import { useNotifications } from "../context/NotificationContext";
+import { friendlyError } from "../utils/friendlyError";
 
 export default function Conversation() {
   const { id } = useParams();
   const { user } = useAuth();
+  const { refreshBadges } = useNotifications();
   const [conv, setConv] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [input, setInput] = useState("");
+  const [sendError, setSendError] = useState("");
   const bottomRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // A tapped suggestion goes into the box (after anything already typed)
+  // so the renter can change it before sending.
+  function addSuggestion(question) {
+    setInput((current) => (current.trim() ? `${current.trim()} ${question}` : question).slice(0, 1000));
+    inputRef.current?.focus();
+  }
 
   useEffect(() => {
     if (!user) return;
     messageService.getConversation(id, user.id)
       .then((data) => {
         setConv(data);
-        messageService.markMessagesRead(id, user.id).catch(() => {});
+        messageService.markMessagesRead(id, user.id).then(refreshBadges, () => {});
       })
       .catch(() => setLoadError("Conversation not found."));
-  }, [id, user]);
+  }, [id, user, refreshBadges]);
 
   // Real-time: append messages sent by the other person
   useEffect(() => {
@@ -51,11 +64,11 @@ export default function Conversation() {
             }],
           };
         });
-        messageService.markMessagesRead(id, user.id).catch(() => {});
+        messageService.markMessagesRead(id, user.id).then(refreshBadges, () => {});
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
-  }, [id, user]);
+  }, [id, user, refreshBadges]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -91,10 +104,13 @@ export default function Conversation() {
     const optimisticMsg = { id: `temp-${Date.now()}`, from: "me", text, time: "Now" };
     setConv((prev) => ({ ...prev, messages: [...prev.messages, optimisticMsg] }));
     setInput("");
+    setSendError("");
     try {
       await messageService.sendMessage(id, user.id, text);
-    } catch {
+    } catch (err) {
       setConv((prev) => ({ ...prev, messages: prev.messages.filter((m) => m.id !== optimisticMsg.id) }));
+      setInput(text);
+      setSendError(friendlyError(err, "Your message wasn't sent. Please try again."));
     }
   }
 
@@ -124,12 +140,23 @@ export default function Conversation() {
               <div ref={bottomRef} />
             </div>
 
+            {conv.isRenter && (
+              <SuggestedQuestions category={conv.category} onPick={addSuggestion}
+                defaultOpen={conv.messages.length === 0} />
+            )}
+
+            {sendError && (
+              <div className="px-4 py-2 text-[13px] text-red bg-red-tint border-t border-border">{sendError}</div>
+            )}
+
             <form onSubmit={sendMessage}
               className="h-16 border-t border-border px-4 flex items-center gap-3 shrink-0 bg-white">
               <input
+                ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                maxLength={1000}
                 placeholder="Type a message..."
                 className="flex-1 h-10 px-3 text-sm text-ink border border-border rounded-lg outline-none"
               />

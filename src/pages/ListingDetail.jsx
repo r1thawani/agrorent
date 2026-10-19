@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { MapPin, ChevronLeft, Heart } from "lucide-react";
 import { equipmentService } from "../services/equipmentService";
 import { bookingService } from "../services/bookingService";
 import { reviewService } from "../services/reviewService";
 import { messageService } from "../services/messageService";
+import { calculateBooking } from "../utils/calculateBooking";
 import StarRating from "../components/StarRating";
 import ReviewCard from "../components/ReviewCard";
 import { useWishlist } from "../context/WishlistContext";
@@ -80,6 +81,20 @@ export default function ListingDetail() {
   const [messageError, setMessageError] = useState("");
   const { isWishlisted, toggleWishlist } = useWishlist();
 
+  // Phones: the booking box comes after the photos, details and reviews, so a
+  // bar pinned to the bottom of the screen offers it until it scrolls into view.
+  const bookingBoxRef = useRef(null);
+  const [bookingBoxReached, setBookingBoxReached] = useState(false);
+  useEffect(() => {
+    const box = bookingBoxRef.current;
+    if (!box || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setBookingBoxReached(entry.isIntersecting || entry.boundingClientRect.top < 0);
+    });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [eq]);
+
   async function handleMessageOwner() {
     if (!user) { navigate("/login"); return; }
     setMessagingOwner(true);
@@ -121,9 +136,8 @@ export default function ListingDetail() {
   const days = startDate && endDate
     ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000))
     : 0;
-  const subtotal = days * eq.price_day;
-  const downpayment = Math.round(subtotal * 0.25);
-  const remaining = subtotal - downpayment;
+  const { subtotal, fee, downPayment: downpayment, balance: remaining } = calculateBooking(eq.price_day, days);
+  const canBook = eq.is_available !== false && !eq.deleted_at;
 
   const listedDate = eq.created_at
     ? new Date(eq.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })
@@ -166,8 +180,8 @@ export default function ListingDetail() {
                   {eq.condition} condition
                 </span>
                 {activeBooking && (
-                  <span className="text-[11px] font-medium px-2.5 py-[3px] rounded-full bg-red-tint text-red">
-                    Unavailable
+                  <span className="text-[11px] font-medium px-2.5 py-[3px] rounded-full bg-orange-tint text-orange-dark">
+                    Booked today
                   </span>
                 )}
               </div>
@@ -243,7 +257,7 @@ export default function ListingDetail() {
             </div>
           </div>
 
-          <div className="w-full lg:w-[340px] shrink-0 lg:sticky lg:top-20">
+          <div ref={bookingBoxRef} id="booking-box" className="w-full lg:w-[340px] shrink-0 lg:sticky lg:top-20 scroll-mt-20">
             <div className="bg-white border border-border/50 rounded-xl p-5">
               <div className="flex items-baseline gap-1">
                 <span className="text-[24px] font-medium text-orange">K{eq.price_day.toLocaleString()}</span>
@@ -275,23 +289,29 @@ export default function ListingDetail() {
               {days > 0 && (
                 <div className="mt-3 bg-page rounded-lg p-3 text-[13px] text-ink flex flex-col gap-1">
                   <div>{days} days × K{eq.price_day.toLocaleString()} = K{subtotal.toLocaleString()}</div>
-                  <div>Down payment due now: <strong>K{downpayment.toLocaleString()}</strong></div>
+                  <div className="text-xs text-ink-muted">Service fee: K{fee.toLocaleString()}</div>
+                  <div>Deposit after the owner accepts: <strong>K{downpayment.toLocaleString()}</strong></div>
                   <div className="text-xs text-ink-muted">Remaining balance at pickup: K{remaining.toLocaleString()}</div>
                 </div>
               )}
 
-              {!isOwnEquipment && (
-                <Link to={`/listings/${eq.id}/book`}
+              {!isOwnEquipment && !canBook && (
+                <div className="mt-4 bg-page rounded-lg px-3 py-2.5 text-[13px] text-ink-muted text-center">
+                  {eq.deleted_at ? "This listing has been removed by the owner." : "This equipment is not available for booking right now."}
+                </div>
+              )}
+              {!isOwnEquipment && canBook && (
+                <Link to={`/listings/${eq.id}/book${startDate && endDate ? `?start=${startDate}&end=${endDate}` : ""}`}
                   className="block w-full h-12 rounded-lg bg-orange text-white text-[15px] font-medium text-center leading-[48px] no-underline mt-4">
-                  Book Now
+                  Request to book
                 </Link>
               )}
               {activeBooking && (
                 <div className="mt-2 bg-red-tint rounded-lg px-3 py-2.5 text-[12px] text-red text-center">
-                  Booked until {new Date(activeBooking.end_date).toLocaleDateString()} — select dates after that
+                  Booked until {new Date(activeBooking.end_date).toLocaleDateString()}. You can still request other dates.
                 </div>
               )}
-              <p className="text-center text-xs text-ink-muted mt-2">You won't be charged yet</p>
+              <p className="text-center text-xs text-ink-muted mt-2">No payment until the owner accepts</p>
 
               <div className="border-t border-border my-4" />
 
@@ -324,6 +344,20 @@ export default function ListingDetail() {
           </div>
         </div>
       </div>
+
+      {!isOwnEquipment && canBook && !bookingBoxReached && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border px-4 py-3 flex items-center justify-between gap-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+          <div className="flex items-baseline gap-1">
+            <span className="text-[20px] font-medium text-orange">K{eq.price_day.toLocaleString()}</span>
+            <span className="text-sm text-ink-muted">/ day</span>
+          </div>
+          <a href="#booking-box"
+            onClick={(e) => { e.preventDefault(); bookingBoxRef.current?.scrollIntoView({ behavior: "smooth" }); }}
+            className="h-11 px-5 rounded-lg bg-orange text-white text-[15px] font-medium leading-[44px] no-underline">
+            Request to book
+          </a>
+        </div>
+      )}
     </div>
   );
 }

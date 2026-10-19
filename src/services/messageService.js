@@ -1,5 +1,6 @@
 // FILE: agrorent/src/services/messageService.js
 import { supabase } from "../lib/supabaseClient";
+import { emailService } from "./emailService";
 
 export const messageService = {
   // Returns one row per conversation the user is part of (as renter or
@@ -50,7 +51,7 @@ export const messageService = {
         equipment_id,
         renter_id,
         owner_id,
-        equipment(name),
+        equipment(name, category),
         renter:profiles!conversations_renter_id_fkey(id, name, photo_url),
         owner:profiles!conversations_owner_id_fkey(id, name, photo_url)
       `)
@@ -72,6 +73,8 @@ export const messageService = {
       person: otherPerson?.name || "Unknown",
       photo: otherPerson?.photo_url || "",
       equipment: conv.equipment?.name || "",
+      category: conv.equipment?.category || "",
+      isRenter: conv.renter_id === userId,
       messages: messages.map((m) => ({
         id: m.id,
         from: m.sender_id === userId ? "me" : "them",
@@ -133,6 +136,7 @@ export const messageService = {
       .select()
       .single();
     if (error) throw error;
+    emailService.notifyNewMessage(data.id);
     return data;
   },
 };

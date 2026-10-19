@@ -25,7 +25,10 @@ export default function Notification({ notification, onClick }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm text-ink leading-snug">{text}</div>
-        <div className="text-xs text-ink-muted mt-1">{time}</div>
+        <div className="text-xs text-ink-muted mt-1">
+          {time}
+          {notification.link && <span className="text-orange ml-2">Open →</span>}
+        </div>
       </div>
     </div>
   );

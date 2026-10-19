@@ -3,10 +3,30 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, HelpCircle } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import Avatar from "./Avatar";
+import { useNotifications } from "../context/NotificationContext";
+
+function AttentionDot({ count }) {
+  if (!count) return null;
+  return (
+    <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-orange border-2 border-green-dark"
+      title={`${count} thing${count === 1 ? "" : "s"} need your attention`} />
+  );
+}
+
+// Logged-out buttons, so Log In reads as a button next to Sign Up.
+const LOGIN_BTN =
+  "inline-flex items-center justify-center bg-transparent hover:bg-white/10 transition-colors text-white font-medium rounded-lg border border-white/50 no-underline";
+const SIGNUP_BTN =
+  "inline-flex items-center justify-center bg-orange hover:bg-orange-dark transition-colors text-white font-medium rounded-lg border border-orange no-underline";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const { badges } = useNotifications();
+  // Things waiting on this user: requests to answer, deposits to pay, unread messages/notifications.
+  const pending = isAuthenticated
+    ? badges.booking_requests + badges.my_bookings + badges.messages + badges.notifications
+    : 0;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   function handleLogout() {
@@ -52,7 +72,10 @@ export default function Navbar() {
                 to={user.role === "admin" ? "/admin" : "/dashboard"}
                 className="flex items-center gap-2 text-white text-sm no-underline"
               >
-                <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
+                <span className="relative">
+                  <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
+                  <AttentionDot count={pending} />
+                </span>
                 {user.name}
               </Link>
               <button
@@ -64,28 +87,40 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" className="text-white text-sm no-underline">
-                Login
+              <Link to="/login" className={`${LOGIN_BTN} h-9 px-4 text-[13px]`}>
+                Log In
               </Link>
-              <Link
-                to="/signup"
-                className="bg-orange text-white text-[13px] font-medium px-4 py-2 rounded-lg no-underline"
-              >
+              <Link to="/signup" className={`${SIGNUP_BTN} h-9 px-4 text-[13px]`}>
                 Sign Up
               </Link>
             </>
           )}
         </div>
 
-        {/* Hamburger — mobile only */}
-        <button
-          onClick={() => setMobileOpen((open) => !open)}
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-          aria-expanded={mobileOpen}
-          className="md:hidden text-white p-1 bg-transparent border-none cursor-pointer"
-        >
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* Mobile — Log In / Sign Up stay visible without opening the menu */}
+        <div className="md:hidden flex items-center gap-2">
+          {!isAuthenticated && (
+            <>
+              <Link to="/login" onClick={closeMobileMenu} className={`${LOGIN_BTN} h-8 px-3 text-[13px]`}>
+                Log In
+              </Link>
+              <Link to="/signup" onClick={closeMobileMenu} className={`${SIGNUP_BTN} h-8 px-3 text-[13px]`}>
+                Sign Up
+              </Link>
+            </>
+          )}
+
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={() => setMobileOpen((open) => !open)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            className="md:hidden relative text-white p-1 bg-transparent border-none cursor-pointer"
+          >
+            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+            {!mobileOpen && <AttentionDot count={pending} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile dropdown panel */}
@@ -105,16 +140,18 @@ export default function Navbar() {
             <HelpCircle size={16} /> Need help?
           </Link>
 
-          <div className="border-t border-white/10" />
-
-          {isAuthenticated ? (
+          {isAuthenticated && (
             <>
+              <div className="border-t border-white/10" />
               <Link
                 to={user.role === "admin" ? "/admin" : "/dashboard"}
                 onClick={closeMobileMenu}
                 className="flex items-center gap-2 text-white text-sm no-underline"
               >
-                <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
+                <span className="relative">
+                  <Avatar src={user.photo_url} name={user.name} className="w-7 h-7 text-[10px]" />
+                  <AttentionDot count={pending} />
+                </span>
                 {user.name}
               </Link>
               <button
@@ -123,19 +160,6 @@ export default function Navbar() {
               >
                 Log Out
               </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" onClick={closeMobileMenu} className="text-white text-sm no-underline">
-                Login
-              </Link>
-              <Link
-                to="/signup"
-                onClick={closeMobileMenu}
-                className="bg-orange text-white text-[13px] font-medium px-4 py-2 rounded-lg no-underline text-center"
-              >
-                Sign Up
-              </Link>
             </>
           )}
         </div>

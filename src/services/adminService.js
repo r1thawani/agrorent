@@ -1,10 +1,23 @@
 // FILE: agrorent/src/services/adminService.js
 import { supabase } from "../lib/supabaseClient";
 
+// Everyone's profile including email, for admins (migrations/004). If the
+// function can't be reached, show the list without emails rather than fail.
+async function adminProfiles(limit) {
+  const res = await supabase.rpc("admin_list_profiles", limit ? { p_limit: limit } : {});
+  if (!res.error) return res;
+  let query = supabase
+    .from("profiles")
+    .select("id, name, photo_url, bio, role, status, created_at")
+    .order("created_at", { ascending: false });
+  if (limit) query = query.limit(limit);
+  return query;
+}
+
 export const adminService = {
   async getStats() {
     const [{ count: userCount }, { count: listingCount }, { data: bookings }] = await Promise.all([
-      supabase.from("profiles").select("*", { count: "exact", head: true }),
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("equipment").select("*", { count: "exact", head: true }),
       supabase.from("bookings").select("total_price, status"),
     ]);
@@ -22,12 +35,9 @@ export const adminService = {
     };
   },
 
+  // Admin-only database function: the only way to see users' emails.
   async getRecentUsers(limit = 5) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(limit);
+    const { data, error } = await adminProfiles(limit);
     if (error) throw error;
     return data;
   },
@@ -44,10 +54,7 @@ export const adminService = {
   },
 
   async getAllUsers() {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await adminProfiles();
     if (error) throw error;
     return data;
   },
@@ -58,7 +65,7 @@ export const adminService = {
       .from("profiles")
       .update({ status: nextStatus })
       .eq("id", id)
-      .select()
+      .select("id, name, role, status") // not email: see migrations/004
       .single();
     if (error) throw error;
     return data;

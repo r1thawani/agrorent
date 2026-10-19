@@ -8,6 +8,7 @@ import { bookingService } from "../services/bookingService";
 import { messageService } from "../services/messageService";
 import { useAuth } from "../hooks/useAuth";
 import Avatar from "../components/Avatar";
+import { summarizeEarnings } from "../utils/earnings";
 
 export default function OwnerDashboard() {
   const { user } = useAuth();
@@ -33,32 +34,14 @@ export default function OwnerDashboard() {
       .finally(() => setLoading(false));
   }, [user]);
 
-  async function accept(id) {
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "confirmed" } : b)));
-    try { await bookingService.accept(id); }
-    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b))); }
-  }
-
-  async function decline(id) {
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "declined" } : b)));
-    try { await bookingService.decline(id); }
-    catch { setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "pending" } : b))); }
-  }
-
   const pendingRequests = bookings.filter((b) => b.status === "pending");
   const confirmedBookings = bookings.filter((b) => b.status === "confirmed");
-  const earningsThisMonth = bookings
-    .filter((b) => {
-      if (b.status !== "confirmed" && b.status !== "completed") return false;
-      const d = new Date(b.created_at);
-      const now = new Date();
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    })
-    .reduce((sum, b) => sum + Number(b.total_price), 0);
+  const today = new Date().toISOString().split("T")[0];
+  const earningsThisMonth = summarizeEarnings(bookings, today, [today.slice(0, 7)]).thisMonth;
 
   return (
     <div className="min-h-screen bg-page pt-14">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 items-start">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 pb-8 flex flex-col lg:flex-row gap-6 lg:items-start">
         <Sidebar activeLink="/dashboard/owner" />
 
         <div className="flex-1 min-w-0">
@@ -95,14 +78,10 @@ export default function OwnerDashboard() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2 shrink-0">
-                        <button onClick={() => accept(r.id)}
-                          className="px-[18px] py-2 text-[13px] font-medium text-white bg-green rounded-lg border-none cursor-pointer">
-                          Accept
-                        </button>
-                        <button onClick={() => decline(r.id)}
-                          className="px-[18px] py-2 text-[13px] font-medium text-ink-muted bg-transparent border border-border-muted rounded-lg cursor-pointer">
-                          Decline
-                        </button>
+                        <Link to="/booking-requests"
+                          className="px-[18px] py-2 text-[13px] font-medium text-white bg-green rounded-lg no-underline text-center">
+                          Review
+                        </Link>
                         <Link to="/messages"
                           className="text-xs text-center text-green no-underline">
                           Message renter
@@ -126,7 +105,7 @@ export default function OwnerDashboard() {
             ) : (
               <div className="flex flex-col gap-2.5">
                 {confirmedBookings.map((b) => (
-                  <BookingCard key={b.id} booking={b} linkTo="/booking-requests" />
+                  <BookingCard key={b.id} booking={b} linkTo="/booking-requests" role="owner" />
                 ))}
               </div>
             )}

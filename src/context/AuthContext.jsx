@@ -2,6 +2,7 @@
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { isBusyError } from "../utils/friendlyError";
+import { postApi } from "../lib/api";
 
 export const AuthContext = createContext(null);
 
@@ -10,10 +11,61 @@ export const AuthContext = createContext(null);
 // retries instead of failing the whole login on the first slow response.
 const RETRY_DELAYS_MS = [800, 2000];
 
-async function loadProfile(userId) {
+// Profile columns anyone may read and that exist in every version of the
+// database (not email, phone or date of birth, which are private).
+const PUBLIC_PROFILE_COLUMNS = "id, name, photo_url, bio, role, status, created_at";
+
+// Details typed on the sign-up form travel with the account (user metadata)
+// until the person first logs in; copy any the profile is still missing.
+const SIGNUP_FIELDS = ["phone", "province", "district", "date_of_birth"];
+
+async function fillFromSignup(profile) {
+  // Only with the full profile (my_profile()): the public fallback can't see
+  // phone or date of birth, so it can't tell whether they're missing.
+  if (!profile || !("phone" in profile)) return profile;
+  const { data: { session } } = await supabase.auth.getSession();
+  const meta = session?.user?.user_metadata || {};
+  const changes = {};
+  for (const field of SIGNUP_FIELDS) {
+    if (!profile[field] && meta[field]) changes[field] = meta[field];
+  }
+  if (Object.keys(changes).length === 0) return profile;
+  const { error } = await supabase.from("profiles").update(changes).eq("id", profile.id);
+  if (error) {
+    console.warn("Could not copy sign-up details to the profile:", error.message);
+    return profile;
+  }
+  return { ...profile, ...changes };
+}
+
+async function loadProfile() {
   for (let attempt = 0; ; attempt++) {
-    const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
-    if (!error) return data;
+    // my_profile() returns the signed-in user's own row in full; other
+    // people's emails are hidden (migrations/004_private_emails.sql).
+    let { data, error } = await supabase.rpc("my_profile").single();
+    // If the function can't be reached (migration not run yet, or Supabase's
+    // API hasn't picked it up), read the columns everyone may read and take
+    // the email from the login session. Never select("*"): once emails are
+    // private, that is refused outright.
+    if (error && !isBusyError(error)) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase
+        .from("profiles")
+        .select(PUBLIC_PROFILE_COLUMNS)
+        .eq("id", session?.user?.id)
+        .single();
+      data = res.data ? { ...res.data, email: session.user.email } : null;
+      error = res.error;
+    }
+    if (!error) {
+      // Closed account whose login wasn't removed (the last step of
+      // /api/delete-account failed): don't let it back in.
+      if (data?.deleted_at) {
+        await supabase.auth.signOut({ scope: "local" });
+        throw new Error("This account has been deleted.");
+      }
+      return fillFromSignup(data);
+    }
     if (!isBusyError(error) || attempt >= RETRY_DELAYS_MS.length) throw error;
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
   }
@@ -86,7 +138,7 @@ export function AuthProvider({ children }) {
         return;
       }
       try {
-        const profile = await loadProfile(session.user.id);
+        const profile = await loadProfile();
         if (active) applyUser(profile);
       } catch (err) {
         console.error("Could not load profile:", err);
@@ -134,17 +186,17 @@ export function AuthProvider({ children }) {
     markRecovering(false);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    const { data: { session } } = await supabase.auth.getSession();
-    const profile = await loadProfile(session.user.id);
+    const profile = await loadProfile();
     applyUser(profile);
     return profile;
   }
 
-  async function signup({ name, email, password }) {
+  async function signup({ name, email, password, phone, province, district, dateOfBirth }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      // Saved to the profile at first login (fillFromSignup).
+      options: { data: { name, phone, province, district, date_of_birth: dateOfBirth } },
     });
     if (error) throw error;
     // identities is empty when the email is already registered (Supabase silent-duplicate behaviour)
@@ -155,6 +207,33 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     await supabase.auth.signOut();
+  }
+
+  // Re-checks the signed-in person's password before a sensitive change,
+  // so an unattended, logged-in device can't be used to make it.
+  async function verifyPassword(password) {
+    const { error } = await supabase.auth.signInWithPassword({ email: user.email, password });
+    if (error) {
+      throw new Error(/invalid login credentials/i.test(error.message)
+        ? "That password isn't right. Please try again."
+        : error.message);
+    }
+  }
+
+  async function changePassword(currentPassword, newPassword) {
+    if (!user) return;
+    await verifyPassword(currentPassword);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
+  // Closes the account (/api/delete-account). Doesn't sign out: the caller
+  // moves to /account-deleted first, which does, so the protected page it
+  // came from doesn't bounce to /login.
+  async function deleteAccount(password) {
+    if (!user) return;
+    await verifyPassword(password);
+    await postApi("/api/delete-account");
   }
 
   // Optimistic update that rolls back and throws if the database rejects it,
@@ -179,6 +258,8 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     updateProfile,
+    changePassword,
+    deleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,17 +3,19 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import LocationSelect from "../components/LocationSelect";
 import { useAuth } from "../hooks/useAuth";
-import { supabase } from "../lib/supabaseClient";
 import Avatar from "../components/Avatar";
+import { formatPhoneInput, isValidPhone } from "../utils/phone";
+import { friendlyError } from "../utils/friendlyError";
+import { getPasswordError, PASSWORD_HINT } from "../utils/password";
 
 export default function EditProfile() {
   const navigate = useNavigate();
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, changePassword, deleteAccount } = useAuth();
   const [form, setForm] = useState({
     name: user?.name || "",
-    phone: "",
-    province: "Lusaka Province",
-    district: "Lusaka",
+    phone: user?.phone || "+260",
+    province: user?.province || "",
+    district: user?.district || "",
   });
   const [bio, setBio] = useState(user?.bio || "");
   const [focusedField, setFocusedField] = useState(null);
@@ -23,8 +25,12 @@ export default function EditProfile() {
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [pwError, setPwError] = useState("");
   const [pwSaved, setPwSaved] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   function inputCls(field) {
     return `w-full h-11 px-3 text-sm text-ink rounded-lg outline-none ${
@@ -39,7 +45,18 @@ export default function EditProfile() {
       setSaveError("Name cannot be empty.");
       return;
     }
+    // "+260" alone means the field was left empty.
+    const phone = form.phone === "+260" ? null : form.phone;
+    if (phone && !isValidPhone(phone)) {
+      setSaveError("Please enter your phone number in the format +260XXXXXXXXX.");
+      return;
+    }
     try {
+      const details = {};
+      if (phone !== (user.phone || null)) details.phone = phone;
+      if (form.province !== (user.province || "")) details.province = form.province || null;
+      if (form.district !== (user.district || "")) details.district = form.district || null;
+      if (Object.keys(details).length) await updateProfile(details);
       // Saved separately so a name edit still works even if the bio column
       // hasn't been added to the database yet.
       if (form.name.trim() !== user.name) {
@@ -74,12 +91,27 @@ export default function EditProfile() {
     e.target.value = "";
   }
 
-  function getPasswordError(pw) {
-    if (pw.length < 8) return "New password must be at least 8 characters.";
-    if (!/[A-Z]/.test(pw)) return "New password must include at least one uppercase letter.";
-    if (!/[a-z]/.test(pw)) return "New password must include at least one lowercase letter.";
-    if (!/[0-9]/.test(pw)) return "New password must include at least one number.";
-    return "";
+  function cancelDelete() {
+    setConfirmDelete(false);
+    setDeletePassword("");
+    setDeleteError("");
+  }
+
+  async function handleDelete(e) {
+    e.preventDefault();
+    if (!deletePassword) {
+      setDeleteError("Enter your password to confirm.");
+      return;
+    }
+    setDeleteError("");
+    setDeleting(true);
+    try {
+      await deleteAccount(deletePassword);
+      navigate("/account-deleted", { replace: true });
+    } catch (err) {
+      setDeleteError(friendlyError(err, "We couldn't delete your account. Please try again."));
+      setDeleting(false);
+    }
   }
 
   async function handlePasswordUpdate(e) {
@@ -94,15 +126,21 @@ export default function EditProfile() {
       setPwError("New password and confirmation don't match.");
       return;
     }
+    if (pwForm.next === pwForm.current) {
+      setPwError("Your new password must be different from your current one.");
+      return;
+    }
     setPwError("");
+    setPwSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: pwForm.next });
-      if (error) throw error;
+      await changePassword(pwForm.current, pwForm.next);
       setPwSaved(true);
       setPwForm({ current: "", next: "", confirm: "" });
       setTimeout(() => setPwSaved(false), 2500);
     } catch (err) {
-      setPwError(err.message || "Could not update your password. Please try again.");
+      setPwError(friendlyError(err, "Could not update your password. Please try again."));
+    } finally {
+      setPwSaving(false);
     }
   }
 
@@ -137,10 +175,13 @@ export default function EditProfile() {
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-ink mb-2">Phone Number</label>
-                <input type="tel" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                <input type="tel" value={form.phone} placeholder="+260XXXXXXXXX"
+                  onChange={(e) => setForm((f) => ({ ...f, phone: formatPhoneInput(e.target.value) }))}
                   onFocus={() => setFocusedField("phone")} onBlur={() => setFocusedField(null)}
                   className={inputCls("phone")} />
-                <p className="text-[11px] text-ink-faint mt-1">Not saved yet — coming soon.</p>
+                <p className="text-[11px] text-ink-muted mt-1">
+                  Private. Only shared with the other person on a booking once the deposit is paid, so you can arrange pickup.
+                </p>
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-ink mb-2">Location</label>
@@ -149,9 +190,8 @@ export default function EditProfile() {
                   district={form.district}
                   onProvinceChange={(v) => setForm((f) => ({ ...f, province: v }))}
                   onDistrictChange={(v) => setForm((f) => ({ ...f, district: v }))}
-                  required
                 />
-                <p className="text-[11px] text-ink-faint mt-1">Not saved yet — coming soon.</p>
+                <p className="text-[11px] text-ink-muted mt-1">Shown on your public profile.</p>
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-ink mb-2">Short bio</label>
@@ -188,20 +228,22 @@ export default function EditProfile() {
             <h2 className="text-[15px] font-medium text-ink mb-5">Change password</h2>
             <div className="flex flex-col gap-6">
               {[
-                { label: "Current Password", field: "current" },
-                { label: "New Password", field: "next" },
-                { label: "Confirm New Password", field: "confirm" },
-              ].map(({ label, field }) => (
+                { label: "Current Password", field: "current", autoComplete: "current-password" },
+                { label: "New Password", field: "next", autoComplete: "new-password", hint: PASSWORD_HINT },
+                { label: "Confirm New Password", field: "confirm", autoComplete: "new-password" },
+              ].map(({ label, field, autoComplete, hint }) => (
                 <div key={field}>
                   <label className="block text-[13px] font-medium text-ink mb-2">{label}</label>
                   <input
                     type="password"
+                    autoComplete={autoComplete}
                     value={pwForm[field]}
                     onChange={(e) => setPwForm((f) => ({ ...f, [field]: e.target.value }))}
                     onFocus={() => setFocusedField(field)}
                     onBlur={() => setFocusedField(null)}
                     className={inputCls(field)}
                   />
+                  {hint && <p className="text-xs text-ink-muted mt-1">{hint}</p>}
                 </div>
               ))}
 
@@ -212,17 +254,22 @@ export default function EditProfile() {
                 </div>
               )}
 
-              <button type="submit"
-                className="w-full h-11 rounded-lg text-sm font-medium bg-transparent border border-orange text-orange cursor-pointer">
-                Update password
+              <button type="submit" disabled={pwSaving}
+                className="w-full h-11 rounded-lg text-sm font-medium bg-transparent border border-orange text-orange cursor-pointer disabled:opacity-60">
+                {pwSaving ? "Updating…" : "Update password"}
               </button>
             </div>
           </form>
 
           <div className="bg-white rounded-xl p-6 border border-border/50 border-l-[3px] border-l-red">
             <h2 className="text-[15px] font-medium text-red mb-2">Delete account</h2>
+            <p className="text-[13px] text-ink-muted mb-2">
+              This permanently deletes your account. Your profile, phone number and listings are removed, any
+              requests you haven't paid for are withdrawn, and you won't be able to log in again.
+            </p>
             <p className="text-[13px] text-ink-muted mb-4">
-              Deleting your account is permanent. All your listings, bookings, and data will be removed.
+              Bookings and messages you shared with other people stay in their history, shown as
+              "Deleted user". You can't delete your account while a paid booking hasn't finished.
             </p>
 
             {!confirmDelete ? (
@@ -231,16 +278,34 @@ export default function EditProfile() {
                 Delete my account
               </button>
             ) : (
-              <div className="flex gap-2.5">
-                <button onClick={() => setConfirmDelete(false)}
-                  className="flex-1 h-11 rounded-lg text-sm font-medium bg-transparent border border-border-muted text-ink-muted cursor-pointer">
-                  Cancel
-                </button>
-                <button onClick={() => { logout(); navigate("/"); }}
-                  className="flex-1 h-11 rounded-lg text-sm font-medium text-white bg-red border-none cursor-pointer">
-                  Confirm delete
-                </button>
-              </div>
+              <form onSubmit={handleDelete} className="flex flex-col gap-3">
+                <label className="text-[13px] text-ink" htmlFor="delete-password">
+                  Enter your password to confirm
+                </label>
+                <input
+                  id="delete-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  onFocus={() => setFocusedField("deletePassword")}
+                  onBlur={() => setFocusedField(null)}
+                  className={inputCls("deletePassword")}
+                />
+                {deleteError && (
+                  <div className="text-[13px] text-red bg-red-tint rounded-lg px-3 py-2">{deleteError}</div>
+                )}
+                <div className="flex gap-2.5">
+                  <button type="button" onClick={cancelDelete} disabled={deleting}
+                    className="flex-1 h-11 rounded-lg text-sm font-medium bg-transparent border border-border-muted text-ink-muted cursor-pointer">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={deleting}
+                    className="flex-1 h-11 rounded-lg text-sm font-medium text-white bg-red border-none cursor-pointer disabled:opacity-60">
+                    {deleting ? "Deleting…" : "Delete permanently"}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>
