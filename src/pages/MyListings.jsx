@@ -57,15 +57,12 @@ export default function MyListings() {
     }
   }
 
+  // Removes the row only once the database has deleted it. (Hiding it first
+  // and re-adding it on failure re-created the row, which lost its error
+  // message: the listing just "came back" with no reason given.)
   async function deleteListing(id) {
-    const removed = listings.find((eq) => eq.id === id);
+    await equipmentService.remove(id); // throws, so ListingRow can show why
     setListings((prev) => prev.filter((eq) => eq.id !== id));
-    try {
-      await equipmentService.remove(id);
-    } catch (err) {
-      if (removed) setListings((prev) => [...prev, removed].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
-      throw err; // re-throw so ListingRow can show the error
-    }
   }
 
   return (
