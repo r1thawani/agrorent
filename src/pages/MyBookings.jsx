@@ -9,6 +9,8 @@ import { formatDateRange } from "../utils/formatDate";
 import { friendlyError } from "../utils/friendlyError";
 import { describeStatus, effectiveStatus, timeLeft, TONE_CLASSES } from "../utils/bookingStatus";
 import ConfirmDialog from "../components/ConfirmDialog";
+import ReportProblemDialog, { ReportStatus } from "../components/ReportProblem";
+import { disputeService, REPORTABLE_STATUSES } from "../services/disputeService";
 
 // Tabs group bookings by what the renter needs to do.
 const TABS = [
@@ -34,7 +36,7 @@ function ContactLine({ contact, who }) {
   );
 }
 
-function BookingRow({ booking, now, onCancel, contact }) {
+function BookingRow({ booking, now, onCancel, contact, report, onReport }) {
   const photos = (booking.equipment?.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
   const image = photos[0]?.url || "";
   const status = effectiveStatus(booking, now);
@@ -59,6 +61,7 @@ function BookingRow({ booking, now, onCancel, contact }) {
         </span>
         {note && <div className="text-xs text-ink-muted mt-1.5">{note}</div>}
         <ContactLine contact={contact} who="Owner" />
+        <ReportStatus report={report} />
       </div>
       <div className="w-full sm:w-auto flex sm:block items-baseline gap-2 text-left sm:text-right shrink-0">
         <div className="text-[15px] font-medium text-orange">K{Number(booking.total_price).toLocaleString()}</div>
@@ -91,6 +94,12 @@ function BookingRow({ booking, now, onCancel, contact }) {
             Leave a review
           </Link>
         )}
+        {REPORTABLE_STATUSES.includes(status) && report?.status !== "open" && (
+          <button onClick={() => onReport(booking)}
+            className="text-[13px] text-ink-muted bg-transparent border-none p-0 cursor-pointer">
+            Report a problem
+          </button>
+        )}
       </div>
     </div>
   );
@@ -103,6 +112,7 @@ export default function MyBookings() {
   const { refreshBadges, lastEventAt } = useNotifications();
   const [bookings, setBookings] = useState([]);
   const [contacts, setContacts] = useState({});
+  const [reports, setReports] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -113,6 +123,7 @@ export default function MyBookings() {
   useEffect(() => {
     if (!user) return;
     bookingService.getContacts().then(setContacts);
+    disputeService.getMyReports(user.id).then(setReports).catch(() => {});
     bookingService.getMyBookings(user.id)
       .then(setBookings)
       .catch(() => setLoadError("Could not load your bookings."))
@@ -123,6 +134,20 @@ export default function MyBookings() {
   // The booking waiting for "are you sure?" in the confirmation box.
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelling, setCancelling] = useState(false);
+  // The booking being reported in the "Report a problem" box.
+  const [reportTarget, setReportTarget] = useState(null);
+
+  function handleReport(booking) {
+    setActionError("");
+    setNotice("");
+    setReportTarget(booking);
+  }
+
+  function handleReported(report) {
+    setReports((prev) => ({ ...prev, [report.booking_id]: report }));
+    setReportTarget(null);
+    setNotice("Thanks, your report was sent. An AgroRent admin will look into it and contact you.");
+  }
 
   function handleCancel(booking) {
     setActionError("");
@@ -211,7 +236,8 @@ export default function MyBookings() {
           {!loading && !loadError && filtered.length > 0 && (
             <div className="flex flex-col gap-2.5">
               {filtered.map((b) => (
-                <BookingRow key={b.id} booking={b} now={now} onCancel={handleCancel} contact={contacts[b.id]} />
+                <BookingRow key={b.id} booking={b} now={now} onCancel={handleCancel} contact={contacts[b.id]}
+                  report={reports[b.id]} onReport={handleReport} />
               ))}
             </div>
           )}
@@ -245,6 +271,15 @@ export default function MyBookings() {
           </>
         )}
       </ConfirmDialog>
+
+      {reportTarget && (
+        <ReportProblemDialog
+          booking={reportTarget}
+          otherName={contacts[reportTarget.id]?.name}
+          onClose={() => setReportTarget(null)}
+          onReported={handleReported}
+        />
+      )}
     </div>
   );
 }

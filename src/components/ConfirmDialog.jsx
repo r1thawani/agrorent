@@ -17,10 +17,18 @@ export default function ConfirmDialog({
   onCancel,
 }) {
   const cancelRef = useRef(null);
+  const dialogRef = useRef(null);
+
+  // Focus once when it opens. Not on every render: pages re-render each
+  // second (countdowns), which would pull focus out of a text box inside.
+  useEffect(() => {
+    if (!open) return;
+    const field = dialogRef.current?.querySelector("textarea, input");
+    (field || cancelRef.current)?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    cancelRef.current?.focus();
     function onKey(e) {
       if (e.key === "Escape" && !busy) onCancel();
     }
@@ -40,6 +48,7 @@ export default function ConfirmDialog({
       onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onCancel(); }}
     >
       <div
+        ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"

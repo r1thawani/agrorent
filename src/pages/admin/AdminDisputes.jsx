@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import AdminTopNav from "../../components/AdminTopNav";
 import { adminService } from "../../services/adminService";
 import Avatar from "../../components/Avatar";
+import { formatDateRange } from "../../utils/formatDate";
 
 export default function AdminDisputes() {
   const [activeTab, setActiveTab] = useState("open");
@@ -16,7 +17,7 @@ export default function AdminDisputes() {
 
   async function resolve(id) {
     const noteText = notes[id] ?? "";
-    setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "resolved" } : d)));
+    setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "resolved", resolution_notes: noteText || null } : d)));
     try { await adminService.resolveDispute(id, noteText); }
     catch { setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "open" } : d))); }
   }
@@ -74,6 +75,16 @@ export default function AdminDisputes() {
                     </div>
                   </div>
                 </div>
+
+                {d.booking && (
+                  <>
+                    <div className={miniLabel}>Booking</div>
+                    <p className="text-[14px] text-ink m-0 mb-4">
+                      {d.booking.equipment?.name ?? "Listing removed"}
+                      {" · "}{formatDateRange(d.booking.start_date, d.booking.end_date)}
+                    </p>
+                  </>
+                )}
 
                 <div className={miniLabel}>Reason</div>
                 <p className="text-[14px] text-ink m-0">{d.reason}</p>

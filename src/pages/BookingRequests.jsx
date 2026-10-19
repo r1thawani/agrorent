@@ -8,6 +8,8 @@ import { useNotifications } from "../context/NotificationContext";
 import Avatar from "../components/Avatar";
 import { formatDateRange } from "../utils/formatDate";
 import { friendlyError } from "../utils/friendlyError";
+import ReportProblemDialog, { ReportStatus } from "../components/ReportProblem";
+import { disputeService, REPORTABLE_STATUSES } from "../services/disputeService";
 import { acceptBlocker, describeStatus, effectiveStatus, timeLeft, TONE_CLASSES } from "../utils/bookingStatus";
 
 const TABS = [
@@ -17,7 +19,7 @@ const TABS = [
   { key: "closed", label: "Declined / cancelled", statuses: ["declined", "expired", "cancelled"] },
 ];
 
-function RequestRow({ request, allBookings, now, busy, onAccept, onDecline, contact }) {
+function RequestRow({ request, allBookings, now, busy, onAccept, onDecline, contact, report, onReport }) {
   const status = effectiveStatus(request, now);
   const { label, tone, note } = describeStatus(request, "owner", now);
   const blocker = status === "pending" ? acceptBlocker(request, allBookings, now) : "";
@@ -54,6 +56,7 @@ function RequestRow({ request, allBookings, now, busy, onAccept, onDecline, cont
               : <span className="text-ink-muted">not added yet, use Messages</span>}
           </div>
         )}
+        <ReportStatus report={report} />
       </div>
       <div className="shrink-0 w-full sm:w-auto flex flex-row sm:flex-col gap-2 items-center sm:items-stretch">
         {status === "pending" || status === "accepted" ? (
@@ -73,9 +76,17 @@ function RequestRow({ request, allBookings, now, busy, onAccept, onDecline, cont
             </Link>
           </>
         ) : (
-          <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full ${TONE_CLASSES[tone]}`}>
-            {label}
-          </span>
+          <>
+            <span className={`inline-block text-[11px] font-medium px-2.5 py-[3px] rounded-full ${TONE_CLASSES[tone]}`}>
+              {label}
+            </span>
+            {REPORTABLE_STATUSES.includes(status) && report?.status !== "open" && (
+              <button onClick={() => onReport(request)}
+                className="text-[13px] text-ink-muted bg-transparent border-none p-0 cursor-pointer sm:text-right">
+                Report a problem
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -93,9 +104,14 @@ export default function BookingRequests() {
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [reports, setReports] = useState({});
+  // The booking being reported in the "Report a problem" box.
+  const [reportTarget, setReportTarget] = useState(null);
+  const [notice, setNotice] = useState("");
 
   const load = useCallback(() => {
     bookingService.getContacts().then(setContacts);
+    disputeService.getMyReports(user.id).then(setReports).catch(() => {});
     return bookingService.getRequestsForOwner(user.id).then(setRequests);
   }, [user]);
 
@@ -133,6 +149,9 @@ export default function BookingRequests() {
         <div className="flex-1 min-w-0">
           <h1 className="text-[22px] font-medium text-ink mb-4">Booking requests</h1>
 
+          {notice && (
+            <div className="bg-green-tint text-green-dark text-sm rounded-lg px-4 py-3 mb-4">{notice}</div>
+          )}
           {actionError && (
             <div className="bg-red-tint text-red text-sm rounded-lg px-4 py-3 mb-4">{actionError}</div>
           )}
@@ -176,6 +195,8 @@ export default function BookingRequests() {
                 <RequestRow key={r.id} request={r} allBookings={requests} now={now}
                   busy={busyId === r.id}
                   contact={contacts[r.id]}
+                  report={reports[r.id]}
+                  onReport={(booking) => { setActionError(""); setNotice(""); setReportTarget(booking); }}
                   onAccept={(id) => act(id, bookingService.accept)}
                   onDecline={(id) => act(id, bookingService.decline)} />
               ))}
@@ -183,6 +204,19 @@ export default function BookingRequests() {
           )}
         </div>
       </div>
+
+      {reportTarget && (
+        <ReportProblemDialog
+          booking={reportTarget}
+          otherName={reportTarget.renter?.name}
+          onClose={() => setReportTarget(null)}
+          onReported={(report) => {
+            setReports((prev) => ({ ...prev, [report.booking_id]: report }));
+            setReportTarget(null);
+            setNotice("Thanks, your report was sent. An AgroRent admin will look into it and contact you.");
+          }}
+        />
+      )}
     </div>
   );
 }

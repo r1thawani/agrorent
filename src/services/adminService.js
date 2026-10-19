@@ -104,7 +104,7 @@ export const adminService = {
   async getAllDisputes() {
     const { data, error } = await supabase
       .from("disputes")
-      .select("*, reporter:profiles!disputes_reporter_id_fkey(name, photo_url), against:profiles!disputes_against_id_fkey(name, photo_url)")
+      .select("*, reporter:profiles!disputes_reporter_id_fkey(name, photo_url), against:profiles!disputes_against_id_fkey(name, photo_url), booking:bookings(start_date, end_date, equipment(name))")
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data;
