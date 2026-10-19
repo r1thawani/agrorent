@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 // verbatim. This fails when a migration is added or edited without copying
 // it there, so a new project can't end up behind the live one.
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const schema = readFileSync(`${root}schema.sql`, "utf8");
+// Git on Windows may check files out with CRLF line endings; compare as LF.
+const readText = (path) => readFileSync(path, "utf8").replace(/\r\n/g, "\n");
+const schema = readText(`${root}schema.sql`);
 const migrations = readdirSync(`${root}migrations`).filter((f) => f.endsWith(".sql")).sort();
 
 describe("schema.sql", () => {
@@ -22,7 +24,7 @@ describe("schema.sql", () => {
       const to = schema.indexOf(end, from);
       expect(from, `migrations/${file} is missing from schema.sql section 16`).toBeGreaterThan(-1);
       const copied = schema.slice(from + start.length, to);
-      const original = readFileSync(`${root}migrations/${file}`, "utf8").replace(/\n+$/, "");
+      const original = readText(`${root}migrations/${file}`).replace(/\n+$/, "");
       expect(copied, `schema.sql's copy of migrations/${file} is out of date`).toBe(original);
     });
   }
