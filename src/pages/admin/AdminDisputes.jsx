@@ -15,8 +15,11 @@ export default function AdminDisputes() {
     adminService.getAllDisputes().then(setDisputes).finally(() => setLoading(false));
   }, []);
 
-  async function resolve(id) {
-    const noteText = notes[id] ?? "";
+  // Dismissing closes it the same way (there is no separate "dismissed"
+  // status); the note tells the reporter no action was needed.
+  async function resolve(id, { dismiss = false } = {}) {
+    const typed = (notes[id] ?? "").trim();
+    const noteText = dismiss ? ["Dismissed: no action needed.", typed].filter(Boolean).join(" ") : typed;
     setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "resolved", resolution_notes: noteText || null } : d)));
     try { await adminService.resolveDispute(id, noteText); }
     catch { setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "open" } : d))); }
@@ -111,7 +114,7 @@ export default function AdminDisputes() {
                         className="px-4 py-2 text-[13px] font-medium text-white bg-green rounded-lg border-none cursor-pointer">
                         Mark as resolved
                       </button>
-                      <button
+                      <button onClick={() => resolve(d.id, { dismiss: true })}
                         className="px-4 py-2 text-[13px] font-medium text-ink-muted bg-white border border-border-muted rounded-lg cursor-pointer">
                         Dismiss
                       </button>
