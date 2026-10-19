@@ -6,15 +6,15 @@ import { calculateBooking } from "../utils/calculateBooking";
 // ListingDetail.jsx's sidebar both need, so a booking widget can be built
 // as `const booking = useBooking(priceDay)` instead of wiring up
 // calculateDays + calculateBooking by hand on every page that needs it.
-export function useBooking(priceDay) {
+export function useBooking(priceDay, priceWeek = null) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
   const days = calculateDays(startDate, endDate);
 
   const pricing = useMemo(
-    () => (days > 0 ? calculateBooking(priceDay, days) : { subtotal: 0, fee: 0, total: 0, downPayment: 0, balance: 0 }),
-    [priceDay, days]
+    () => (days > 0 ? calculateBooking(priceDay, days, priceWeek) : { subtotal: 0, fee: 0, total: 0, downPayment: 0, balance: 0 }),
+    [priceDay, days, priceWeek]
   );
 
   function reset() {

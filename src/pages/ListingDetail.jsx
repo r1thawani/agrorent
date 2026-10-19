@@ -5,7 +5,7 @@ import { equipmentService } from "../services/equipmentService";
 import { bookingService } from "../services/bookingService";
 import { reviewService } from "../services/reviewService";
 import { messageService } from "../services/messageService";
-import { calculateBooking } from "../utils/calculateBooking";
+import { calculateBooking, priceBreakdown } from "../utils/calculateBooking";
 import StarRating from "../components/StarRating";
 import ReviewCard from "../components/ReviewCard";
 import { useWishlist } from "../context/WishlistContext";
@@ -136,7 +136,7 @@ export default function ListingDetail() {
   const days = startDate && endDate
     ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000))
     : 0;
-  const { subtotal, fee, downPayment: downpayment, balance: remaining } = calculateBooking(eq.price_day, days);
+  const { subtotal, fee, downPayment: downpayment, balance: remaining } = calculateBooking(eq.price_day, days, eq.price_week);
   const canBook = eq.is_available !== false && !eq.deleted_at;
 
   const listedDate = eq.created_at
@@ -288,7 +288,7 @@ export default function ListingDetail() {
 
               {days > 0 && (
                 <div className="mt-3 bg-page rounded-lg p-3 text-[13px] text-ink flex flex-col gap-1">
-                  <div>{days} days × K{eq.price_day.toLocaleString()} = K{subtotal.toLocaleString()}</div>
+                  <div>{priceBreakdown(eq.price_day, days, eq.price_week)} = K{subtotal.toLocaleString()}</div>
                   <div className="text-xs text-ink-muted">Service fee: K{fee.toLocaleString()}</div>
                   <div>Deposit after the owner accepts: <strong>K{downpayment.toLocaleString()}</strong></div>
                   <div className="text-xs text-ink-muted">Remaining balance at pickup: K{remaining.toLocaleString()}</div>

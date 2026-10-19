@@ -8,6 +8,7 @@ import Avatar from "../components/Avatar";
 import { effectiveStatus, timeLeft } from "../utils/bookingStatus";
 import { formatDateRange } from "../utils/formatDate";
 import { friendlyError } from "../utils/friendlyError";
+import { priceBreakdown } from "../utils/calculateBooking";
 
 // Step 2 of booking: the owner accepted the request, and the renter pays
 // the 25% deposit before the deadline to confirm it.
@@ -273,7 +274,7 @@ export default function PayDeposit() {
 
               <div className="flex flex-col gap-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-ink">{booking.total_days} day{booking.total_days === 1 ? "" : "s"} × K{Number(booking.price_day_snapshot).toLocaleString()}</span>
+                  <span className="text-ink">{priceBreakdown(Number(booking.price_day_snapshot), booking.total_days, booking.price_week_snapshot)}</span>
                   <span>K{Number(booking.subtotal).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">

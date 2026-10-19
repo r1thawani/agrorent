@@ -6,7 +6,7 @@ import { bookingService } from "../services/bookingService";
 import { useAuth } from "../hooks/useAuth";
 import Avatar from "../components/Avatar";
 import { calculateDays } from "../utils/calculateDays";
-import { calculateBooking } from "../utils/calculateBooking";
+import { calculateBooking, priceBreakdown } from "../utils/calculateBooking";
 import { friendlyError } from "../utils/friendlyError";
 import { formatDateRange } from "../utils/formatDate";
 
@@ -57,7 +57,7 @@ export default function BookingPage() {
   const photoUrl = eq.equipment_photos?.[0]?.url ?? "";
   const rawDays = calculateDays(startDate, endDate);
   const days = rawDays > 0 ? rawDays : 0;
-  const { subtotal, fee, total, downPayment, balance } = calculateBooking(eq.price_day, days || 1);
+  const { subtotal, fee, total, downPayment, balance } = calculateBooking(eq.price_day, days || 1, eq.price_week);
   const minStartDate = eq.available_from && eq.available_from > today ? eq.available_from : today;
 
   function inputCls(field) {
@@ -166,7 +166,7 @@ export default function BookingPage() {
               {days > 0 ? (
                 <div className="flex flex-col gap-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-ink">{days} day{days === 1 ? "" : "s"} × K{eq.price_day.toLocaleString()}</span>
+                    <span className="text-ink">{priceBreakdown(eq.price_day, days || 1, eq.price_week)}</span>
                     <span>K{subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
