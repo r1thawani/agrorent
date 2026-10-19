@@ -8,6 +8,7 @@ import { useNotifications } from "../context/NotificationContext";
 import { formatDateRange } from "../utils/formatDate";
 import { friendlyError } from "../utils/friendlyError";
 import { describeStatus, effectiveStatus, timeLeft, TONE_CLASSES } from "../utils/bookingStatus";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 // Tabs group bookings by what the renter needs to do.
 const TABS = [
@@ -119,27 +120,36 @@ export default function MyBookings() {
   }, [user, lastEventAt]);
 
   const [notice, setNotice] = useState("");
+  // The booking waiting for "are you sure?" in the confirmation box.
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
 
-  async function handleCancel(booking) {
+  function handleCancel(booking) {
+    setActionError("");
+    setNotice("");
+    setCancelTarget(booking);
+  }
+
+  async function confirmCancel() {
+    const booking = cancelTarget;
     const id = booking.id;
     const paid = booking.status === "confirmed";
     const deposit = `K${Number(booking.down_payment).toLocaleString()}`;
-    const question = paid
-      ? `Cancel this booking? Your ${deposit} deposit will be refunded within 5 working days.`
-      : "Cancel this request?";
-    if (!window.confirm(question)) return;
-    setActionError("");
-    setNotice("");
-    const original = bookings.find((b) => b.id === id);
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
+    setCancelling(true);
     try {
       const updated = await bookingService.cancel(id);
       setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, ...updated } : b)));
-      if (paid) setNotice(`Booking cancelled. Your ${deposit} deposit will be refunded within 5 working days, and we've emailed you the details.`);
+      setNotice(paid
+        ? `Booking cancelled. Your ${deposit} deposit will be refunded within 5 working days, and we've emailed you the details.`
+        : booking.status === "pending"
+          ? "Request withdrawn. The owner has been told."
+          : "Booking cancelled. Nothing was charged, and the owner has been told.");
       refreshBadges();
     } catch (err) {
-      setBookings((prev) => prev.map((b) => (b.id === id ? original : b)));
       setActionError(friendlyError(err, "Could not cancel this booking."));
+    } finally {
+      setCancelling(false);
+      setCancelTarget(null);
     }
   }
 
@@ -207,6 +217,34 @@ export default function MyBookings() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(cancelTarget)}
+        title={cancelTarget?.status === "pending" ? "Withdraw this request?" : "Cancel this booking?"}
+        confirmLabel={cancelTarget?.status === "pending" ? "Withdraw request" : "Cancel booking"}
+        busyLabel="Cancelling…"
+        cancelLabel={cancelTarget?.status === "pending" ? "Keep request" : "Keep booking"}
+        busy={cancelling}
+        onConfirm={confirmCancel}
+        onCancel={() => setCancelTarget(null)}
+      >
+        {cancelTarget && (
+          <>
+            <p>
+              <span className="font-medium text-ink">{cancelTarget.equipment?.name}</span>
+              {" · "}{formatDateRange(cancelTarget.start_date, cancelTarget.end_date)}
+            </p>
+            {cancelTarget.status === "confirmed" ? (
+              <p className="mt-3 bg-green-tint text-green-dark rounded-lg px-3 py-2.5 text-[13px]">
+                Your K{Number(cancelTarget.down_payment).toLocaleString()} deposit will be refunded within 5 working days.
+                We'll email you the details.
+              </p>
+            ) : (
+              <p className="mt-2">Nothing has been paid, so nothing will be charged. The owner will be told.</p>
+            )}
+          </>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

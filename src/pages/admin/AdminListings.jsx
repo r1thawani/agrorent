@@ -5,6 +5,7 @@ import AdminTable from "../../components/AdminTable";
 import { adminService } from "../../services/adminService";
 import { equipmentService } from "../../services/equipmentService";
 import { friendlyError } from "../../utils/friendlyError";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 const CATEGORIES = ["Tractors", "Ploughs", "Planters", "Harvesters", "Irrigation", "Sprayers", "Other"];
 
@@ -33,17 +34,26 @@ export default function AdminListings() {
     catch { setListings((prev) => prev.map((eq) => (eq.id === id ? { ...eq, flagged: prevFlagged } : eq))); }
   }
 
-  async function removeListing(id) {
-    const target = listings.find((eq) => eq.id === id);
-    if (!window.confirm(`Delete "${target?.name}"? Renters with open requests will be told it was removed.`)) return;
+  // The listing waiting for "are you sure?" in the confirmation box.
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  function removeListing(id) {
     setError("");
-    setListings((prev) => prev.filter((eq) => eq.id !== id));
+    setDeleteTarget(listings.find((eq) => eq.id === id) || null);
+  }
+
+  async function confirmRemove() {
+    const target = deleteTarget;
+    setDeleting(true);
     try {
-      await equipmentService.remove(id);
+      await equipmentService.remove(target.id);
+      setListings((prev) => prev.filter((eq) => eq.id !== target.id));
     } catch (err) {
-      // Put it back: the listing is still there, so the page must not pretend otherwise.
-      setListings((prev) => (target ? [target, ...prev] : prev));
       setError(friendlyError(err, "Could not delete that listing. Please try again."));
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   }
 
@@ -122,6 +132,19 @@ export default function AdminListings() {
           />
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this listing?"
+        confirmLabel="Delete listing"
+        busyLabel="Deleting…"
+        busy={deleting}
+        onConfirm={confirmRemove}
+        onCancel={() => setDeleteTarget(null)}
+      >
+        <p><span className="font-medium text-ink">{deleteTarget?.name}</span> will be removed from AgroRent.</p>
+        <p className="mt-2">Renters with open requests will be told it was removed. A listing with a paid booking that hasn't finished can't be deleted.</p>
+      </ConfirmDialog>
     </div>
   );
 }
