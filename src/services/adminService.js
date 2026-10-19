@@ -18,7 +18,7 @@ export const adminService = {
   async getStats() {
     const [{ count: userCount }, { count: listingCount }, { data: bookings }] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact", head: true }),
-      supabase.from("equipment").select("*", { count: "exact", head: true }),
+      supabase.from("equipment").select("*", { count: "exact", head: true }).is("deleted_at", null),
       supabase.from("bookings").select("total_price, status"),
     ]);
 
@@ -75,6 +75,7 @@ export const adminService = {
     const { data, error } = await supabase
       .from("equipment")
       .select("*, equipment_photos(url, sort_order), owner:profiles!equipment_owner_id_fkey(name)")
+      .is("deleted_at", null) // archived listings (deleted, but kept for booking history)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data;

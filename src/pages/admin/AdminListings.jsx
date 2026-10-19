@@ -4,6 +4,7 @@ import AdminTopNav from "../../components/AdminTopNav";
 import AdminTable from "../../components/AdminTable";
 import { adminService } from "../../services/adminService";
 import { equipmentService } from "../../services/equipmentService";
+import { friendlyError } from "../../utils/friendlyError";
 
 const CATEGORIES = ["Tractors", "Ploughs", "Planters", "Harvesters", "Irrigation", "Sprayers", "Other"];
 
@@ -18,6 +19,7 @@ function Badge({ cls, children }) {
 export default function AdminListings() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     adminService.getAllListings().then(setListings).finally(() => setLoading(false));
@@ -32,8 +34,17 @@ export default function AdminListings() {
   }
 
   async function removeListing(id) {
+    const target = listings.find((eq) => eq.id === id);
+    if (!window.confirm(`Delete "${target?.name}"? Renters with open requests will be told it was removed.`)) return;
+    setError("");
     setListings((prev) => prev.filter((eq) => eq.id !== id));
-    try { await equipmentService.remove(id); } catch { /* stale optimistic remove is acceptable */ }
+    try {
+      await equipmentService.remove(id);
+    } catch (err) {
+      // Put it back: the listing is still there, so the page must not pretend otherwise.
+      setListings((prev) => (target ? [target, ...prev] : prev));
+      setError(friendlyError(err, "Could not delete that listing. Please try again."));
+    }
   }
 
   const rows = listings.map((eq) => {
@@ -94,6 +105,7 @@ export default function AdminListings() {
       <AdminTopNav />
       <div className="min-h-[calc(100vh-56px)] bg-page px-4 sm:px-8 py-8">
         <h1 className="text-[22px] font-medium text-ink mb-5">All listings</h1>
+        {error && <p className="text-[13px] text-red mb-4">{error}</p>}
         {loading ? (
           <div className="text-center py-20 text-ink-muted">Loading…</div>
         ) : (

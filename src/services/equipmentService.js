@@ -21,6 +21,7 @@ export const equipmentService = {
       .from("equipment")
       .select("*, equipment_photos(url, sort_order), owner:profiles!equipment_owner_id_fkey(id, name, photo_url)")
       .eq("id", id)
+      .is("deleted_at", null) // an archived (deleted) listing can't be opened by its old link
       .single();
     if (error) throw error;
     return data;
