@@ -8,13 +8,15 @@
 -- What it does: creates four pretend users (an owner, two renters and a
 -- stranger), a test tractor and some bookings, then acts as each user and
 -- tries things the database should allow or refuse: booking prices,
--- double-booking, privacy, admin rights and reporting a problem.
+-- double-booking, privacy, admin rights, reporting a problem and replies to
+-- reviews.
 --
 -- Nothing is saved. Everything the script creates is undone at the end, so
 -- it is safe to run on the live database as often as you like.
 --
--- Needs all migrations up to 012 to have been run. If a "Report a problem"
--- check fails, run migrations/012_report_problem.sql first.
+-- Needs all migrations up to 013 to have been run. If a "Report a problem"
+-- check fails, run migrations/012_report_problem.sql first; if a "Review
+-- replies" check fails, run migrations/013_review_replies.sql.
 -- =====================================================================
 
 drop table if exists rules_check;
@@ -37,6 +39,8 @@ declare
   eq_id     uuid := gen_random_uuid();
   b1 uuid;
   b2 uuid;
+  b3 uuid;
+  rev_id uuid := gen_random_uuid();
   res  rules_check[] := '{}';
   n    int := 0;
   ok   boolean;
@@ -62,6 +66,14 @@ begin
 
     insert into equipment (id, owner_id, name, category, price_day, province, district, location, pickup_address)
     values (eq_id, owner_id, 'Test Tractor', 'Tractors', 500, 'Lusaka', 'Lusaka', 'Lusaka', 'Plot 1, Chilanga Road');
+
+    -- A finished rental with a two-star review, for the review reply checks.
+    insert into bookings (equipment_id, renter_id, start_date, end_date)
+    values (eq_id, renter2, current_date + 50, current_date + 52)
+    returning id into b3;
+    update bookings set status = 'completed' where id = b3;
+    insert into reviews (id, booking_id, equipment_id, reviewer_id, rating, text)
+    values (rev_id, b3, eq_id, renter2, 2, 'The tractor arrived late');
 
     -- ---------------------------------------------------------------
     -- 1. The database works out the price itself
@@ -376,6 +388,57 @@ begin
     n := n + 1;
     res := res || row(n, 'Report a problem', 'First renter tries to mark their own report as resolved',
                       'No change, the report stays open', 'Status is ' || coalesce(v_text, 'missing'),
+                      case when ok then 'PASS' else 'FAIL' end)::rules_check;
+
+    -- ---------------------------------------------------------------
+    -- 20. Only the owner of the equipment can reply to its reviews
+    -- ---------------------------------------------------------------
+    perform set_config('request.jwt.claims', json_build_object('sub', stranger, 'role', 'authenticated')::text, true);
+    set local role authenticated;
+    begin
+      perform reply_to_review(rev_id, 'Replying to a review of someone else''s tractor');
+      ok := false; got := 'Reply saved';
+    exception when others then
+      ok := true; got := 'Refused: ' || sqlerrm;
+    end;
+    reset role;
+    n := n + 1;
+    res := res || row(n, 'Review replies', 'A stranger tries to reply to a review of the owner''s tractor',
+                      'Refused', got, case when ok then 'PASS' else 'FAIL' end)::rules_check;
+
+    -- ---------------------------------------------------------------
+    -- 21. The owner can reply to a review of their equipment
+    -- ---------------------------------------------------------------
+    perform set_config('request.jwt.claims', json_build_object('sub', owner_id, 'role', 'authenticated')::text, true);
+    set local role authenticated;
+    begin
+      select owner_reply into v_text from reply_to_review(rev_id, 'Sorry for the delay, thank you for renting');
+      ok := v_text is not null; got := 'Reply saved';
+    exception when others then
+      ok := false; got := 'Refused: ' || sqlerrm;
+    end;
+    reset role;
+    n := n + 1;
+    res := res || row(n, 'Review replies', 'Owner replies to the two-star review of their tractor',
+                      'Reply saved and shown under the review', got,
+                      case when ok then 'PASS' else 'FAIL' end)::rules_check;
+
+    -- ---------------------------------------------------------------
+    -- 22. The owner cannot change the renter's rating
+    -- ---------------------------------------------------------------
+    perform set_config('request.jwt.claims', json_build_object('sub', owner_id, 'role', 'authenticated')::text, true);
+    set local role authenticated;
+    begin
+      update reviews set rating = 5, text = 'Excellent tractor' where id = rev_id;
+    exception when others then
+      null;
+    end;
+    reset role;
+    select rating into v_count from reviews where id = rev_id;
+    ok := v_count = 2;
+    n := n + 1;
+    res := res || row(n, 'Review replies', 'Owner tries to change the review to five stars',
+                      'No change, the review stays at two stars', 'Rating is ' || v_count,
                       case when ok then 'PASS' else 'FAIL' end)::rules_check;
 
     -- Undo everything above.

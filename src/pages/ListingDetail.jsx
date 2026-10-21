@@ -126,6 +126,12 @@ export default function ListingDetail() {
 
   const saved = isWishlisted(eq.id);
   const isOwnEquipment = user && eq.owner_id === user.id;
+
+  async function saveReply(reviewId, reply) {
+    const updated = await reviewService.reply(reviewId, reply);
+    setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, owner_reply: updated.owner_reply } : r)));
+  }
+
   const photos = (eq.equipment_photos || []).slice().sort((a, b) => a.sort_order - b.sort_order);
   const photoUrls = photos.map((p) => p.url);
 
@@ -251,7 +257,7 @@ export default function ListingDetail() {
                     rating: r.rating,
                     text: r.text,
                     reply: r.owner_reply,
-                  }} />
+                  }} onSaveReply={isOwnEquipment ? saveReply : undefined} />
                 ))
               )}
             </div>

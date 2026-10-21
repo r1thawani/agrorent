@@ -32,4 +32,12 @@ export const reviewService = {
     if (error) throw error;
     return data;
   },
+
+  // Owner's reply to a review of their equipment. An empty reply removes it.
+  // Goes through a database function so owners can't change the rating or text.
+  async reply(reviewId, reply) {
+    const { data, error } = await supabase.rpc("reply_to_review", { p_review_id: reviewId, p_reply: reply });
+    if (error) throw error;
+    return data;
+  },
 };
