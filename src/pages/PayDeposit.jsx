@@ -9,6 +9,7 @@ import { effectiveStatus, timeLeft } from "../utils/bookingStatus";
 import { formatDateRange } from "../utils/formatDate";
 import { friendlyError } from "../utils/friendlyError";
 import { priceBreakdown } from "../utils/calculateBooking";
+import { detectCardType, luhn } from "../utils/cardNumber";
 
 // Step 2 of booking: the owner accepted the request, and the renter pays
 // the 25% deposit before the deadline to confirm it.
@@ -18,23 +19,6 @@ const PAY_OPTIONS = [
   { id: "mtn", label: "MTN Mobile Money", desc: "Pay with your MTN Mobile Money number" },
   { id: "card", label: "Bank card", desc: "Visa or Mastercard" },
 ];
-
-function luhn(digits) {
-  let sum = 0, alt = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let n = parseInt(digits[i], 10);
-    if (alt) { n *= 2; if (n > 9) n -= 9; }
-    sum += n;
-    alt = !alt;
-  }
-  return sum % 10 === 0;
-}
-
-function detectCardType(digits) {
-  if (/^4/.test(digits)) return "visa";
-  if (/^5[1-5]/.test(digits) || /^2(?:2[2-9][1-9]|[3-6]\d{2}|7[01]\d|720)/.test(digits)) return "mastercard";
-  return null;
-}
 
 const NAV_KEYS = ["Backspace","Delete","Tab","Escape","Enter","ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End"];
 
